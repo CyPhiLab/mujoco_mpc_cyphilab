@@ -1,0 +1,12 @@
+--- spirob.xml	2026-01-21 10:00:00.000000000 -0800
++++ spirob_modified.xml	2026-01-21 10:00:00.000000000 -0800
+@@ -1,4 +1,4 @@
+-<?xml version="1.0" ?>
+-<!-- Generated using onshape-to-robot -->
+-<!-- Onshape https://cad.onshape.com/documents/11f47046aadde998d93845f5/w/2219ecd5bc279fe0ecc107c4/e/786bc53f5acd65211f6c0c24 -->
+-<mujoco model="my-SpiRob">
++<?xml version="1.0"?>
++<!-- SpiRob continuum robot model for MJPC -->
++<!-- Modified from original SpiRob model -->
++<mujoco model="SpiRob">
+   <compiler angle="radian" meshdir="assets" autolimits="true"/>

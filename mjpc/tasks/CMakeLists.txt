@@ -199,6 +199,24 @@ add_custom_target(
   COMMAND ${Python_EXECUTABLE}
           ${CMAKE_CURRENT_BINARY_DIR}/manipulation/merge_panda_robotiq.py
           ${CMAKE_CURRENT_BINARY_DIR}/manipulation/panda_robotiq.xml
+          
+  # SpiRob continuum robot
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_SOURCE_DIR}/../spirob_mujoco/robot/spirob.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob.xml
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/../spirob_mujoco/robot/assets
+          ${CMAKE_CURRENT_BINARY_DIR}/spirob/assets
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_SOURCE_DIR}/../spirob_mujoco/robot/scene.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene.xml
+  COMMAND patch -o ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_modified.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob.xml
+          <${CMAKE_CURRENT_SOURCE_DIR}/spirob/spirob.xml.patch
+  COMMAND patch -o ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene_modified.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene.xml
+          <${CMAKE_CURRENT_SOURCE_DIR}/spirob/spirob_scene.xml.patch
+          
   COMMENT "Copying Menagerie and dm_control assets into binary directory")
 
 add_custom_target(copy_resources ALL

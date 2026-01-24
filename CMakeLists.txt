@@ -90,7 +90,7 @@ findorfetch(
 # TODO(nimrod): Update to the latest version of abseil, or use the one defined
 # by MuJoCo, once grpc fix their build issues.
 set(MUJOCO_DEP_VERSION_abseil
-    fb3621f4f897824c0dbe0615fa94543df6192f30 # LTS 20230802.1
+    bc257a88f7c1939f24e0379f14a3589e926c950c # LTS 20230802.1
     CACHE STRING "Version of `abseil` to be fetched."
     FORCE
 )

@@ -74,6 +74,8 @@ add_library(
   tasks/rubik/solve.h
   tasks/shadow_reorient/hand.cc
   tasks/shadow_reorient/hand.h
+  tasks/spirob/spirob.cc
+  tasks/spirob/spirob.h
   tasks/quadrotor/quadrotor.cc
   tasks/quadrotor/quadrotor.h
   tasks/quadruped/quadruped.cc
