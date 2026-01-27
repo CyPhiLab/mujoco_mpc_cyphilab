@@ -28,56 +28,74 @@ std::string Spirob::XmlPath() const {
 std::string Spirob::Name() const { return "SpiRob"; }
 
 // ------- Residuals for SpiRob task ------
-//     Tip Position: End effector should reach target position
-//     Tendon Effort: Minimize tendon forces
-//     Tendon Limits: Keep tendon positions within limits
-//     Velocity: Minimize joint velocities
+//     Ring Enclosure: Ring min-distance wrapping around cube
+//     Tendon Effort: Minimize tendon forces  
+//     Cube Height: Reward lifting the cube up
+//     Cube XY: Keep cube centered
+//     Joint Velocity: Smooth motion penalty
 // ------------------------------------------
 namespace {
-void ResidualImpl(const mjModel* model, const mjData* data,
-                  const double target[3], double* residual) {
-  // ----- residual (0-2): tip position error ----- //
-  double* tip_pos = SensorByName(model, data, "tip_position");
-  mju_sub(residual, tip_pos, target, 3);
 
-  // ----- residual (3): tendon effort ----- //
+
+void ResidualImpl(const mjModel* model, const mjData* data, double* residual) {
+  // ----- residual (0): tip-to-cube distance ----- //
+  double* cube_pos = SensorByName(model, data, "cube_position");
+  double* tip_pos = SensorByName(model, data, "tip_position");
+  
+  double dx = tip_pos[0] - cube_pos[0];
+  double dy = tip_pos[1] - cube_pos[1]; 
+  double dz = tip_pos[2] - cube_pos[2];
+  residual[0] = std::sqrt(dx * dx + dy * dy + dz * dz);
+  
+  // ----- residual (1): segment-to-cube distance penalty ----- //
+  // Simple approach: penalize distances from robot segments to cube
+  const int sample_step = 2; // Sample every 2nd site for performance
+  double total_distance = 0.0;
+  int count = 0;
+  
+  // Iterate through robot sites, sampling for efficiency
+  for (int site_idx = 0; site_idx < model->nsite; site_idx += sample_step) {
+    const double* site_pos = &data->site_xpos[3 * site_idx];
+    
+    double dx = site_pos[0] - cube_pos[0];
+    double dy = site_pos[1] - cube_pos[1]; 
+    double dz = site_pos[2] - cube_pos[2];
+    double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+    
+    // Accumulate inverse exponential to reward proximity
+    total_distance += -dist; // threshold for "close"
+    count++;
+  }
+  
+  // Average and negate (we want to maximize proximity by minimizing residual)
+  residual[1] = -(total_distance / count);
+
+  // ----- residual (2): tendon effort ----- //
   double tendon_effort = 0.0;
   for (int i = 0; i < model->nu; i++) {
     tendon_effort += data->ctrl[i] * data->ctrl[i];
   }
-  residual[3] = std::sqrt(tendon_effort);
+  residual[2] = std::sqrt(tendon_effort);
 
-  // ----- residual (4): tendon limits ----- //
-  double tendon_limit_violation = 0.0;
-  for (int i = 0; i < model->ntendon; i++) {
-    double length = data->ten_length[i];
-    if (model->tendon_range) {
-      double range_low = model->tendon_range[2*i];
-      double range_high = model->tendon_range[2*i + 1];
-      
-      if (length < range_low) {
-        tendon_limit_violation += (range_low - length) * (range_low - length);
-      } else if (length > range_high) {
-        tendon_limit_violation += (length - range_high) * (length - range_high);
-      }
-    }
-  }
-  residual[4] = std::sqrt(tendon_limit_violation);
+  // ----- residual (3): cube height (negative to reward lifting) ----- //
+  residual[3] = -(cube_pos[2] - 0.2); // Reward lifting above initial height
 
-  // ----- residual (5): joint velocity ----- //
-  double vel_magnitude = 0.0;
+  // ----- residual (4-5): cube x,y position (keep close to 0,0) ----- //
+  residual[4] = cube_pos[0]; // x position
+  residual[5] = cube_pos[1]; // y position
+
+  // ----- residual (6): joint velocity penalty ----- //
+  double joint_vel_penalty = 0.0;
   for (int i = 0; i < model->nv; i++) {
-    vel_magnitude += data->qvel[i] * data->qvel[i];
+    joint_vel_penalty += data->qvel[i] * data->qvel[i];
   }
-  residual[5] = std::sqrt(vel_magnitude);
+  residual[6] = std::sqrt(joint_vel_penalty);
 }
 }  // namespace
 
 void Spirob::ResidualFn::Residual(const mjModel* model, const mjData* data,
                                  double* residual) const {
-  // Fixed target position (for now - can be made dynamic later)
-  double target[3]{0.3, 0.0, 0.2};
-  ResidualImpl(model, data, target, residual);
+  ResidualImpl(model, data, residual);
 }
 
 }  // namespace mjpc

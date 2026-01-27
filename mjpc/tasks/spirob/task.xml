@@ -7,7 +7,7 @@
 
   <custom>
     <!-- agent -->
-    <numeric name="agent_planner" data="1" />
+    <numeric name="agent_planner" data="0" />
     <numeric name="agent_horizon" data="2.0" />
     <numeric name="agent_timestep" data="0.02" />
     <numeric name="sampling_trajectories" data="64"/>
@@ -15,31 +15,61 @@
     <numeric name="sampling_exploration" data="0.3" />
     <numeric name="gradient_spline_points" data="8" />
     <numeric name="sample_gradient_trajectories" data="16"/>
-    <!-- Target position (x, y, z) -->
-    <numeric name="residual_Target" data="0.3 0.0 1.0" />
+
+    <!-- Wrapping cost tunables -->
+    <numeric name="wrap_radius" data="0.045" />
+    <numeric name="wrap_points" data="12" />
+    <numeric name="wrap_threshold" data="0.02" />
+    <numeric name="wrap_sample_step" data="3" />
 
     <!-- estimator -->
     <numeric name="estimator" data="0" />
   </custom>
 
+  <asset>
+    <material name="wood" rgba="0.6 0.4 0.2 1" />
+    <material name="metal" rgba="0.7 0.7 0.8 1" />
+    <material name="plastic_red" rgba="0.8 0.2 0.2 1" />
+  </asset>
+
   <worldbody>
-    <!-- Target visualization -->
-    <body name="target" pos="0.3 0.0 0.2">
-      <geom name="target" type="sphere" size="0.02" rgba="1 0 0 0.7" contype="0" conaffinity="0"/>
-      <site name="target_site" pos="0 0 0" size="0.01"/>
+
+
+    <!-- Drawer -->
+    <!-- <body name="drawer_body" pos="0.15 0.0 0.15" euler="0 0 1.5708"> -->
+      <!-- Drawer bottom -->
+      <!-- <geom name="drawer_bottom" type="box" size="0.12 0.08 0.01" pos="0 0 0" material="wood" /> -->
+      
+      <!-- Drawer walls -->
+      <!-- <geom name="drawer_wall_left" type="box" size="0.01 0.08 0.04" pos="-0.11 0 0.04" material="wood" />
+      <geom name="drawer_wall_right" type="box" size="0.01 0.08 0.04" pos="0.11 0 0.04" material="wood" />
+      <geom name="drawer_wall_back" type="box" size="0.12 0.01 0.04" pos="0 -0.07 0.04" material="wood" />
+      <geom name="drawer_wall_front" type="box" size="0.12 0.01 0.02" pos="0 0.07 0.02" material="wood" /> -->
+      
+      <!-- Drawer handle -->
+      <!-- <geom name="drawer_handle" type="cylinder" size="0.006 0.025" pos="0 0.095 0.035" material="metal" euler="0 90 0" />
+    </body> -->
+
+    <!-- Object to pick up (cube on the drawer) -->
+    <body name="pickup_cube" pos="0.05 0.0 0.24">
+      <freejoint />
+      <geom name="cube_geom" type="box" size="0.03 0.03 0.03" material="plastic_red" mass="0.001" condim="6" friction="1 5e-3 5e-4" solref=".01 1" margin=".02" gap=".02"/>
+      <site name="cube_site" pos="0 0 0" size="0.03"/>
     </body>
   </worldbody>
 
   <sensor>
-    <!-- cost sensors (must be first and sequential) -->
-    <user name="Tip Position" dim="3" user="0 10.0 0.0 100.0"/>
-    <user name="Tendon Effort" dim="1" user="0 0.1 0.0 1.0"/>
-    <!-- <user name="Tendon Limits" dim="1" user="0 1.0 0.0 10.0"/> -->
-    <!-- <user name="Joint Velocity" dim="1" user="0 0.1 0.0 1.0"/> -->
+    <!-- cost sensors (must be first and sequential) -->    
+    <user name="Tip Distance" dim="1" user="0 20.0 0.0 100.0"/>    
+    <user name="Wrapping Score" dim="1" user="0 0.0 0.0 1000.0"/>
+    <user name="Tendon Effort" dim="1" user="0 0.2 0.0 10.0"/>
+    <user name="Cube Height" dim="1" user="0 20.0 0.0 500.0"/>
+    <user name="Cube XY Position" dim="2" user="0 15.0 0.0 100.0"/>
+    <user name="Joint Velocity" dim="1" user="0 0.0 0.0 1.0"/>
     
     <!-- Additional monitoring sensors -->
     <framepos name="tip_position" objtype="site" objname="150"/>
-    <framepos name="target_position" objtype="site" objname="target_site"/>
+    <framepos name="cube_position" objtype="site" objname="cube_site"/>
     <tendonpos name="tendon1_pos" tendon="tendon1"/>
     <tendonpos name="tendon2_pos" tendon="tendon2"/>
     <tendonpos name="tendon3_pos" tendon="tendon3"/>
@@ -51,12 +81,12 @@
   <keyframe>
     <!-- Initial configuration -->
     <key name="home" 
-         qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+         qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.0 0.05 0.0 1 0 0 0"
          ctrl="0 0 0"/>
          
     <!-- Reaching configuration -->
     <key name="reach" 
-         qpos="0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3"
-         ctrl="-0.5 -0.3 -0.7"/>
+         qpos="0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.1 0.2 0.1 0.3 0.05 0.0 0.30 1 0 0 0"
+         ctrl="-0.0 -0.0 -0.0"/>
   </keyframe>
 </mujoco>
