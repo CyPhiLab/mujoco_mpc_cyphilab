@@ -37,6 +37,7 @@
 #include "mjpc/tasks/quadrotor/quadrotor.h"
 #include "mjpc/tasks/quadruped/quadruped.h"
 #include "mjpc/tasks/rubik/solve.h"
+#include "mjpc/tasks/pterosaur/pterosaur.h"
 #include "mjpc/tasks/shadow_reorient/hand.h"
 #include "mjpc/tasks/spirob/spirob.h"
 #include "mjpc/tasks/swimmer/swimmer.h"
@@ -63,6 +64,7 @@ std::vector<std::shared_ptr<Task>> GetTasks() {
       std::make_shared<Panda>(),
       std::make_shared<Particle>(),
       std::make_shared<ParticleFixed>(),
+      std::make_shared<Pterosaur>(),
       std::make_shared<Rubik>(),
       std::make_shared<ShadowReorient>(),
       std::make_shared<Spirob>(),

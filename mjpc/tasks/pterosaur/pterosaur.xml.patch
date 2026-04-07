@@ -1,0 +1,9 @@
+--- pterosaur.xml	2026-01-01 00:00:00.000000000 -0500
++++ pterosaur_modified.xml	2026-01-01 00:00:00.000000000 -0500
+@@ -1,4 +1,2 @@
+-<?xml version="1.0" ?>
+-<!-- Generated using onshape-to-robot -->
+-<!-- Onshape https://cad.onshape.com/documents/10983e84519d457ae82440ea/w/286bda59dae2fbf061500275/e/1ab19f16b069914ec1cc48d7 -->
+-<mujoco model="pterosaur">
++<!-- Pterosaur robot model for MJPC -->
++<mujoco model="pterosaur">

@@ -200,6 +200,27 @@ add_custom_target(
           ${CMAKE_CURRENT_BINARY_DIR}/manipulation/merge_panda_robotiq.py
           ${CMAKE_CURRENT_BINARY_DIR}/manipulation/panda_robotiq.xml
           
+  # Pterosaur quadruped robot
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_SOURCE_DIR}/../ptero_sim/pterosaur.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/pterosaur.xml
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/../ptero_sim/assets
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/assets
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_SOURCE_DIR}/../ptero_sim/scene.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/pterosaur_scene.xml
+  COMMAND ${Python_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/pterosaur/prepare_model.py
+          robot
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/pterosaur.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/pterosaur_modified.xml
+  COMMAND ${Python_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/pterosaur/prepare_model.py
+          scene
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/pterosaur_scene.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/pterosaur/pterosaur_scene_modified.xml
+
   # SpiRob continuum robot
   COMMAND ${CMAKE_COMMAND} -E copy
           ${CMAKE_SOURCE_DIR}/../spirob_mujoco/robot/spirob.xml

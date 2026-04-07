@@ -1,0 +1,7 @@
+--- pterosaur_scene.xml	2026-01-01 00:00:00.000000000 -0500
++++ pterosaur_scene_modified.xml	2026-01-01 00:00:00.000000000 -0500
+@@ -1,2 +1,2 @@
+-<mujoco model="scene">
+-    <include file="pterosaur.xml" />
++<mujoco model="Pterosaur Scene">
++    <include file="pterosaur_modified.xml" />

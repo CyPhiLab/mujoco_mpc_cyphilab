@@ -74,6 +74,8 @@ add_library(
   tasks/particle/particle.h
   tasks/rubik/solve.cc
   tasks/rubik/solve.h
+  tasks/pterosaur/pterosaur.cc
+  tasks/pterosaur/pterosaur.h
   tasks/shadow_reorient/hand.cc
   tasks/shadow_reorient/hand.h
   tasks/spirob/spirob.cc
