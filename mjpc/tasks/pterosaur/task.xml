@@ -1,0 +1,41 @@
+<mujoco model="Pterosaur Jump">
+  <include file="../common.xml"/>
+  <include file="pterosaur_scene_modified.xml"/>
+
+  <size memory="4M"/>
+
+  <custom>
+    <!-- agent -->
+    <numeric name="agent_planner" data="0"/>
+    <numeric name="agent_horizon" data="1.5"/>
+    <numeric name="agent_timestep" data="0.01"/>
+    <numeric name="sampling_trajectories" data="128"/>
+    <numeric name="sampling_spline_points" data="5"/>
+    <numeric name="sampling_exploration" data="0.3"/>
+    <!-- task parameters (GUI sliders) -->
+    <!-- Launch Speed: desired COM speed at launch (m/s) -->
+    <numeric name="residual_Launch Speed" data="3.0 0 10"/>
+    <!-- Launch Angle: elevation angle from horizontal (radians, 0=flat, pi/2=straight up) -->
+    <numeric name="residual_Launch Angle" data="0.7854 0 1.5708"/>
+    <!-- estimator -->
+    <numeric name="estimator" data="0"/>
+  </custom>
+
+  <sensor>
+    <!-- cost sensors — must match Residual() order exactly -->
+    <!-- dim=3: COM velocity error (vx, vy, vz) vs target launch vector -->
+    <user name="Velocity" dim="3" user="0 1.0 0 10.0"/>
+    <!-- dim=14: control effort for each of the 14 actuators -->
+    <user name="Effort" dim="14" user="0 0.01 0 0.1"/>
+
+    <!-- monitoring sensors -->
+    <framelinvel name="com_velocity" objtype="site" objname="com"/>
+  </sensor>
+
+  <!-- <keyframe> -->
+    <!-- home: all joints at 0 (standing configuration) -->
+    <!-- <key name="home"
+         qpos="0 0 0.69 1 0 0 0  0 0 0 0 0 0 0  0 0 0 0 0 0 0"
+         ctrl="0 0 0 0 0 0 0 0 0 0 0 0"/>
+  </keyframe> -->
+</mujoco>
