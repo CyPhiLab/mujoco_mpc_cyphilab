@@ -1,0 +1,33 @@
+<mujoco model="turtle_3dswimming_velocity_actuators">
+  <!-- Velocity actuators for the turtle 3D swimming robot joints.
+       Order matches ctrl indices used in turtle_3dswimming.cc:
+         0: shoulderL1  (left front arm sweep)
+         1: shoulderL2  (left front arm pitch)
+         2: shoulderL3  (left front flipper)
+         3: shoulderR1  (right front arm sweep)
+         4: shoulderR2  (right front arm pitch)
+         5: shoulderR3  (right front flipper)
+         6: hip_L1      (left rear arm)
+         7: hip_L2      (left rear flipper)  <- 0.33x cost
+         8: hip_R1      (right rear arm)
+         9: hip_R2      (right rear flipper) <- 0.33x cost
+  -->
+  <default>
+    <default class="xw540-t260-motor">
+      <!-- Match working TurtleFree3D specs, not idealized motor specs -->
+      <velocity forcerange="-12.0 12.0" ctrlrange="-4.3 4.3" kv="10" />
+    </default>
+  </default>
+  <actuator>
+    <velocity name="shoulderL1" class="xw540-t260-motor" joint="shoulderL1" />
+    <velocity name="shoulderL2" class="xw540-t260-motor" joint="shoulderL2" />
+    <velocity name="shoulderL3" class="xw540-t260-motor" joint="shoulderL3" />
+    <velocity name="shoulderR1" class="xw540-t260-motor" joint="shoulderR1" />
+    <velocity name="shoulderR2" class="xw540-t260-motor" joint="shoulderR2" />
+    <velocity name="shoulderR3" class="xw540-t260-motor" joint="shoulderR3" />
+    <velocity name="hip_L1"     class="xw540-t260-motor" joint="hip_L1"     />
+    <velocity name="hip_L2"     class="xw540-t260-motor" joint="hip_L2"     />
+    <velocity name="hip_R1"     class="xw540-t260-motor" joint="hip_R1"     />
+    <velocity name="hip_R2"     class="xw540-t260-motor" joint="hip_R2"     />
+  </actuator>
+</mujoco>

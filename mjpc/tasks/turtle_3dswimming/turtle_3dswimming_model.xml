@@ -1,0 +1,4 @@
+<mujoco model="turtle_3dswimming_model">
+  <include file="turtle_3dswimming_body.xml" />
+  <include file="turtle_3dswimming_actuators.xml" />
+</mujoco>

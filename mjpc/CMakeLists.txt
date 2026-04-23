@@ -36,6 +36,10 @@ add_library(
   utilities.h
   tasks/tasks.cc
   tasks/tasks.h
+  tasks/turtle_free_benchmark/turtle_free_benchmark.cc
+  tasks/turtle_free_benchmark/turtle_free_benchmark.h
+  tasks/turtle_3dswimming/turtle_3dswimming.cc
+  tasks/turtle_3dswimming/turtle_3dswimming.h
   tasks/acrobot/acrobot.cc
   tasks/acrobot/acrobot.h
   tasks/allegro/allegro.cc

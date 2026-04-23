@@ -1,0 +1,46 @@
+<mujoco model="Turtle 3D Swimming">
+  <include file="../common.xml" />
+  <include file="turtle_3dswimming_model.xml" />
+
+  <custom>
+    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_horizon" data="2.0" />
+    <numeric name="agent_timestep" data="0.02" />
+    <numeric name="sampling_trajectories" data="64" />
+    <numeric name="sampling_spline_points" data="5" />
+    <numeric name="sampling_exploration" data="0.1" />
+    <numeric name="gradient_spline_points" data="15" />
+    <numeric name="estimator" data="0" />
+  </custom>
+
+  <worldbody>
+    <!-- Target placed in front of the robot nose (-Y direction in turtle.xml frame) -->
+    <body name="target" mocap="true" pos="-0.196 -1.5 0.0717682">
+      <geom name="target" type="sphere" size="0.05" material="target"/>
+      <light name="target_light" diffuse=".7 .7 .7" pos="0 0 0.5"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <!-- Cost terms: 17 total residuals (indices 0-16) -->
+    <!-- [0-9]:   control effort (rear stroke joints 7,9 are 0.33x; front stroke joints 2,5 are 0.5x) -->
+    <!-- [10]:    3D distance base-to-target -->
+    <!-- [11]:    distance-adaptive progress residual (smooth tanh, no clamp) -->
+    <!-- [12-14]: cross(body_axis, head_to_target_direction) -->
+    <!-- [15]:    weak roll/bank trim stabilizer -->
+    <!-- [16]:    reserved / disabled -->
+    <user name="Control"     dim="10" user="0 0.01  0 1" />
+    <user name="Distance"    dim="1"  user="0 2.0   0 100.0" />
+    <user name="Velocity"    dim="1"  user="0 6.0   0 1.0" />
+    <user name="Yaw"         dim="3"  user="0 2.5   0 10.0" />
+    <user name="Height"      dim="1"  user="0 0.5   0 100.0" />
+    <user name="Pitch"       dim="1"  user="0 0.0   0 10.0" />
+
+    <!-- State/position sensors referenced in turtle_3dswimming.cc -->
+    <framepos    name="base_pos_task"       objtype="site" objname="base_cog" />
+    <framepos    name="head_pos_task"       objtype="site" objname="head_pos" />
+    <framepos    name="tail_pos_task"       objtype="site" objname="tail_pos" />
+    <framepos    name="target_pos_task"     objtype="body" objname="target" />
+    <framelinvel name="base_vel_world_task" objtype="site" objname="base_cog" />
+  </sensor>
+</mujoco>
