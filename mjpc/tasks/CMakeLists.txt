@@ -249,7 +249,6 @@ add_custom_target(
           ${CMAKE_SOURCE_DIR}/../turtle_simulator/mujoco_models/assets
           ${CMAKE_CURRENT_BINARY_DIR}/turtle_3dswimming/assets
           
-  COMMENT "Copying Menagerie and dm_control assets into binary directory")
 
 add_custom_target(copy_resources ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory
