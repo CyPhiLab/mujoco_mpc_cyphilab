@@ -86,6 +86,8 @@ add_library(
   tasks/quadruped/quadruped.h
   tasks/swimmer/swimmer.cc
   tasks/swimmer/swimmer.h
+  tasks/Turtle_3D_Swimming/turtle_3dswimming.cc
+  tasks/Turtle_3D_Swimming/turtle_3dswimming.h
   tasks/walker/walker.cc
   tasks/walker/walker.h
   planners/planner.cc
