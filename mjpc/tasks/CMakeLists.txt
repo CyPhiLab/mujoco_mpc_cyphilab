@@ -237,11 +237,6 @@ add_custom_target(
   COMMAND patch -o ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene_modified.xml
           ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene.xml
           <${CMAKE_CURRENT_SOURCE_DIR}/spirob/spirob_scene.xml.patch
-
-  # Turtle 3D Swimming
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${CMAKE_SOURCE_DIR}/../turtle_simulator/mujoco_models/assets
-          ${CMAKE_CURRENT_BINARY_DIR}/turtle_3dswimming/assets
   COMMENT "Copying Menagerie and dm_control assets into binary directory")
 
 add_custom_target(copy_resources ALL
