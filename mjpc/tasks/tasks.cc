@@ -30,7 +30,6 @@
 #include "mjpc/tasks/humanoid/tracking/tracking.h"
 #include "mjpc/tasks/humanoid/walk/walk.h"
 #include "mjpc/tasks/manipulation/manipulation.h"
-#include "mjpc/tasks/turtle_free_benchmark/turtle_free_benchmark.h"
 #include "mjpc/tasks/turtle_3dswimming/turtle_3dswimming.h"
 // DEEPMIND INTERNAL IMPORT
 #include "mjpc/tasks/op3/stand.h"
@@ -43,7 +42,6 @@
 #include "mjpc/tasks/shadow_reorient/hand.h"
 #include "mjpc/tasks/spirob/spirob.h"
 #include "mjpc/tasks/swimmer/swimmer.h"
-#include "mjpc/tasks/Turtle_3D_Swimming/turtle_3dswimming.h"
 #include "mjpc/tasks/walker/walker.h"
 
 namespace mjpc {
@@ -62,7 +60,6 @@ std::vector<std::shared_ptr<Task>> GetTasks() {
       std::make_shared<humanoid::Tracking>(),
       std::make_shared<humanoid::Walk>(),
       std::make_shared<manipulation::Bring>(),
-      std::make_shared<TurtleFreeBenchmark>(),
       std::make_shared<Turtle3DSwimming>(),
       // DEEPMIND INTERNAL TASKS
       std::make_shared<OP3>(),

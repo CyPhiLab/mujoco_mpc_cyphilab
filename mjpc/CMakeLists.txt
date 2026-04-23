@@ -36,8 +36,6 @@ add_library(
   utilities.h
   tasks/tasks.cc
   tasks/tasks.h
-  tasks/turtle_free_benchmark/turtle_free_benchmark.cc
-  tasks/turtle_free_benchmark/turtle_free_benchmark.h
   tasks/turtle_3dswimming/turtle_3dswimming.cc
   tasks/turtle_3dswimming/turtle_3dswimming.h
   tasks/acrobot/acrobot.cc
@@ -90,8 +88,6 @@ add_library(
   tasks/quadruped/quadruped.h
   tasks/swimmer/swimmer.cc
   tasks/swimmer/swimmer.h
-  tasks/Turtle_3D_Swimming/turtle_3dswimming.cc
-  tasks/Turtle_3D_Swimming/turtle_3dswimming.h
   tasks/walker/walker.cc
   tasks/walker/walker.h
   planners/planner.cc

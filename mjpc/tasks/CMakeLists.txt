@@ -32,12 +32,6 @@ add_custom_target(
   COMMAND patch -o ${CMAKE_CURRENT_BINARY_DIR}/cartpole/cartpole_modified.xml
           ${CMAKE_CURRENT_BINARY_DIR}/cartpole/cartpole.xml
           <${CMAKE_CURRENT_SOURCE_DIR}/cartpole/cartpole.xml.patch
-  # Turtle free benchmark: copy full mujoco_models tree
-  COMMAND ${CMAKE_COMMAND} -E make_directory
-          ${CMAKE_CURRENT_BINARY_DIR}/turtle_free_benchmark
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${CMAKE_SOURCE_DIR}/../turtle_simulator/mujoco_models
-          ${CMAKE_CURRENT_BINARY_DIR}/turtle_free_benchmark/mujoco_models
   # humanoid
   COMMAND ${CMAKE_COMMAND} -E copy
           ${dm_control_SOURCE_DIR}/dm_control/suite/humanoid.xml
