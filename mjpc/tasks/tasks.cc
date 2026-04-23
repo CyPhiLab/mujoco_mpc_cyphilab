@@ -41,7 +41,7 @@
 #include "mjpc/tasks/shadow_reorient/hand.h"
 #include "mjpc/tasks/spirob/spirob.h"
 #include "mjpc/tasks/swimmer/swimmer.h"
-#include "mjpc/tasks/Turtle 3D Swimming/turtle_3dswimming.h"
+#include "mjpc/tasks/Turtle_3D_Swimming/turtle_3dswimming.h"
 #include "mjpc/tasks/walker/walker.h"
 
 namespace mjpc {
