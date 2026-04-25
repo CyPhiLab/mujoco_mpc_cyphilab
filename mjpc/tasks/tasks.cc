@@ -60,6 +60,7 @@ std::vector<std::shared_ptr<Task>> GetTasks() {
       std::make_shared<humanoid::Tracking>(),
       std::make_shared<humanoid::Walk>(),
       std::make_shared<manipulation::Bring>(),
+      std::make_shared<Turtle3DSwimming>(),
       // DEEPMIND INTERNAL TASKS
       std::make_shared<OP3>(),
       std::make_shared<Panda>(),
@@ -73,7 +74,6 @@ std::vector<std::shared_ptr<Task>> GetTasks() {
       std::make_shared<QuadrupedFlat>(),
       std::make_shared<QuadrupedHill>(),
       std::make_shared<Swimmer>(),
-      std::make_shared<Turtle3DSwimming>(),
       std::make_shared<Walker>(),
   };
 }
