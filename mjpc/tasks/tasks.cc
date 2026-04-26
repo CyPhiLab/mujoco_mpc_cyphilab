@@ -31,6 +31,7 @@
 #include "mjpc/tasks/humanoid/walk/walk.h"
 #include "mjpc/tasks/manipulation/manipulation.h"
 #include "mjpc/tasks/turtle_3dswimming/turtle_3dswimming.h"
+#include "mjpc/tasks/crab_swimming/crab_swimming.h"
 // DEEPMIND INTERNAL IMPORT
 #include "mjpc/tasks/op3/stand.h"
 #include "mjpc/tasks/panda/panda.h"
@@ -61,6 +62,7 @@ std::vector<std::shared_ptr<Task>> GetTasks() {
       std::make_shared<humanoid::Walk>(),
       std::make_shared<manipulation::Bring>(),
       std::make_shared<Turtle3DSwimming>(),
+      std::make_shared<CrabSwimming>(),
       // DEEPMIND INTERNAL TASKS
       std::make_shared<OP3>(),
       std::make_shared<Panda>(),

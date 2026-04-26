@@ -1,0 +1,63 @@
+<mujoco model="Crab Swimming">
+  <include file="../common.xml" />
+  <include file="crab_swimming_model.xml" />
+
+  <custom>
+    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_horizon" data="2.0" />
+    <numeric name="agent_timestep" data="0.02" />
+    <numeric name="sampling_trajectories" data="64" />
+    <numeric name="sampling_spline_points" data="5" />
+    <numeric name="sampling_exploration" data="0.1" />
+    <numeric name="gradient_spline_points" data="15" />
+    <numeric name="estimator" data="0" />
+    
+    <!-- Generic body-motion locomotion controller parameters -->
+    <!-- DesiredSpeed: target velocity magnitude (m/s) -->
+    <!-- SlowRadius: distance at which to start slowing down (m) -->
+    <!-- LocomotionAxisBody: forward axis in body frame (will be normalized) -->
+    <!-- BodyUpAxisBody: up axis in body frame (will be normalized) -->
+    <!-- EnvNormalWorld: surface normal in world frame (will be normalized) -->
+    <numeric name="residual_DesiredSpeed"       data="0.60" />
+    <numeric name="residual_SlowRadius"         data="0.35" />
+    <numeric name="residual_LocomotionAxisBody" data="1 0 0" />
+    <numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
+    <numeric name="residual_EnvNormalWorld"     data="0 0 1" />
+    
+    <!-- Control smoothing (first-order low-pass filter) -->
+    <numeric name="residual_ControlSmoothingEnabled" data="1" />
+    <numeric name="residual_ControlSmoothingTau"    data="0.08" />
+  </custom>
+
+  <worldbody>
+    <!-- Target placed in the water for the crab to swim toward -->
+    <body name="target" mocap="true" pos="0.5 0.0 0.0">
+      <geom name="target" type="sphere" size="0.05" material="target"/>
+      <light name="target_light" diffuse=".7 .7 .7" pos="0 0 0.5"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <!-- Cost terms: 17 total residuals (indices 0-16) -->
+    <!-- [0-2]:    3D position error -->
+    <!-- [3]:      one-sided forward progress floor -->
+    <!-- [4-6]:    cross-track / slip velocity vector -->
+    <!-- [7-9]:    locomotion-axis alignment vector -->
+    <!-- [10-12]:  trim relative to environment normal -->
+    <!-- [13-15]:  angular-rate damping orthogonal to environment normal -->
+    <!-- [16]:     scalar control effort -->
+    <user name="Position" dim="3" user="0 2.0  0 100.0" />
+    <user name="Progress" dim="1" user="0 8.0  0 1.0" />
+    <user name="Slip"     dim="3" user="0 3.0  0 10.0" />
+    <user name="Align"    dim="3" user="0 2.5  0 10.0" />
+    <user name="Trim"     dim="3" user="0 1.0  0 10.0" />
+    <user name="AngVel"   dim="3" user="0 0.5  0 10.0" />
+    <user name="Control"  dim="1" user="0 0.01 0 1.0" />
+
+    <!-- State/position sensors referenced in crab_swimming.cc -->
+    <framepos    name="base_pos_task"        objtype="site" objname="base_cog" />
+    <framepos    name="target_pos_task"      objtype="body" objname="target" />
+    <framelinvel name="base_vel_world_task"  objtype="site" objname="base_cog" />
+    <frameangvel name="base_angvel_world_task" objtype="site" objname="base_cog" />
+  </sensor>
+</mujoco>

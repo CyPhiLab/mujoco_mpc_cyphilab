@@ -237,6 +237,21 @@ add_custom_target(
   COMMAND patch -o ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene_modified.xml
           ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene.xml
           <${CMAKE_CURRENT_SOURCE_DIR}/spirob/spirob_scene.xml.patch
+
+  # Crab swimming robot (floating base swimming in fluid)
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_SOURCE_DIR}/../Crab/mujoco_models/Robot.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Robot.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_SOURCE_DIR}/../Crab/mujoco_models/Scene.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Scene.xml
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/../Crab/mujoco_models/asset
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/asset
+  COMMAND ${Python_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/crab_swimming/patch_crab_robot.py
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Robot.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Robot_modified.xml
   COMMENT "Copying Menagerie and dm_control assets into binary directory")
 
 add_custom_target(copy_resources ALL
