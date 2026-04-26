@@ -25,7 +25,7 @@ std::string Turtle3DSwimming::XmlPath() const {
   return GetModelPath("turtle_3dswimming/task.xml");
 }
 
-std::string Turtle3DSwimming::Name() const { return "Turtle3DSwimming"; }
+std::string Turtle3DSwimming::Name() const { return "TurtleSwimming"; }
 
 Turtle3DSwimming::Turtle3DSwimming() 
     : residual_(this), initialized_(false) {}
