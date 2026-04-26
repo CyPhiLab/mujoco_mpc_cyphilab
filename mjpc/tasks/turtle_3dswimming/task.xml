@@ -18,6 +18,10 @@
     <numeric name="residual_LocomotionAxisBody" data="0 -1 0" />
     <numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
     <numeric name="residual_EnvNormalWorld"     data="0 0 1" />
+    
+    <!-- Control smoothing (first-order low-pass filter) -->
+    <numeric name="residual_ControlSmoothingEnabled" data="1" />
+    <numeric name="residual_ControlSmoothingTau"    data="0.08" />
   </custom>
 
   <worldbody>

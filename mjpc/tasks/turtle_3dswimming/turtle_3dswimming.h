@@ -49,7 +49,7 @@ class Turtle3DSwimming : public Task {
                   double* residual) const override;
   };
 
-  Turtle3DSwimming() : residual_(this) {}
+  Turtle3DSwimming();
   void TransitionLocked(mjModel* model, mjData* data) override;
 
  protected:
@@ -60,6 +60,8 @@ class Turtle3DSwimming : public Task {
 
  private:
   ResidualFn residual_;
+  std::vector<double> filtered_ctrl_;  // First-order filtered control commands
+  bool initialized_;                    // Flag to track first initialization
 };
 
 }  // namespace mjpc

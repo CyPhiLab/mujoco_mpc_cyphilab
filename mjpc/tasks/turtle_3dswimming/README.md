@@ -12,6 +12,7 @@ Generic body-motion locomotion controller for 3D target-tracking with morphology
 - **One-sided progress floor:** Penalizes only being too slow; does not penalize overspeed
 - **Soft attitude control:** Cross-product alignment and trim constraints avoid over-constraining orientation
 - **Angular rate damping:** Reduces body tumbling perpendicular to the environment normal
+- **Control smoothing:** First-order low-pass filtering reduces abrupt actuator changes without changing the locomotion objective
 - **Real robot geometry:** 6.33 kg Onshape CAD model with velocity-controlled XW540-T260 actuators
 
 ### Performance
@@ -43,6 +44,8 @@ Generic body-motion locomotion controller for 3D target-tracking with morphology
   - `residual_LocomotionAxisBody` (default `0 -1 0`): forward direction in body frame
   - `residual_BodyUpAxisBody` (default `0 0 1`): "up" direction in body frame (used for trim)
   - `residual_EnvNormalWorld` (default `0 0 1`): environment normal in world frame (e.g., gravity direction for swimming)
+  - `residual_ControlSmoothingEnabled` (default `1`): enables first-order actuator smoothing
+  - `residual_ControlSmoothingTau` (default `0.08` s): low-pass filter time constant for applied controls
 - Includes `turtle_3dswimming_model.xml`
 
 **`turtle_3dswimming_model.xml`** — Include wrapper
@@ -131,6 +134,8 @@ cmake --build . --target copy_resources
 Edit `turtle_3dswimming/task.xml` to adjust:
 - `residual_DesiredSpeed`: Increase for faster swimming, decrease for slower
 - `residual_SlowRadius`: Distance at which to start decelerating near goal
+- `residual_ControlSmoothingTau`: Lower toward `0.05` for quicker response, raise toward `0.10` for smoother but slower actuation
+- `residual_ControlSmoothingEnabled`: Set to `0` to bypass smoothing entirely
 - Cost weights in `<user>` elements to balance different objectives
 
 ---
@@ -141,27 +146,37 @@ Edit `turtle_3dswimming/task.xml` to adjust:
 - **Body-frame axes:** `residual_LocomotionAxisBody` and `residual_BodyUpAxisBody` are defined in the robot's body frame and transformed to world frame using the root body's rotation matrix
 - **No hard quaternion constraint:** Unlike older versions, this does not enforce full quaternion matching; soft cross-product residuals allow natural attitude variations
 - **Angular velocity feedback:** Uses `base_angvel_world_task` sensor to damp unwanted tumbling perpendicular to the environment normal
+- **Applied-control smoothing:** `TransitionLocked()` filters `data->ctrl` with a first-order low-pass filter so planner rollouts and executed controls see the same smoothed commands
 
 
 ## Tuning
 
-### Speed (distance-adaptive)
-```cpp
-// turtle_3dswimming.cc
-const double vmax = 0.55;  // max approach speed (m/s)
-const double d0   = 0.6;   // distance at which speed = 0.55 * tanh(1) ≈ 0.46 m/s
+### Speed schedule
+```xml
+<numeric name="residual_DesiredSpeed" data="0.60" />
+<numeric name="residual_SlowRadius"   data="0.35" />
 ```
+
+The progress term stays one-sided: the controller asks for at least the scheduled forward speed toward the target but does not penalize overspeed.
+
+### Control smoothing
+```xml
+<numeric name="residual_ControlSmoothingEnabled" data="1" />
+<numeric name="residual_ControlSmoothingTau"     data="0.08" />
+```
+
+`0.08` is a medium smoothing setting. Try `0.05` first if the robot feels too sluggish, or `0.10` if you want a slightly softer command trace.
 
 ### Cost Weights
 ```xml
-<!-- task.xml — increase Velocity weight for more aggressive chasing -->
-<user name="Velocity" dim="1" user="0 6.0 0 1.0" />
+<!-- task.xml — increase Progress weight for more aggressive chasing -->
+<user name="Progress" dim="1" user="0 8.0 0 1.0" />
 
-<!-- Increase Yaw weight for tighter heading hold -->
-<user name="Yaw" dim="3" user="0 2.5 0 10.0" />
+<!-- Increase Align weight for tighter travel-direction hold -->
+<user name="Align" dim="3" user="0 2.5 0 10.0" />
 
-<!-- Roll trim: 0.0 disables, 0.8 is strong trim -->
-<user name="Height" dim="1" user="0 0.5 0 100.0" />
+<!-- Increase Trim for a stronger upright bias -->
+<user name="Trim" dim="3" user="0 1.0 0 10.0" />
 ```
 
 ---
@@ -178,7 +193,7 @@ const double d0   = 0.6;   // distance at which speed = 0.55 * tanh(1) ≈ 0.46 
 
 | Issue | Solution |
 |-------|----------|
-| Robot floating motionless | Check `forcerange` in actuators.xml — must be ±12 N |
-| Asymmetric flipper motion | Verify `shoulderR1` has `axis="0 0 -1"` in body.xml |
-| Drifting sideways | Increase Yaw weight (2.5 → 3.5) |
-| Rolls excessively | Increase Height weight (0.5 → 0.8) |
+| Robot feels sluggish | Lower `residual_ControlSmoothingTau` from `0.08` to `0.05` |
+| Actuation still looks twitchy | Raise `residual_ControlSmoothingTau` from `0.08` to `0.10` |
+| Drifting sideways | Increase `Align` or `Slip` weight modestly |
+| Rolls excessively | Increase `Trim` weight modestly |

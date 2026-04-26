@@ -27,6 +27,9 @@ std::string Turtle3DSwimming::XmlPath() const {
 
 std::string Turtle3DSwimming::Name() const { return "Turtle3DSwimming"; }
 
+Turtle3DSwimming::Turtle3DSwimming() 
+    : residual_(this), initialized_(false) {}
+
 // Residuals for Turtle3DSwimming task.
 //   Number of residuals: 17
 //     Residual (0-2):    3D position error
@@ -45,12 +48,11 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
   double* base_vel_world = SensorByName(model, data, "base_vel_world_task");
   double* base_angvel_world = SensorByName(model, data, "base_angvel_world_task");
 
-  // Read task parameters from parameters_ array
-  // Parameter layout: DesiredSpeed (1), SlowRadius (1), LocomotionAxisBody (3), 
-  //                   BodyUpAxisBody (3), EnvNormalWorld (3) = 11 total
+  // Read task parameters from parameters_ array.
+  // Parameter layout: DesiredSpeed (1), SlowRadius (1), LocomotionAxisBody (3),
+  // BodyUpAxisBody (3), EnvNormalWorld (3) = 11 total.
   double desired_speed_param = parameters_[0];
-  double slow_radius = parameters_[1];
-  
+
   double loc_axis_body[3] = {parameters_[2], parameters_[3], parameters_[4]};
   double body_up_body[3] = {parameters_[5], parameters_[6], parameters_[7]};
   double env_normal_world[3] = {parameters_[8], parameters_[9], parameters_[10]};
@@ -117,6 +119,7 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
   // ============================================================
   // Residual [3]: one-sided forward progress floor
   // ============================================================
+  double slow_radius = parameters_[1];
   double desired_speed = (dist_3d > slow_radius)
                             ? desired_speed_param
                             : desired_speed_param * (dist_3d / slow_radius);
@@ -146,17 +149,20 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
   // Residual [7-9]: locomotion-axis alignment vector
   // ============================================================
   // cross(loc_axis_world, dir)
-  residual[7] = loc_axis_world[1] * dir[2] - loc_axis_world[2] * dir[1];
-  residual[8] = loc_axis_world[2] * dir[0] - loc_axis_world[0] * dir[2];
-  residual[9] = loc_axis_world[0] * dir[1] - loc_axis_world[1] * dir[0];
+    residual[7] = loc_axis_world[1] * dir[2] - loc_axis_world[2] * dir[1];
+    residual[8] = loc_axis_world[2] * dir[0] - loc_axis_world[0] * dir[2];
+    residual[9] = loc_axis_world[0] * dir[1] - loc_axis_world[1] * dir[0];
 
   // ============================================================
   // Residual [10-12]: trim relative to environment normal
   // ============================================================
   // cross(body_up_world, env_normal_world)
-  residual[10] = body_up_world[1] * env_normal_world[2] - body_up_world[2] * env_normal_world[1];
-  residual[11] = body_up_world[2] * env_normal_world[0] - body_up_world[0] * env_normal_world[2];
-  residual[12] = body_up_world[0] * env_normal_world[1] - body_up_world[1] * env_normal_world[0];
+  residual[10] = body_up_world[1] * env_normal_world[2] -
+                 body_up_world[2] * env_normal_world[1];
+  residual[11] = body_up_world[2] * env_normal_world[0] -
+                 body_up_world[0] * env_normal_world[2];
+  residual[12] = body_up_world[0] * env_normal_world[1] -
+                 body_up_world[1] * env_normal_world[0];
 
   // ============================================================
   // Residual [13-15]: angular-rate damping orthogonal to environment normal
@@ -189,7 +195,47 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
 }
 
 void Turtle3DSwimming::TransitionLocked(mjModel* model, mjData* data) {
-  // Static target; can be extended later for moving targets.
+  // Initialize filtered control vector on first call or if actuator count changes
+  if (!initialized_ || filtered_ctrl_.size() != model->nu) {
+    filtered_ctrl_.resize(model->nu, 0.0);
+    for (int i = 0; i < model->nu; ++i) {
+      filtered_ctrl_[i] = data->ctrl[i];
+    }
+    initialized_ = true;
+  }
+
+  // Read smoothing parameters from task.xml custom numerics
+  // residual_ControlSmoothingEnabled: 1 = enabled, 0 = disabled
+  // residual_ControlSmoothingTau: time constant in seconds
+  int smoothing_enabled_id = 
+      mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingEnabled");
+  int smoothing_tau_id = 
+      mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingTau");
+
+  double smoothing_enabled = (smoothing_enabled_id >= 0) 
+      ? model->numeric_data[smoothing_enabled_id] : 1.0;
+  double tau = (smoothing_tau_id >= 0) 
+      ? model->numeric_data[smoothing_tau_id] : 0.08;
+
+  // Apply first-order control smoothing
+  if (smoothing_enabled > 0.5) {
+    double dt = model->opt.timestep;
+    // First-order low-pass: alpha = dt / (tau + dt)
+    double alpha = dt / (tau + dt);
+    
+    for (int i = 0; i < model->nu; ++i) {
+      // filtered_ctrl[i] += alpha * (u_cmd - filtered_ctrl[i])
+      filtered_ctrl_[i] = filtered_ctrl_[i] + alpha * (data->ctrl[i] - filtered_ctrl_[i]);
+    }
+    
+    // Apply filtered controls back to data->ctrl
+    mju_copy(data->ctrl, filtered_ctrl_.data(), model->nu);
+  } else {
+    // Smoothing disabled: pass through and keep filtered state updated
+    for (int i = 0; i < model->nu; ++i) {
+      filtered_ctrl_[i] = data->ctrl[i];
+    }
+  }
 }
 
 }  // namespace mjpc
