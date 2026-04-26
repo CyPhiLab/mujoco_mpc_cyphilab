@@ -11,6 +11,13 @@
     <numeric name="sampling_exploration" data="0.1" />
     <numeric name="gradient_spline_points" data="15" />
     <numeric name="estimator" data="0" />
+    
+    <!-- Generic body-motion locomotion controller parameters -->
+    <numeric name="residual_DesiredSpeed"       data="0.60" />
+    <numeric name="residual_SlowRadius"         data="0.35" />
+    <numeric name="residual_LocomotionAxisBody" data="0 -1 0" />
+    <numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
+    <numeric name="residual_EnvNormalWorld"     data="0 0 1" />
   </custom>
 
   <worldbody>
@@ -23,24 +30,29 @@
 
   <sensor>
     <!-- Cost terms: 17 total residuals (indices 0-16) -->
-    <!-- [0-9]:   control effort (rear stroke joints 7,9 are 0.33x; front stroke joints 2,5 are 0.5x) -->
-    <!-- [10]:    3D distance base-to-target -->
-    <!-- [11]:    distance-adaptive progress residual (smooth tanh, no clamp) -->
-    <!-- [12-14]: cross(body_axis, head_to_target_direction) -->
-    <!-- [15]:    weak roll/bank trim stabilizer -->
-    <!-- [16]:    reserved / disabled -->
-    <user name="Control"     dim="10" user="0 0.01  0 1" />
-    <user name="Distance"    dim="1"  user="0 2.0   0 100.0" />
-    <user name="Velocity"    dim="1"  user="0 6.0   0 1.0" />
-    <user name="Yaw"         dim="3"  user="0 2.5   0 10.0" />
-    <user name="Height"      dim="1"  user="0 0.5   0 100.0" />
-    <user name="Pitch"       dim="1"  user="0 0.0   0 10.0" />
+    <!-- [0-2]:    3D position error -->
+    <!-- [3]:      one-sided forward progress floor -->
+    <!-- [4-6]:    cross-track / slip velocity vector -->
+    <!-- [7-9]:    locomotion-axis alignment vector -->
+    <!-- [10-12]:  trim relative to environment normal -->
+    <!-- [13-15]:  angular-rate damping orthogonal to environment normal -->
+    <!-- [16]:     scalar control effort -->
+    <user name="Position" dim="3" user="0 2.0  0 100.0" />
+    <user name="Progress" dim="1" user="0 8.0  0 1.0" />
+    <user name="Slip"     dim="3" user="0 3.0  0 10.0" />
+    <user name="Align"    dim="3" user="0 2.5  0 10.0" />
+    <user name="Trim"     dim="3" user="0 1.0  0 10.0" />
+    <user name="AngVel"   dim="3" user="0 0.5  0 10.0" />
+    <user name="Control"  dim="1" user="0 0.01 0 1.0" />
 
     <!-- State/position sensors referenced in turtle_3dswimming.cc -->
-    <framepos    name="base_pos_task"       objtype="site" objname="base_cog" />
+    <framepos    name="base_pos_task"        objtype="site" objname="base_cog" />
+    <framepos    name="target_pos_task"      objtype="body" objname="target" />
+    <framelinvel name="base_vel_world_task"  objtype="site" objname="base_cog" />
+    <frameangvel name="base_angvel_world_task" objtype="site" objname="base_cog" />
+    
+    <!-- Legacy sensors for backward compatibility (not used by main controller) -->
     <framepos    name="head_pos_task"       objtype="site" objname="head_pos" />
     <framepos    name="tail_pos_task"       objtype="site" objname="tail_pos" />
-    <framepos    name="target_pos_task"     objtype="body" objname="target" />
-    <framelinvel name="base_vel_world_task" objtype="site" objname="base_cog" />
   </sensor>
 </mujoco>
