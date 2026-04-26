@@ -57,7 +57,22 @@ if sensor is not None:
     root.remove(sensor)
     print("Removed sensor section from Robot.xml")
 
+# Reduce position actuator Kp gains for stability
+# Kp=200 is too stiff and causes instability with position control
+actuator = root.find('actuator')
+if actuator is not None:
+    for pos_actuator in actuator.findall('position'):
+        current_kp = pos_actuator.get('kp')
+        if current_kp:
+            try:
+                kp_val = float(current_kp)
+                if kp_val > 100:
+                    pos_actuator.set('kp', '30')  # Reduce to 30 for stability
+                    print(f"  Reduced Kp for {pos_actuator.get('name')}: {kp_val} -> 30")
+            except ValueError:
+                pass
+
 # Write the modified XML
 tree.write(output_file)
-print(f"Patched Robot.xml: added base_cog site and removed sensor section")
+print(f"Patched Robot.xml: added base_cog site, reduced Kp gains, and removed sensor section")
 
