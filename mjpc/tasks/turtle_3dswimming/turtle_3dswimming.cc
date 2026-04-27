@@ -42,6 +42,7 @@ Turtle3DSwimming::Turtle3DSwimming()
 void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
                                             const mjData* data,
                                             double* residual) const {
+
   // Fetch sensor values by name
   double* head_pos       = SensorByName(model, data, "head_pos_task");
   double* target_pos     = SensorByName(model, data, "target_pos_task");
@@ -56,6 +57,24 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
   double loc_axis_body[3] = {parameters_[2], parameters_[3], parameters_[4]};
   double body_up_body[3] = {parameters_[5], parameters_[6], parameters_[7]};
   double env_normal_world[3] = {parameters_[8], parameters_[9], parameters_[10]};
+
+  // NaN/Inf check helper
+  auto is_bad = [](double v) { return std::isnan(v) || std::isinf(v); };
+  bool bad_param = false;
+  for (int i = 0; i < 11; ++i) if (is_bad(parameters_[i])) bad_param = true;
+  bool bad_sensor = false;
+  for (int i = 0; i < 3; ++i) {
+    if (is_bad(head_pos[i]) || is_bad(target_pos[i]) || is_bad(base_vel_world[i]) || is_bad(base_angvel_world[i])) bad_sensor = true;
+  }
+  if (bad_param || bad_sensor) {
+    mju_warning("Turtle3DSwimming: NaN/Inf in parameters or sensors! param=%d sensor=%d", bad_param, bad_sensor);
+  }
+
+  // Safe-guard for slow_radius
+  if (is_bad(parameters_[1]) || parameters_[1] <= 1e-8) {
+    mju_warning("Turtle3DSwimming: slow_radius invalid (%.6f), clamping to 1e-8", parameters_[1]);
+    parameters_[1] = 1e-8;
+  }
 
   // Normalize body-frame axes
   const double eps = 1e-8;
