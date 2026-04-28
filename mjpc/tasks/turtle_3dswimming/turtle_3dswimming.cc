@@ -70,10 +70,11 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
     mju_warning("Turtle3DSwimming: NaN/Inf in parameters or sensors! param=%d sensor=%d", bad_param, bad_sensor);
   }
 
-  // Safe-guard for slow_radius
-  if (is_bad(parameters_[1]) || parameters_[1] <= 1e-8) {
-    mju_warning("Turtle3DSwimming: slow_radius invalid (%.6f), clamping to 1e-8", parameters_[1]);
-    parameters_[1] = 1e-8;
+  // Safe-guard for slow_radius. Do not mutate parameters_ inside const Residual().
+  double slow_radius = parameters_[1];
+  if (is_bad(slow_radius) || slow_radius <= 1e-8) {
+    mju_warning("Turtle3DSwimming: slow_radius invalid (%.6f), clamping to 1e-8", slow_radius);
+    slow_radius = 1e-8;
   }
 
   // Normalize body-frame axes
@@ -138,7 +139,6 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
   // ============================================================
   // Residual [3]: one-sided forward progress floor
   // ============================================================
-  double slow_radius = parameters_[1];
   double desired_speed = (dist_3d > slow_radius)
                             ? desired_speed_param
                             : desired_speed_param * (dist_3d / slow_radius);
