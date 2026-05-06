@@ -14,7 +14,10 @@
 
 #include "mjpc/tasks/crab_swimming/crab_swimming.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
+#include <vector>
 
 #include <mujoco/mujoco.h>
 #include "mjpc/utilities.h"
@@ -49,13 +52,27 @@ void CrabSwimming::ResidualFn::Residual(const mjModel* model,
   double* base_angvel_world = SensorByName(model, data, "base_angvel_world_task");
 
   // Read task parameters from parameters_ array.
-  // Parameter layout: DesiredSpeed (1), SlowRadius (1), LocomotionAxisBody (3),
-  // BodyUpAxisBody (3), EnvNormalWorld (3) = 11 total.
+  // Layout (11 scalars): [0] DesiredSpeed, [1] SlowRadius,
+  //   [2-4] LocAxis XYZ, [5-7] UpAxis XYZ, [8-10] EnvNormal XYZ
   double desired_speed_param = parameters_[0];
 
-  double loc_axis_body[3] = {parameters_[2], parameters_[3], parameters_[4]};
-  double body_up_body[3] = {parameters_[5], parameters_[6], parameters_[7]};
+  double loc_axis_body[3]    = {parameters_[2], parameters_[3], parameters_[4]};
+  double body_up_body[3]     = {parameters_[5], parameters_[6], parameters_[7]};
   double env_normal_world[3] = {parameters_[8], parameters_[9], parameters_[10]};
+
+  // NaN/Inf guard — return zeros until sensors are valid
+  auto is_bad = [](double v) { return std::isnan(v) || std::isinf(v); };
+  bool bad_param = false;
+  for (int i = 0; i < 11; ++i) if (is_bad(parameters_[i])) bad_param = true;
+  bool bad_sensor = false;
+  for (int i = 0; i < 3; ++i) {
+    if (is_bad(base_pos[i]) || is_bad(target_pos[i]) ||
+        is_bad(base_vel_world[i]) || is_bad(base_angvel_world[i])) bad_sensor = true;
+  }
+  if (bad_param || bad_sensor) {
+    for (int r = 0; r < 17; ++r) residual[r] = 0.0;
+    return;
+  }
 
   // Normalize body-frame axes
   const double eps = 1e-8;
@@ -91,15 +108,8 @@ void CrabSwimming::ResidualFn::Residual(const mjModel* model,
   double body_up_world[3] = {0, 0, 0};
   
   if (xmat) {
-    // loc_axis_world = R_body_to_world * loc_axis_body
-    loc_axis_world[0] = xmat[0] * loc_axis_body[0] + xmat[3] * loc_axis_body[1] + xmat[6] * loc_axis_body[2];
-    loc_axis_world[1] = xmat[1] * loc_axis_body[0] + xmat[4] * loc_axis_body[1] + xmat[7] * loc_axis_body[2];
-    loc_axis_world[2] = xmat[2] * loc_axis_body[0] + xmat[5] * loc_axis_body[1] + xmat[8] * loc_axis_body[2];
-
-    // body_up_world = R_body_to_world * body_up_body
-    body_up_world[0] = xmat[0] * body_up_body[0] + xmat[3] * body_up_body[1] + xmat[6] * body_up_body[2];
-    body_up_world[1] = xmat[1] * body_up_body[0] + xmat[4] * body_up_body[1] + xmat[7] * body_up_body[2];
-    body_up_world[2] = xmat[2] * body_up_body[0] + xmat[5] * body_up_body[1] + xmat[8] * body_up_body[2];
+    mju_mulMatVec(loc_axis_world, xmat, loc_axis_body, 3, 3);
+    mju_mulMatVec(body_up_world,  xmat, body_up_body,  3, 3);
   }
 
   // Compute target displacement and direction
@@ -120,6 +130,10 @@ void CrabSwimming::ResidualFn::Residual(const mjModel* model,
   // Residual [3]: one-sided forward progress floor
   // ============================================================
   double slow_radius = parameters_[1];
+  if (is_bad(slow_radius) || slow_radius <= 1e-8) {
+    mju_warning("CrabSwimming: slow_radius invalid (%.6f), clamping to 1e-8", slow_radius);
+    slow_radius = 1e-8;
+  }
   double desired_speed = (dist_3d > slow_radius)
                             ? desired_speed_param
                             : desired_speed_param * (dist_3d / slow_radius);
@@ -208,15 +222,15 @@ void CrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
   // Read smoothing parameters from task.xml custom numerics
   // residual_ControlSmoothingEnabled: 1 = enabled, 0 = disabled
   // residual_ControlSmoothingTau: time constant in seconds
-  int smoothing_enabled_id = 
+  int smoothing_enabled_id =
       mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingEnabled");
-  int smoothing_tau_id = 
+  int smoothing_tau_id =
       mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingTau");
 
-  double smoothing_enabled = (smoothing_enabled_id >= 0) 
-      ? model->numeric_data[smoothing_enabled_id] : 1.0;
-  double tau = (smoothing_tau_id >= 0) 
-      ? model->numeric_data[smoothing_tau_id] : 0.08;
+  double smoothing_enabled = (smoothing_enabled_id >= 0)
+      ? model->numeric_data[model->numeric_adr[smoothing_enabled_id]] : 1.0;
+  double tau = (smoothing_tau_id >= 0)
+      ? model->numeric_data[model->numeric_adr[smoothing_tau_id]] : 0.08;
 
   // Apply first-order control smoothing
   if (smoothing_enabled > 0.5) {

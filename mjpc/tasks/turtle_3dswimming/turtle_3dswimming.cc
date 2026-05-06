@@ -14,7 +14,10 @@
 
 #include "mjpc/tasks/turtle_3dswimming/turtle_3dswimming.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
+#include <vector>
 
 #include <mujoco/mujoco.h>
 #include "mjpc/utilities.h"
@@ -44,30 +47,32 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
                                             double* residual) const {
 
   // Fetch sensor values by name
-  double* head_pos       = SensorByName(model, data, "head_pos_task");
+  double* base_pos       = SensorByName(model, data, "base_pos_task");
   double* target_pos     = SensorByName(model, data, "target_pos_task");
   double* base_vel_world = SensorByName(model, data, "base_vel_world_task");
   double* base_angvel_world = SensorByName(model, data, "base_angvel_world_task");
 
   // Read task parameters from parameters_ array.
-  // Parameter layout: DesiredSpeed (1), SlowRadius (1), LocomotionAxisBody (3),
-  // BodyUpAxisBody (3), EnvNormalWorld (3) = 11 total.
+  // Layout (11 scalars): [0] DesiredSpeed, [1] SlowRadius,
+  //   [2-4] LocAxis XYZ, [5-7] UpAxis XYZ, [8-10] EnvNormal XYZ
   double desired_speed_param = parameters_[0];
 
-  double loc_axis_body[3] = {parameters_[2], parameters_[3], parameters_[4]};
-  double body_up_body[3] = {parameters_[5], parameters_[6], parameters_[7]};
+  double loc_axis_body[3]    = {parameters_[2], parameters_[3], parameters_[4]};
+  double body_up_body[3]     = {parameters_[5], parameters_[6], parameters_[7]};
   double env_normal_world[3] = {parameters_[8], parameters_[9], parameters_[10]};
 
-  // NaN/Inf check helper
+  // NaN/Inf guard — return zeros until sensors are valid
   auto is_bad = [](double v) { return std::isnan(v) || std::isinf(v); };
   bool bad_param = false;
   for (int i = 0; i < 11; ++i) if (is_bad(parameters_[i])) bad_param = true;
   bool bad_sensor = false;
   for (int i = 0; i < 3; ++i) {
-    if (is_bad(head_pos[i]) || is_bad(target_pos[i]) || is_bad(base_vel_world[i]) || is_bad(base_angvel_world[i])) bad_sensor = true;
+    if (is_bad(base_pos[i]) || is_bad(target_pos[i]) ||
+        is_bad(base_vel_world[i]) || is_bad(base_angvel_world[i])) bad_sensor = true;
   }
   if (bad_param || bad_sensor) {
-    mju_warning("Turtle3DSwimming: NaN/Inf in parameters or sensors! param=%d sensor=%d", bad_param, bad_sensor);
+    for (int r = 0; r < 17; ++r) residual[r] = 0.0;
+    return;
   }
 
   // Safe-guard for slow_radius. Do not mutate parameters_ inside const Residual().
@@ -111,21 +116,14 @@ void Turtle3DSwimming::ResidualFn::Residual(const mjModel* model,
   double body_up_world[3] = {0, 0, 0};
   
   if (xmat) {
-    // loc_axis_world = R_body_to_world * loc_axis_body
-    loc_axis_world[0] = xmat[0] * loc_axis_body[0] + xmat[3] * loc_axis_body[1] + xmat[6] * loc_axis_body[2];
-    loc_axis_world[1] = xmat[1] * loc_axis_body[0] + xmat[4] * loc_axis_body[1] + xmat[7] * loc_axis_body[2];
-    loc_axis_world[2] = xmat[2] * loc_axis_body[0] + xmat[5] * loc_axis_body[1] + xmat[8] * loc_axis_body[2];
-
-    // body_up_world = R_body_to_world * body_up_body
-    body_up_world[0] = xmat[0] * body_up_body[0] + xmat[3] * body_up_body[1] + xmat[6] * body_up_body[2];
-    body_up_world[1] = xmat[1] * body_up_body[0] + xmat[4] * body_up_body[1] + xmat[7] * body_up_body[2];
-    body_up_world[2] = xmat[2] * body_up_body[0] + xmat[5] * body_up_body[1] + xmat[8] * body_up_body[2];
+    mju_mulMatVec(loc_axis_world, xmat, loc_axis_body, 3, 3);
+    mju_mulMatVec(body_up_world,  xmat, body_up_body,  3, 3);
   }
 
-  // Compute target displacement and direction
-  double d[3] = {target_pos[0] - head_pos[0],
-                 target_pos[1] - head_pos[1],
-                 target_pos[2] - head_pos[2]};
+  // Compute target displacement and direction (all from base_cog)
+  double d[3] = {target_pos[0] - base_pos[0],
+                 target_pos[1] - base_pos[1],
+                 target_pos[2] - base_pos[2]};
   double dist_3d = mju_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + eps);
   double dir[3] = {d[0] / dist_3d, d[1] / dist_3d, d[2] / dist_3d};
 
@@ -226,15 +224,15 @@ void Turtle3DSwimming::TransitionLocked(mjModel* model, mjData* data) {
   // Read smoothing parameters from task.xml custom numerics
   // residual_ControlSmoothingEnabled: 1 = enabled, 0 = disabled
   // residual_ControlSmoothingTau: time constant in seconds
-  int smoothing_enabled_id = 
+  int smoothing_enabled_id =
       mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingEnabled");
-  int smoothing_tau_id = 
+  int smoothing_tau_id =
       mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingTau");
 
-  double smoothing_enabled = (smoothing_enabled_id >= 0) 
-      ? model->numeric_data[smoothing_enabled_id] : 1.0;
-  double tau = (smoothing_tau_id >= 0) 
-      ? model->numeric_data[smoothing_tau_id] : 0.08;
+  double smoothing_enabled = (smoothing_enabled_id >= 0)
+      ? model->numeric_data[model->numeric_adr[smoothing_enabled_id]] : 1.0;
+  double tau = (smoothing_tau_id >= 0)
+      ? model->numeric_data[model->numeric_adr[smoothing_tau_id]] : 0.08;
 
   // Apply first-order control smoothing
   if (smoothing_enabled > 0.5) {

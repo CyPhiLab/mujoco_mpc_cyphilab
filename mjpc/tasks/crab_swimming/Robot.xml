@@ -1,0 +1,261 @@
+<mujoco model="hexapod">
+  <!-- <option timestep=".0001"/> -->
+  <option integrator="implicit" jacobian="sparse" timestep="0.005" gravity="0 0 0" density="1000" viscosity="0.0009" cone="elliptic" />
+  
+  <!-- <size memory="4G"/> -->
+  <include file="Scene.xml"/>
+  <visual>
+    <map stiffness="100"/>
+    <scale com=".005" framewidth=".005" jointwidth=".01"/>
+    <global offheight="2160" offwidth="1920"/>
+  </visual>
+
+
+
+  <default>
+    <geom rgba=".6 .5 .5 1"/>
+    <default class="fluid-ellipsoid-model">
+        <geom fluidshape="ellipsoid"/>
+    </default>
+  </default>
+
+
+  <asset>
+    <mesh name="mid segment front right" file="mid segment front right.STL" scale=".001 .001 .001"/>
+    <mesh name="proximal segment front right" file="proximal segment front right.STL" scale=".001 .001 .001"/>
+    <mesh name="plate" file="sebasplate.STL" scale=".0015 .0015 .0015"/>
+    <mesh name="distal segment front right" file="distal segment front right.STL" scale=".001 .001 .001"/>
+
+    <!-- Front Left -->
+    <mesh name="mid segment front left" file="mid segment front left.STL" scale=".001 .001 .001"/>
+    <mesh name="proximal segment front left" file="proximal segment front left.STL" scale=".001 .001 .001"/>
+    <mesh name="distal segment front left" file="distal segment front left.STL" scale=".001 .001 .001"/>
+
+    <!-- Mid Right -->
+    <mesh name="mid segment middle right" file="mid segment middle right.STL" scale=".001 .001 .001"/>
+    <mesh name="proximal segment middle right" file="proximal segment middle right.STL" scale=".001 .001 .001"/>
+    <mesh name="distal segment middle right" file="distal segment middle right.STL" scale=".001 .001 .001"/>
+
+    <!-- Mid Left -->
+    <mesh name="mid segment middle left" file="mid segment middle left.STL" scale=".001 .001 .001"/>
+    <mesh name="proximal segment middle left" file="proximal segment middle left.STL" scale=".001 .001 .001"/>
+    <mesh name="distal segment middle left" file="distal segment middle left.STL" scale=".001 .001 .001"/>
+
+    <!-- Back Right -->
+    <mesh name="mid segment back right" file="mid segment back right.STL" scale=".001 .001 .001"/>
+    <mesh name="proximal segment back right" file="proximal segment back right.STL" scale=".001 .001 .001"/>
+    <mesh name="distal segment back right" file="distal segment back right.STL" scale=".001 .001 .001"/>
+
+    <!-- Back Left -->
+    <mesh name="mid segment back left" file="mid segment back left.STL" scale=".001 .001 .001"/>
+    <mesh name="proximal segment back left" file="proximal segment back left.STL" scale=".001 .001 .001"/>
+    <mesh name="distal segment back left" file="distal segment back left.STL" scale=".001 .001 .001"/>
+
+  </asset>
+  <worldbody>
+    <camera pos="0.081 1.453 0.272" xyaxes="-0.998 -0.060 -0.000 0.001 0.016 1.000"  name="albert"/>
+    <camera pos="-0.148 3.790 1.822" xyaxes="-1.000 -0.003 -0.000 0.001 -0.469 0.883" name="timothy"/>
+    <camera pos="1.474 1.285 1.059" xyaxes="-0.562 0.827 -0.000 -0.452 -0.307 0.838" name="gerald"/>
+    <camera pos="0.092 -1.458 0.703" xyaxes="1.000 -0.001 -0.000 0.001 0.478 0.878" name="upclose"/>
+    <camera pos="-1.227 -0.855 0.789" xyaxes="0.565 -0.825 -0.000 0.343 0.235 0.909" name = "diag"/>
+    <camera pos="0.003 -0.720 0.017" xyaxes="1.000 0.005 -0.000 -0.000 0.024 1.000" name = "underview"/>
+    <camera pos="0.360 -0.432 0.200" xyaxes="0.794 0.608 -0.000 -0.153 0.200 0.968" name = "testview"/>
+    <camera pos="3.890 -4.099 -1.210" xyaxes="0.699 0.715 -0.000 0.071 -0.069 0.995" name="under"/>
+    <camera pos="1.023 0.787 0.001" xyaxes="-0.603 0.797 0.000 -0.033 -0.025 0.999" name="verif"/>
+    <camera pos="0.010 -0.018 1.093" xyaxes="1.000 -0.009 -0.000 0.009 1.000 0.017" name="from above"/>
+      <!-- <site name="sand_height" pos="0 0 0" size="0.7 0.7 0.0001" rgba="0.68 0.6 0.49 0.4" type="box"/> -->
+      <body name='plate' pos='0 00 0.1' euler='90 00 0'>
+        <camera pos="-.879 0.100 0.00" euler = "0 -90 0" name="plate_camera" mode="track"/>
+        <geom type='mesh' mesh='plate' euler='-90 00 0'/>
+        <geom type='mesh' mesh='plate' euler='-90 00 0' class='fluid-ellipsoid-model' />
+        <freejoint/>
+        <inertial pos='0 0 0' mass='1' diaginertia=' .00614 .00759  .00146  '/>
+        <body name= 'box' pos='0 0.06 0'>
+          <geom type='box' size='.1 .05 .1'/>
+          <geom type='box' size='.1 .05 .1' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass="1" diaginertia="0.00001 0.00001 0.00001"/>
+        </body>
+         <!-- edit above to change body mass -->
+        <body name='proximal segment front right' pos='-.14 -.0 -.24' euler='0 0 0'>
+          <geom type='mesh' mesh='proximal segment front right' />
+          <geom type='mesh' mesh='proximal segment front right' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass=".1" diaginertia="0.0000699 0.0000946 0.0000375"/>
+          <body name='mid segment front right' pos="-0.00 0.001 -0.065" euler="0 90 0">
+            <geom type='mesh' mesh='mid segment front right' />
+            <geom type='mesh' mesh='mid segment front right' class='fluid-ellipsoid-model'/>
+            <inertial pos="0 0 0" mass=".14" diaginertia="0.0000375 0.0000946 0.0000699"/>
+            <joint name='mid segment front right' type='hinge' pos='-0.03 0.0 0.000' axis='-0 0 1' stiffness='1' damping='1'/>
+            <body name='distal segment front right' pos="0.09 .0 0.0" euler="90 -90 0">
+              <geom type='mesh' mesh='distal segment front right' />
+              <geom type='mesh' mesh='distal segment front right' class='fluid-ellipsoid-model'/>
+              <joint name='distal segment front right' type='hinge' pos='0.000 0 .045' axis='0 1 0' stiffness='1' damping='1'/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="0.0000946 0.0000699 0.0000375"/>
+              <!-- <site name="prox_fr_dactyl_tip" pos="0.015 0 -0.063" size="0.005" rgba="1 0 0 1" type="sphere"/> -->
+            </body>
+          </body>
+        </body>
+        <body name='proximal segment middle right' pos='0 -.0 -.24' euler='0 0 0'>
+          <geom type='mesh' mesh='proximal segment middle right' />
+          <geom type='mesh' mesh='proximal segment middle right' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass=".1" diaginertia="0.0000699 0.0000946 0.0000375"/>
+          <body name='mid segment middle right' pos="-0.00 0.001 -0.065" euler="0 90 0">
+            <geom type='mesh' mesh='mid segment middle right' />
+            <geom type='mesh' mesh='mid segment middle right' class='fluid-ellipsoid-model'/>
+            <inertial pos="0 0 0" mass=".14" diaginertia="0.0000375 0.0000946 0.0000699"/>
+            <joint name='mid segment middle right' type='hinge' pos='-0.03 0.0 0.000' axis='-0 0 1' stiffness='1' damping='1'/>
+            <body name='distal segment middle right' pos="0.09 .0 0.0" euler="90 -90 0">
+              <geom type='mesh' mesh='distal segment middle right' />
+              <geom type='mesh' mesh='distal segment middle right' class='fluid-ellipsoid-model'/>
+              <joint name='distal segment middle right' type='hinge' pos='0.000 0 .045' axis='0 1 0' stiffness='1' damping='1'/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="0.0000946 0.0000699 0.0000375"/>
+              <!-- <site name="prox_mr_dactyl_tip" pos="0.015 0 -0.063" size="0.005" rgba="0 1 0 1" type="sphere"/> -->
+            </body>
+          </body>
+        </body>
+        <body name='proximal segment back right' pos='0.14 -.0 -.24' euler='0 0 0'>
+          <geom type='mesh' mesh='proximal segment back right' />
+          <geom type='mesh' mesh='proximal segment back right' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass=".1" diaginertia="0.0000699 0.0000946 0.0000375"/>
+          <body name='mid segment back right' pos="-0.00 0.001 -0.065" euler="0 90 0">
+            <geom type='mesh' mesh='mid segment back right' />
+            <geom type='mesh' mesh='mid segment back right' class='fluid-ellipsoid-model'/>
+            <inertial pos="0 0 0" mass=".14" diaginertia="0.0000375 0.0000946 0.0000699"/>
+            <joint name='mid segment back right' type='hinge' pos='-0.03 0.0 0.000' axis='-0 0 1' stiffness='1' damping='1'/>
+            <body name='distal segment back right' pos="0.09 .0 0.0" euler="90 -90 0">
+              <geom type='mesh' mesh='distal segment back right'  />
+              <geom type='mesh' mesh='distal segment back right' class='fluid-ellipsoid-model'/>
+              <joint name='distal segment back right' type='hinge' pos='0.000 0 .045' axis='0 1 0' stiffness='1' damping='1'/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="0.0000946 0.0000699 0.0000375"/>
+              <!-- <site name="prox_br_dactyl_tip" pos="0.015 0 -0.063" size="0.005" rgba="0 0 1 1" type="sphere"/> -->
+            </body>
+          </body>
+        </body>
+        <body name='proximal segment front left' pos='-.14 -.0 .24' euler='0 180 0'>
+          <geom type='mesh' mesh='proximal segment front left' />
+          <geom type='mesh' mesh='proximal segment front left' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass=".1" diaginertia="0.0000699 0.0000946 0.0000375"/>
+
+          <body name='mid segment front left' pos="-0.00 0.001 -0.065" euler="0 90 0">
+            <geom type='mesh' mesh='mid segment front left' />
+            <geom type='mesh' mesh='mid segment front left' class='fluid-ellipsoid-model'/>
+            <inertial pos="0 0 0" mass=".14" diaginertia="0.0000375 0.0000946 0.0000699"/>
+            <joint name='mid segment front left' type='hinge' pos='-0.03 0.0 0.000' axis='-0 0 1' stiffness='1' damping='1'/>
+
+            <body name='distal segment front left' pos="0.09 .0 0.0" euler="90 -90 0">
+              <geom type='mesh' mesh='distal segment front left' />
+              <geom type='mesh' mesh='distal segment front left' class='fluid-ellipsoid-model'/>
+              <joint name='distal segment front left' type='hinge' pos='0.000 0 .045' axis='0 1 0' stiffness='1' damping='1'/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="0.0000946 0.0000699 0.0000375"/>
+              <!-- <site name="prox_fl_dactyl_tip" pos="0.015 0 -0.063" size="0.005" rgba="1 1 0 1" type="sphere"/> -->
+            </body>
+          </body>
+        </body>
+        <body name='proximal segment middle left' pos='0 -.0 .24' euler='0 180 0'>
+          <geom type='mesh' mesh='proximal segment middle left' />
+          <geom type='mesh' mesh='proximal segment middle left' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass=".1" diaginertia="0.0000699 0.0000946 0.0000375"/>
+
+          <body name='mid segment middle left' pos="-0.00 0.001 -0.065" euler="0 90 0">
+            <geom type='mesh' mesh='mid segment middle left' />
+            <geom type='mesh' mesh='mid segment middle left' class='fluid-ellipsoid-model'/>
+            <joint name='mid segment middle left' type='hinge' pos='-0.03 0.0 0.000' axis='-0 0 1' stiffness='1' damping='1'/>
+
+            <body name='distal segment middle left' pos="0.09 .0 0.0" euler="90 -90 0">
+              <geom type='mesh' mesh='distal segment middle left'/>
+              <geom type='mesh' mesh='distal segment middle left' class='fluid-ellipsoid-model'/>
+              <joint name='distal segment middle left' type='hinge' pos='0.000 0 .045' axis='0 1 0' stiffness='1' damping='1'/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="0.0000946 0.0000699 0.0000375"/>
+              <!-- <site name="prox_ml_dactyl_tip" pos="0.015 0 -0.063" size="0.005" rgba="0 1 1 1" type="sphere"/> -->
+            </body>
+          </body>
+        </body>
+
+        <body name='proximal segment back left' pos='0.14 -.0 .24' euler='0 180 0'>
+          <geom type='mesh' mesh='proximal segment back left' />
+          <geom type='mesh' mesh='proximal segment back left' class='fluid-ellipsoid-model'/>
+          <inertial pos="0 0 0" mass=".1" diaginertia="0.0000699 0.0000946 0.0000375"/>
+
+          <body name='mid segment back left' pos="-0.00 0.001 -0.065" euler="0 90 0">
+            <geom type='mesh' mesh='mid segment back left' />
+            <geom type='mesh' mesh='mid segment back left' class='fluid-ellipsoid-model'/>
+            <inertial pos="0 0 0" mass=".14" diaginertia="0.0000375 0.0000946 0.0000699"/>
+            <joint name='mid segment back left' type='hinge' pos='-0.03 0.0 0.000' axis='-0 0 1' stiffness='1' damping='1'/>
+
+            <body name='distal segment back left' pos="0.09 .0 0.0" euler="90 -90 0">
+              <geom type='mesh' mesh='distal segment back left' />
+              <geom type='mesh' mesh='distal segment back left' class='fluid-ellipsoid-model'/>
+              <joint name='distal segment back left' type='hinge' pos='0.000 0 .045' axis='0 1 0' stiffness='1' damping='1'/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="0.0000946 0.0000699 0.0000375"/>
+              <!-- <site name="prox_bl_dactyl_tip" pos="0.015 0 -0.063" size="0.005" rgba="1 0 1 1" type="sphere"/> -->
+            </body>
+          </body>
+        </body>
+
+      </body>
+
+
+ </worldbody>
+
+  <sensor>
+
+
+    <actuatorfrc name="torque_mid_front_right" actuator='mid segment front right_p'/>
+    <actuatorfrc name="torque_distal_front_right" actuator='distal segment front right_p'/>
+    <actuatorfrc name="torque_mid_middle_right" actuator='mid segment middle right_p'/>
+    <actuatorfrc name="torque_distal_middle_right" actuator='distal segment middle right_p'/>
+    <actuatorfrc name="torque_mid_back_right" actuator='mid segment back right_p'/>
+    <actuatorfrc name="torque_distal_back_right" actuator='distal segment back right_p'/>
+
+    <actuatorfrc name="torque_mid_front_left" actuator='mid segment front left_p'/>
+    <actuatorfrc name="torque_distal_front_left" actuator='distal segment front left_p'/>
+    <actuatorfrc name="torque_mid_middle_left" actuator='mid segment middle left_p'/>
+    <actuatorfrc name="torque_distal_middle_left" actuator='distal segment middle left_p'/>
+    <actuatorfrc name="torque_mid_back_left" actuator='mid segment back left_p'/>
+    <actuatorfrc name="torque_distal_back_left" actuator='distal segment back left_p'/>
+
+    <!-- joint sensors -->
+    <jointvel name='msfr_vel' joint='mid segment front right'/>
+    <jointvel name='dsfr_vel' joint='distal segment front right'/>
+    <jointvel name='msmr_vel' joint='mid segment middle right'/>
+    <jointvel name='dsmr_vel' joint='distal segment middle right'/>
+    <jointvel name='msbr_vel' joint='mid segment back right'/>
+    <jointvel name='dsbr_vel' joint='distal segment back right'/>
+    <jointvel name='msfl_vel' joint='mid segment front left'/>
+    <jointvel name='dsfl_vel' joint='distal segment front left'/>
+    <jointvel name='msml_vel' joint='mid segment middle left'/>
+    <jointvel name='dsml_vel' joint='distal segment middle left'/>
+    <jointvel name='msbl_vel' joint='mid segment back left'/>
+    <jointvel name='dsbl_vel' joint='distal segment back left'/>
+  </sensor>
+  <actuator>
+    <!-- Front Right Leg -->
+    <position name="mid segment front right_p" joint="mid segment front right"     kp='200' ctrlrange="-3.14 3.14"/>
+    <position name="distal segment front right_p" joint="distal segment front right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+
+    <!-- Middle Right Leg -->
+
+    <position name="mid segment middle right_p" joint="mid segment middle right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="distal segment middle right_p" joint="distal segment middle right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+
+    <!-- Back Right Leg -->
+
+    <position name="mid segment back right_p" joint="mid segment back right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="distal segment back right_p" joint="distal segment back right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+
+    <!-- Front Left Leg -->
+
+    <position name="mid segment front left_p" joint="mid segment front left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="distal segment front left_p" joint="distal segment front left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+
+    <!-- Middle Left Leg -->
+
+    <position name="mid segment middle left_p" joint="mid segment middle left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="distal segment middle left_p" joint="distal segment middle left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+
+    <!-- Back Left Leg -->
+
+    <position name="mid segment back left_p" joint="mid segment back left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="distal segment back left_p" joint="distal segment back left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    
+  </actuator>
+</mujoco>

@@ -17,8 +17,9 @@ Generic body-motion locomotion controller for 3D target-tracking with morphology
 
 ### Performance
 - **Planning Horizon:** 2.0 seconds
-- **Sampling:** 64 trajectories, 5 spline points
+- **Sampling:** 64 trajectories, 5 spline points (Sampling Gradient planner)
 - **Approach Speed:** 0.60 m/s (configurable via `residual_DesiredSpeed`)
+- **Slow Radius:** 0.20 m (distance to start decelerating)
 
 ---
 
@@ -38,14 +39,23 @@ Generic body-motion locomotion controller for 3D target-tracking with morphology
 - `[16]` **Scalar control effort:** Equal weighting across all actuators (no morphology-specific discounts)
 
 **`task.xml`** — MJPC configuration and configurable parameters
+- **Target Reference:** Head position (`head_pos` site) for position and velocity sensing
 - **Residual parameters (configurable):**
   - `residual_DesiredSpeed` (default 0.60 m/s): target cruise speed
-  - `residual_SlowRadius` (default 0.35 m): distance at which to start tapering speed toward goal
-  - `residual_LocomotionAxisBody` (default `0 -1 0`): forward direction in body frame
-  - `residual_BodyUpAxisBody` (default `0 0 1`): "up" direction in body frame (used for trim)
-  - `residual_EnvNormalWorld` (default `0 0 1`): environment normal in world frame (e.g., gravity direction for swimming)
+  - `residual_SlowRadius` (default 0.20 m): distance at which to start decelerating toward goal
+  - `residual_LocAxisX/Y/Z` (default `0 -1 0`): forward direction in body frame (head-to-tail axis)
+  - `residual_UpAxisX/Y/Z` (default `0 0 1`): "up" direction in body frame (used for trim)
+  - `residual_EnvNormalX/Y/Z` (default `0 0 1`): environment normal in world frame
   - `residual_ControlSmoothingEnabled` (default `1`): enables first-order actuator smoothing
   - `residual_ControlSmoothingTau` (default `0.08` s): low-pass filter time constant for applied controls
+- **Cost weights:**
+  - Position: 2.0 (3D error to target)
+  - Progress: 8.0 (forward progress floor)
+  - Slip: 3.0 (cross-track velocity)
+  - Align: 2.5 (locomotion-axis alignment)
+  - Trim: 1.0 (body orientation relative to environment normal)
+  - AngVel: 0.5 (angular velocity damping)
+  - Control: 0.01 (actuator command effort)
 - Includes `turtle_3dswimming_model.xml`
 
 **`turtle_3dswimming_model.xml`** — Include wrapper

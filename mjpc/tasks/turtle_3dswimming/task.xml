@@ -3,7 +3,7 @@
   <include file="turtle_3dswimming_model.xml" />
 
   <custom>
-    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_planner" data="6" />
     <numeric name="agent_horizon" data="2.0" />
     <numeric name="agent_timestep" data="0.02" />
     <numeric name="sampling_trajectories" data="64" />
@@ -14,10 +14,16 @@
     
     <!-- Generic body-motion locomotion controller parameters -->
     <numeric name="residual_DesiredSpeed"       data="0.60" />
-    <numeric name="residual_SlowRadius"         data="0.35" />
-    <numeric name="residual_LocomotionAxisBody" data="0 -1 0" />
-    <numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
-    <numeric name="residual_EnvNormalWorld"     data="0 0 1" />
+    <numeric name="residual_SlowRadius"         data="0.20" />
+    <numeric name="residual_LocAxisX"           data="0.0" />
+    <numeric name="residual_LocAxisY"           data="-1.0" />
+    <numeric name="residual_LocAxisZ"           data="0.0" />
+    <numeric name="residual_UpAxisX"            data="0.0" />
+    <numeric name="residual_UpAxisY"            data="0.0" />
+    <numeric name="residual_UpAxisZ"            data="1.0" />
+    <numeric name="residual_EnvNormalX"         data="0.0" />
+    <numeric name="residual_EnvNormalY"         data="0.0" />
+    <numeric name="residual_EnvNormalZ"         data="1.0" />
     
     <!-- Control smoothing (first-order low-pass filter) -->
     <numeric name="residual_ControlSmoothingEnabled" data="1" />
@@ -25,7 +31,7 @@
   </custom>
 
   <worldbody>
-    <!-- Target placed in front of the robot nose (-Y direction in turtle.xml frame) -->
+    <!-- Target placed in front of the robot head (-Y direction in turtle.xml frame) -->
     <body name="target" mocap="true" pos="-0.196 -1.5 0.0717682">
       <geom name="target" type="sphere" size="0.05" material="target"/>
       <light name="target_light" diffuse=".7 .7 .7" pos="0 0 0.5"/>
@@ -50,10 +56,10 @@
     <user name="Control"  dim="1" user="0 0.01 0 1.0" />
 
     <!-- State/position sensors referenced in turtle_3dswimming.cc -->
-    <framepos    name="base_pos_task"        objtype="site" objname="base_cog" />
+    <framepos    name="base_pos_task"        objtype="site" objname="head_pos" />
     <framepos    name="target_pos_task"      objtype="body" objname="target" />
-    <framelinvel name="base_vel_world_task"  objtype="site" objname="base_cog" />
-    <frameangvel name="base_angvel_world_task" objtype="site" objname="base_cog" />
+    <framelinvel name="base_vel_world_task"  objtype="site" objname="head_pos" />
+    <frameangvel name="base_angvel_world_task" objtype="site" objname="head_pos" />
     
     <!-- Legacy sensors for backward compatibility (not used by main controller) -->
     <framepos    name="head_pos_task"       objtype="site" objname="head_pos" />
