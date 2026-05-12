@@ -229,32 +229,32 @@
   </sensor>
   <actuator>
     <!-- Front Right Leg -->
-    <position name="mid segment front right_p" joint="mid segment front right"     kp='200' ctrlrange="-3.14 3.14"/>
+    <position name="mid segment front right_p" joint="mid segment front right"     kp='200' ctrlrange="-2.0 2.0"/>
     <position name="distal segment front right_p" joint="distal segment front right"     kp='200' ctrllimited='true'  ctrlrange="-0.5 0.5"/>
 
     <!-- Middle Right Leg -->
 
-    <position name="mid segment middle right_p" joint="mid segment middle right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="mid segment middle right_p" joint="mid segment middle right"     kp='200' ctrllimited='true'  ctrlrange="-2.0 2.0"/>
     <position name="distal segment middle right_p" joint="distal segment middle right"     kp='200' ctrllimited='true'  ctrlrange="-0.5 0.5"/>
 
     <!-- Back Right Leg -->
 
-    <position name="mid segment back right_p" joint="mid segment back right"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="mid segment back right_p" joint="mid segment back right"     kp='200' ctrllimited='true'  ctrlrange="-2.0 2.0"/>
     <position name="distal segment back right_p" joint="distal segment back right"     kp='200' ctrllimited='true'  ctrlrange="-0.5 0.5"/>
 
     <!-- Front Left Leg -->
 
-    <position name="mid segment front left_p" joint="mid segment front left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="mid segment front left_p" joint="mid segment front left"     kp='200' ctrllimited='true'  ctrlrange="-2.0 2.0"/>
     <position name="distal segment front left_p" joint="distal segment front left"     kp='200' ctrllimited='true'  ctrlrange="-0.5 0.5"/>
 
     <!-- Middle Left Leg -->
 
-    <position name="mid segment middle left_p" joint="mid segment middle left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="mid segment middle left_p" joint="mid segment middle left"     kp='200' ctrllimited='true'  ctrlrange="-2.0 2.0"/>
     <position name="distal segment middle left_p" joint="distal segment middle left"     kp='200' ctrllimited='true'  ctrlrange="-0.5 0.5"/>
 
     <!-- Back Left Leg -->
 
-    <position name="mid segment back left_p" joint="mid segment back left"     kp='200' ctrllimited='true'  ctrlrange="-3.14 3.14"/>
+    <position name="mid segment back left_p" joint="mid segment back left"     kp='200' ctrllimited='true'  ctrlrange="-2.0 2.0"/>
     <position name="distal segment back left_p" joint="distal segment back left"     kp='200' ctrllimited='true'  ctrlrange="-0.5 0.5"/>
     
   </actuator>

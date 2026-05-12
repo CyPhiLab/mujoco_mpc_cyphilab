@@ -4,7 +4,7 @@
 
   <custom>
     <numeric name="agent_planner" data="6" />
-    <numeric name="agent_horizon" data="2.0" />
+    <numeric name="agent_horizon" data="0.5" />
     <numeric name="agent_timestep" data="0.02" />
     <numeric name="sampling_trajectories" data="64" />
     <numeric name="sampling_spline_points" data="5" />
@@ -13,17 +13,21 @@
     <numeric name="estimator" data="0" />
     
     <!-- Generic body-motion locomotion controller parameters -->
-    <numeric name="residual_DesiredSpeed"       data="0.60" />
+    <numeric name="residual_DesiredSpeed"       data="0.70" />
     <numeric name="residual_SlowRadius"         data="0.20" />
-    <numeric name="residual_LocAxisX"           data="1.0" />
+    <numeric name="residual_LocAxisX"           data="0.0" />
     <numeric name="residual_LocAxisY"           data="0.0" />
-    <numeric name="residual_LocAxisZ"           data="0.0" />
+    <numeric name="residual_LocAxisZ"           data="1.0" />
     <numeric name="residual_UpAxisX"            data="0.0" />
     <numeric name="residual_UpAxisY"            data="1.0" />
     <numeric name="residual_UpAxisZ"            data="0.0" />
     <numeric name="residual_EnvNormalX"         data="0.0" />
     <numeric name="residual_EnvNormalY"         data="0.0" />
     <numeric name="residual_EnvNormalZ"         data="1.0" />
+    
+    <!-- Regularization weights for smooth, efficient fluttering -->
+    <numeric name="residual_AmplitudeWeight"    data="0.05" />
+    <numeric name="residual_ControlRateWeight"  data="0.05" />
     
     <!-- Control smoothing (first-order low-pass filter) -->
     <numeric name="residual_ControlSmoothingEnabled" data="1" />
@@ -32,14 +36,14 @@
 
   <worldbody>
     <!-- Target placed in the water for the crab to swim toward -->
-    <body name="target" mocap="true" pos="0.5 0.0 0.0">
+    <body name="target" mocap="true" pos="0 0 2.0">
       <geom name="target" type="sphere" size="0.05" material="target"/>
       <light name="target_light" diffuse=".7 .7 .7" pos="0 0 0.5"/>
     </body>
   </worldbody>
 
   <sensor>
-    <!-- Cost terms: 17 total residuals (indices 0-16) -->
+    <!-- Cost terms: 41 total residuals (indices 0-40) -->
     <!-- [0-2]:    3D position error -->
     <!-- [3]:      one-sided forward progress floor -->
     <!-- [4-6]:    cross-track / slip velocity vector -->
@@ -47,20 +51,24 @@
     <!-- [10-12]:  trim relative to environment normal -->
     <!-- [13-15]:  angular-rate damping orthogonal to environment normal -->
     <!-- [16]:     scalar control effort -->
+    <!-- [17-28]:  amplitude regularization (ctrl[i] - neutral, where neutral=0) -->
+    <!-- [29-40]:  control-rate regularization (ctrl_rate[i] penalty) -->
     <user name="Position" dim="3" user="0 2.0  0 100.0" />
     <user name="Progress" dim="1" user="0 8.0  0 1.0" />
     <user name="Slip"     dim="3" user="0 3.0  0 10.0" />
-    <user name="Align"    dim="3" user="0 2.5  0 10.0" />
+    <user name="Align"    dim="3" user="0 0.0  0 10.0" />
     <user name="Trim"     dim="3" user="0 0.3  0 10.0" />
     <user name="AngVel"   dim="3" user="0 0.5  0 10.0" />
-    <user name="Control"  dim="1" user="0 0.01 0 1.0" />
+    <user name="Control"  dim="1" user="0 0.05 0 1.0" />
+    <user name="Amplitude" dim="12" user="0 0.05 0 10.0" />
+    <user name="ControlRate" dim="12" user="0 0.05 0 10.0" />
 
     <!-- State/position sensors referenced in crab_swimming.cc -->
-    <!-- Position and velocity measured from forward reference point (front_ref) -->
-    <!-- Angular velocity still measured from body center (base_cog) -->
-    <framepos    name="base_pos_task"        objtype="site" objname="front_ref" />
+    <!-- Position and velocity measured from body center (base_cog) to avoid exploiting rotation -->
+    <!-- Angular velocity measured from body center (base_cog) -->
+    <framepos    name="base_pos_task"        objtype="site" objname="base_cog" />
     <framepos    name="target_pos_task"      objtype="body" objname="target" />
-    <framelinvel name="base_vel_world_task"  objtype="site" objname="front_ref" />
+    <framelinvel name="base_vel_world_task"  objtype="site" objname="base_cog" />
     <frameangvel name="base_angvel_world_task" objtype="site" objname="base_cog" />
   </sensor>
 </mujoco>

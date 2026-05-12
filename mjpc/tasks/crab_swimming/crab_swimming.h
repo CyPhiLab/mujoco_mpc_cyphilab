@@ -54,6 +54,9 @@ class CrabSwimming : public Task {
   CrabSwimming();
   void TransitionLocked(mjModel* model, mjData* data) override;
 
+  // Public access for residual function
+  std::vector<double> prev_ctrl_;  // Previous control values for rate-of-change residual
+
  protected:
   std::unique_ptr<mjpc::ResidualFn> ResidualLocked() const override {
     return std::make_unique<ResidualFn>(this);

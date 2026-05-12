@@ -50,16 +50,6 @@ site_cog.set('rgba', '1 0 0 0.3')
 site_cog.set('type', 'sphere')
 plate.append(site_cog)
 
-# Add a forward-pointing reference site (along the body length, at +X direction)
-# This is used for position and velocity sensing along the swimming direction
-site_front = ET.Element('site')
-site_front.set('name', 'front_ref')
-site_front.set('pos', '0.15 0 0')  # Forward (+X) direction
-site_front.set('size', '0.008')
-site_front.set('rgba', '0 1 0 0.3')
-site_front.set('type', 'sphere')
-plate.append(site_front)
-
 # Find and remove the sensor section (we'll define our own in task.xml)
 # This must be done because MJPC requires user sensors to come first
 sensor = root.find('sensor')

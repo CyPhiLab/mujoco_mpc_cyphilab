@@ -34,7 +34,7 @@ CrabSwimming::CrabSwimming()
     : residual_(this), initialized_(false) {}
 
 // Residuals for CrabSwimming task.
-//   Number of residuals: 17
+//   Number of residuals: 41
 //     Residual (0-2):    3D position error
 //     Residual (3):      one-sided forward progress floor
 //     Residual (4-6):    cross-track / slip velocity vector
@@ -42,6 +42,8 @@ CrabSwimming::CrabSwimming()
 //     Residual (10-12):  trim relative to environment normal
 //     Residual (13-15):  angular-rate damping orthogonal to environment normal
 //     Residual (16):     scalar control effort
+//     Residual (17-28):  amplitude regularization (ctrl[i] - neutral_pose[i], neutral=0)
+//     Residual (29-40):  control-rate regularization (ctrl_rate[i])
 void CrabSwimming::ResidualFn::Residual(const mjModel* model,
                                         const mjData* data,
                                         double* residual) const {
@@ -207,14 +209,46 @@ void CrabSwimming::ResidualFn::Residual(const mjModel* model,
     effort_sq += data->ctrl[i] * data->ctrl[i];
   }
   residual[16] = mju_sqrt(effort_sq);
+
+  // ============================================================
+  // Residual [17-28]: amplitude regularization
+  // ============================================================
+  // Penalize deviation from neutral pose (neutral = 0.0 for all joints)
+  // This encourages small, modest joint angles for smooth fluttering
+  for (int i = 0; i < model->nu; ++i) {
+    // Residual is just the control value itself (penalizes magnitude)
+    residual[17 + i] = data->ctrl[i];
+  }
+
+  // ============================================================
+  // Residual [29-40]: control-rate regularization
+  // ============================================================
+  // Penalize the rate of change of control commands
+  // This encourages smooth transitions between timesteps
+  // Note: prev_ctrl is updated in TransitionLocked and should be valid here
+  const CrabSwimming* crab_task = static_cast<const CrabSwimming*>(task_);
+  if (model->nu == static_cast<int>(crab_task->prev_ctrl_.size())) {
+    for (int i = 0; i < model->nu; ++i) {
+      // Rate of change = current - previous
+      residual[29 + i] = data->ctrl[i] - crab_task->prev_ctrl_[i];
+    }
+  } else {
+    // If sizes don't match (shouldn't happen), zero out the residuals
+    for (int i = 0; i < model->nu; ++i) {
+      residual[29 + i] = 0.0;
+    }
+  }
 }
 
 void CrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
-  // Initialize filtered control vector on first call or if actuator count changes
+  // Initialize filtered control and previous control vectors on first call
+  // or if actuator count changes
   if (!initialized_ || filtered_ctrl_.size() != model->nu) {
     filtered_ctrl_.resize(model->nu, 0.0);
+    prev_ctrl_.resize(model->nu, 0.0);
     for (int i = 0; i < model->nu; ++i) {
       filtered_ctrl_[i] = data->ctrl[i];
+      prev_ctrl_[i] = data->ctrl[i];  // Initialize previous control to current
     }
     initialized_ = true;
   }
@@ -239,6 +273,8 @@ void CrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
     double alpha = dt / (tau + dt);
     
     for (int i = 0; i < model->nu; ++i) {
+      // Store the current control before filtering (for rate residual next step)
+      prev_ctrl_[i] = filtered_ctrl_[i];
       // filtered_ctrl[i] += alpha * (u_cmd - filtered_ctrl[i])
       filtered_ctrl_[i] = filtered_ctrl_[i] + alpha * (data->ctrl[i] - filtered_ctrl_[i]);
     }
@@ -246,8 +282,9 @@ void CrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
     // Apply filtered controls back to data->ctrl
     mju_copy(data->ctrl, filtered_ctrl_.data(), model->nu);
   } else {
-    // Smoothing disabled: pass through and keep filtered state updated
+    // Smoothing disabled: store current for next step and keep state updated
     for (int i = 0; i < model->nu; ++i) {
+      prev_ctrl_[i] = filtered_ctrl_[i];
       filtered_ctrl_[i] = data->ctrl[i];
     }
   }
