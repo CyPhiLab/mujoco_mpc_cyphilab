@@ -1,140 +1,123 @@
 # Crab Swimming Task for MJPC
 
-Generic body-motion locomotion controller for 3D target-tracking with a 12-DOF position-controlled crab robot.
+Generic body-motion locomotion controller for 3D target tracking with a 12-DOF position-controlled crab robot.
 
 ## Overview
 
-**CrabSwimming** is a fully-tuned MPC task implementing a generic body-motion controller for a 12-joint crab robot swimming toward a 3D target. Like Turtle3DSwimming, this controller is morphology-agnostic and reusable—configurable locomotion axes and environmental parameters allow adaptation to other swimmers or walkers by changing only XML parameters.
+**CrabSwimming** is an MJPC task for a 12-joint crab robot swimming toward a 3D target in fluid. The current controller tracks the target from the body-center reference site `base_cog`, uses a short planning horizon for reactive motion, and adds amplitude and control-rate regularization to encourage smaller, smoother flapping motions.
+
+### Current Configuration
+- **Planning horizon:** 0.5 s
+- **Timestep:** 0.02 s
+- **Desired speed:** 0.70 m/s
+- **Slow radius:** 0.20 m
+- **Locomotion axis:** `0 0 1` in the body frame
+- **Body up axis:** `0 1 0`
+- **Environment normal:** `0 0 1`
+- **Target default position:** `(0, 0, 2.0)`
+- **Control smoothing:** enabled, `tau = 0.08 s`
+- **Amplitude regularization weight:** 0.05
+- **Control-rate regularization weight:** 0.05
+- **Align weight:** 0.0
 
 ### Key Features
-- **Morphology-agnostic:** Body-frame locomotion axis, body-up axis, and environment normal are all configurable parameters
-- **Position actuators:** Controls desired joint angles (not forces), making it suitable for robots with joint-level servo control (e.g., position-controlled legs)
-- **Base-body targeting:** Tracks distance and direction from the plate (floating base) center to target
-- **One-sided progress floor:** Penalizes only being too slow; does not penalize overspeed
-- **Soft attitude control:** Cross-product alignment and trim constraints avoid over-constraining orientation
-- **Angular rate damping:** Reduces body tumbling perpendicular to the environment normal
-- **Control smoothing:** First-order low-pass filtering on joint targets reduces abrupt angle changes without affecting locomotion objective
-- **Real crab geometry:** 12 DOF with 6 legs (front, middle, back on each side), mid and distal segments per leg
-
-### Performance
-- **Planning Horizon:** 2.0 seconds
-- **Sampling:** 64 trajectories, 5 spline points (Sampling Gradient planner)
-- **Approach Speed:** 0.60 m/s (configurable via `residual_DesiredSpeed`)
-- **Slow Radius:** 0.20 m (distance to start decelerating)
-- **Actuator Gains:** Position servo with Kp=30 (stabilized during build to prevent numerical divergence)
+- **Body-center targeting:** Position, velocity, and angular velocity are measured from `base_cog`
+- **Position actuators:** The planner commands desired joint angles, not torques
+- **One-sided progress floor:** Being too slow is penalized; overspeed is not
+- **Slip suppression:** Penalizes velocity perpendicular to the target direction
+- **Soft trim control:** Keeps body-up near the environment normal without hard orientation locking
+- **Angular-rate damping:** Reduces tumbling orthogonal to the environment normal
+- **Joint regularization:** Penalizes large joint commands and abrupt command changes
+- **Control smoothing:** Applies a first-order low-pass filter before controls reach the servos
 
 ---
 
 ## Files
 
-**`crab_swimming.h`** — Task class header
-- Defines `CrabSwimming` inheriting from MJPC `Task`
-- Declares `ResidualFn` with 17 residuals
-- Includes filtered control state for joint-target smoothing
+**`crab_swimming.h`**
+- Declares `CrabSwimming` and its nested `ResidualFn`
+- Stores filtered controls and previous controls for smoothing and rate penalties
 
-**`crab_swimming.cc`** — Generic body-motion controller implementation
-- `[0-2]` **3D position error:** Vector from base to target (not scalar distance)
-- `[3]` **One-sided forward progress floor:** Penalizes only being slower than desired; ignores overspeed
-- `[4-6]` **Cross-track / slip velocity:** Perpendicular component of base velocity relative to target direction
-- `[7-9]` **Locomotion-axis alignment:** `cross(locomotion_axis_world, target_direction)` — zero when locomotion axis points at target
-- `[10-12]` **Trim relative to environment normal:** `cross(body_up_world, environment_normal)` — zero when body-up aligns with environment normal
-- `[13-15]` **Angular-rate damping orthogonal to environment:** Penalizes rolling/tumbling perpendicular to environment normal
-- `[16]` **Scalar control effort:** Equal weighting across all 12 actuators (no per-leg discounts)
+**`crab_swimming.cc`**
+- Implements a **41-residual** controller:
+  - `[0-2]` position error from `base_cog` to target
+  - `[3]` one-sided progress floor
+  - `[4-6]` slip velocity
+  - `[7-9]` locomotion-axis alignment residual
+  - `[10-12]` trim residual
+  - `[13-15]` angular-rate damping
+  - `[16]` scalar control effort
+  - `[17-28]` amplitude regularization for all 12 joints
+  - `[29-40]` control-rate regularization for all 12 joints
+- Filters `data->ctrl` in `TransitionLocked()` using a first-order low-pass filter
 
-**Actuator Mapping (ctrl indices 0-11):**
+**Actuator Mapping (ctrl indices 0-11)**
+```text
+0-1:   Front right leg (mid, distal)
+2-3:   Middle right leg (mid, distal)
+4-5:   Back right leg (mid, distal)
+6-7:   Front left leg (mid, distal)
+8-9:   Middle left leg (mid, distal)
+10-11: Back left leg (mid, distal)
 ```
-0-1:   Front right leg (mid segment, distal segment)
-2-3:   Middle right leg (mid segment, distal segment)
-4-5:   Back right leg (mid segment, distal segment)
-6-7:   Front left leg (mid segment, distal segment)
-8-9:   Middle left leg (mid segment, distal segment)
-10-11: Back left leg (mid segment, distal segment)
-```
 
-**`task.xml`** — MJPC configuration and configurable parameters
-- **Residual parameters (configurable):**
-  - `residual_DesiredSpeed` (default 0.60 m/s): target cruise speed
-  - `residual_SlowRadius` (default 0.20 m): distance at which to start decelerating toward goal
-  - `residual_LocAxisX/Y/Z` (default `1 0 0`): forward direction in body frame
-  - `residual_UpAxisX/Y/Z` (default `0 1 0`): "up" direction in body frame (used for trim)
-  - `residual_EnvNormalX/Y/Z` (default `0 0 1`): environment normal in world frame
-  - `residual_ControlSmoothingEnabled` (default `1`): enables first-order joint-target smoothing
-  - `residual_ControlSmoothingTau` (default `0.08` s): low-pass filter time constant for joint targets
-- **Cost weights:**
-  - Position: 2.0 (3D error to target)
-  - Progress: 8.0 (forward progress floor)
-  - Slip: 3.0 (cross-track velocity)
-  - Align: 2.5 (locomotion-axis alignment)
-  - Trim: 0.3 (body orientation relative to environment normal)
-  - AngVel: 0.5 (angular velocity damping)
-  - Control: 0.01 (joint command effort)
-- Includes `crab_swimming_model.xml`
+**`task.xml`**
+- Sets planner configuration and cost weights
+- Defines the body-center sensors:
+  - `base_pos_task` from `base_cog`
+  - `base_vel_world_task` from `base_cog`
+  - `base_angvel_world_task` from `base_cog`
+  - `target_pos_task` from the mocap target body
+- Places the default target at `(0, 0, 2.0)`
 
-**`crab_swimming_model.xml`** — Include wrapper
-- References `Robot_modified.xml` (patched during build with base_cog site added and Kp reduced)
+**`crab_swimming_model.xml`**
+- Includes `Robot_modified.xml`
 
-**`patch_crab_robot.py`** — Build-time model patcher
-- Copies Robot.xml from `../../Crab/mujoco_models/`
-- Adds `base_cog` reference site to plate body for sensor attachment
-- Reduces position servo gains from Kp=200 to Kp=30 to prevent numerical instability
-- Removes pre-existing sensors (MJPC requires user cost sensors to be declared first in task.xml)
+**`patch_crab_robot.py`**
+- Adds the `base_cog` site to the floating base
+- Reduces position-servo `kp` from 200 to 30 for stability
+- Removes pre-existing sensors so MJPC task sensors can be declared in `task.xml`
+- No longer adds a separate forward-point site
 
 ---
 
-## Cost Weights (task.xml)
+## Cost Weights
 
 | Residual | Name | Weight | Description |
 |----------|------|--------|-------------|
-| [0-2] | Position | 2.0 | 3D vector error (base → target) |
-| [3] | Progress | 8.0 | One-sided forward progress floor |
-| [4-6] | Slip | 3.0 | Cross-track / slip velocity vector |
-| [7-9] | Align | 2.5 | Locomotion-axis alignment cross-product |
-| [10-12] | Trim | 1.0 | Trim relative to environment normal |
-| [13-15] | AngVel | 0.5 | Angular-rate damping orthogonal to environment |
-| [16] | Control | 0.01 | Scalar control effort (all 12 joints equal) |
+| [0-2] | Position | 2.0 | 3D vector error (`base_cog` → target) |
+| [3] | Progress | 8.0 | One-sided speed floor toward target |
+| [4-6] | Slip | 3.0 | Velocity perpendicular to target direction |
+| [7-9] | Align | 0.0 | Locomotion-axis alignment residual, currently disabled |
+| [10-12] | Trim | 0.3 | Body-up relative to environment normal |
+| [13-15] | AngVel | 0.5 | Angular-rate damping orthogonal to environment normal |
+| [16] | Control | 0.05 | Scalar control effort |
+| [17-28] | Amplitude | 0.05 | Joint-angle magnitude regularization |
+| [29-40] | ControlRate | 0.05 | Joint-command rate regularization |
 
 ---
 
-## Key Differences from Turtle3DSwimming
+## Notes on the Current Design
 
-| Aspect | Turtle3DSwimming | CrabSwimming |
-|--------|------------------|--------------|
-| Actuators | 10 velocity-controlled | 12 position-controlled |
-| Locomotion Axis | [0 -1 0] (tail-to-head) | [1 0 0] (body length) |
-| Control Signal | Motor command (force/torque) | Joint angle target |
-| Servo Gains | Built-in (XW540 actuators) | Kp=30 (position servo) |
-| Control Smoothing | Applied to forces | Applied to joint targets |
-| Leg Configuration | 2 flippers (front & rear) | 6 legs (3 pairs: front/mid/back) |
+### Body-center sensing
+The controller now computes target displacement, progress, slip, and angular-rate terms using `base_cog`. This avoids relying on an offset forward-point site and makes the objective purely body-center based.
 
----
+### Locomotion axis vs Align cost
+The locomotion axis is still configured in the task as `0 0 1`, but the explicit Align cost weight is set to `0.0`. That means the controller still knows what the nominal swim axis is, but it is not currently paying a direct penalty for locomotion-axis misalignment.
 
-## Customization for Other Morphologies
+### Smoothing and regularization
+The current controller uses three separate mechanisms to tame motion:
+- first-order control smoothing in `TransitionLocked()`
+- amplitude regularization on all 12 commanded joint angles
+- control-rate regularization against the previous filtered command
 
-To adapt this controller to a different robot, change only the three axis parameters in `task.xml`:
-
-```xml
-<!-- For crab (default) — moves along body length -->
-<numeric name="residual_LocomotionAxisBody" data="1 0 0" />
-<numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
-
-<!-- For biped walking on ground, Z is up -->
-<numeric name="residual_LocomotionAxisBody" data="0 1 0" />
-<numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
-<numeric name="residual_EnvNormalWorld"     data="0 0 1" />
-
-<!-- For swimmer with head pointing forward -->
-<numeric name="residual_LocomotionAxisBody" data="0 -1 0" />
-<numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
-<numeric name="residual_EnvNormalWorld"     data="0 0 1" />
-```
-
-The cost function logic automatically transforms these axes into world frame and computes alignment/trim relative to them, regardless of robot morphology or actuator count.
+Together these are meant to reduce large flapping and abrupt command changes while preserving forward progress.
 
 ---
 
 ## Quick Start
 
-### 1. Build in MJPC Workspace
+### Build
 ```bash
 cd /path/to/mujoco_mpc_cyphilab
 mkdir -p build && cd build
@@ -142,122 +125,73 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --target mjpc -j$(nproc)
 ```
 
-The build system automatically:
-- Copies `Robot.xml` from `../../Crab/mujoco_models/` (if available)
-- Patches it with `patch_crab_robot.py` (adds `base_cog` site, reduces Kp)
-- Registers the CrabSwimming task in the UI
-
-### 2. Run
+### Run
 ```bash
-./build/bin/mjpc  # Select "CrabSwimming" from the task dropdown
+./build/bin/mjpc --task="CrabSwimming"
 ```
 
-### 3. Interact
-- **Click on simulator** to place target (blue sphere)
-- **Observe** the crab's MPC planner compute and execute smooth leg motions toward the target
-- **Inspect parameters** via the UI; modify and recompile `task.xml` to re-tune
-
-### 4. Tune Parameters (if needed)
-Edit `crab_swimming/task.xml` to adjust:
-- `residual_DesiredSpeed`: Increase for faster swimming, decrease for slower
-- `residual_SlowRadius`: Distance at which to start decelerating near goal
-- `residual_ControlSmoothingTau`: 
-  - `0.05` for quick, responsive joint tracking
-  - `0.08` (default) for balanced smoothness and responsiveness
-  - `0.12` for very smooth but slower joint motions
-- `residual_ControlSmoothingEnabled`: Set to `0` to bypass smoothing entirely
-- Cost weights in `<user>` elements to balance different objectives
-
----
-
-## Implementation Notes
-
-### Position Control vs. Velocity Control
-- **Turtle3DSwimming** uses velocity actuators: `data->ctrl` represents desired motor speeds, and the planner commands forces
-- **CrabSwimming** uses position actuators: `data->ctrl` represents desired joint angles, and the planner commands angle targets
-- Position smoothing in `TransitionLocked()` filters joint angles before applying them to the servo controllers
-
-### Build-Time Model Patching
-The `patch_crab_robot.py` script runs during CMake configuration:
-1. Copies the original `Robot.xml` (which may have high Kp gains for terrestrial locomotion)
-2. Adds a `base_cog` reference site to the `plate` body for sensor attachment
-3. Reduces position servo Kp from 200 to 30 to ensure numerical stability during MPC trajectory rollouts
-4. Removes pre-existing sensors to comply with MJPC's requirement that cost sensors be declared first
-
-### Body-frame Axes
-- `residual_LocomotionAxisBody` and `residual_BodyUpAxisBody` are defined in the robot's body frame
-- They are transformed to world frame using the root body (`plate`) rotation matrix at runtime
-- This allows seamless reuse across different orientations and morphologies
-
-### No Hard Quaternion Constraint
-Unlike older versions, this controller does not enforce full quaternion matching. Instead:
-- Soft cross-product residuals (`Align`, `Trim`) allow natural attitude variations
-- Angular velocity damping (`AngVel`) prevents unwanted tumbling
-- This approach is more physically natural and robust to model discrepancy
+### Interact
+- Move the mocap target in the simulator to retask the crab
+- Observe the body-center target tracking and smoothed joint commands
+- Edit `task.xml` to retune horizon, speed, axes, or cost weights
 
 ---
 
 ## Tuning Guide
 
-### If the crab feels sluggish
+### If the crab is too sluggish
 ```xml
-<!-- Lower control smoothing time constant -->
-<numeric name="residual_ControlSmoothingTau" data="0.05" />
+<numeric name="agent_horizon" data="0.6" />
+<numeric name="residual_DesiredSpeed" data="0.80" />
 ```
-This makes joint angles respond faster to MPC commands (at the cost of more abrupt motions).
+A slightly longer horizon or higher desired speed can make the controller less conservative.
 
-### If the crab's leg motions look jerky
+### If the leg motion is too large
 ```xml
-<!-- Increase control smoothing time constant -->
+<numeric name="residual_AmplitudeWeight" data="0.10" />
+```
+This increases the cost on large joint-angle commands.
+
+### If the leg motion is too jerky
+```xml
+<numeric name="residual_ControlRateWeight" data="0.10" />
 <numeric name="residual_ControlSmoothingTau" data="0.12" />
 ```
-This smooths the joint angle trajectory but may reduce responsiveness.
+Increase either the explicit rate penalty, the filter time constant, or both.
 
-### If the crab is not reaching targets quickly enough
+### If the crab drifts sideways
 ```xml
-<!-- Increase desired speed and/or progress weight -->
-<numeric name="residual_DesiredSpeed" data="0.80" />  <!-- up from 0.60 -->
-
-<!-- In task.xml, increase Progress weight -->
-<user name="Progress" dim="1" user="0 12.0 0 1.0" />  <!-- up from 8.0 -->
+<user name="Slip" dim="3" user="0 5.0 0 10.0" />
 ```
+The Align term is currently disabled, so sideways drift is mostly handled by the Slip cost.
 
-### If the crab is drifting sideways
+### If you want explicit heading enforcement again
 ```xml
-<!-- Increase Slip or Align weight -->
-<user name="Slip"  dim="3" user="0 5.0  0 10.0" />  <!-- up from 3.0 -->
-<user name="Align" dim="3" user="0 3.5  0 10.0" />  <!-- up from 2.5 -->
+<user name="Align" dim="3" user="0 2.5 0 10.0" />
 ```
-
-### If the crab is rolling excessively
-```xml
-<!-- Increase Trim weight to enforce stricter upright posture -->
-<user name="Trim" dim="3" user="0 2.0 0 10.0" />  <!-- up from 1.0 -->
-```
+This re-enables the locomotion-axis alignment penalty.
 
 ---
 
-## Dependencies & Assets
+## Dependencies and Assets
 
-- **MuJoCo 3.2+**, **C++17**, **CMake 3.15+**
-- **Crab model files:** Expected at `../../Crab/mujoco_models/`
-  - `Robot.xml` (floating base, 12 DOF position-controlled legs)
-  - `Scene.xml` (water environment)
-  - `asset/` directory (mesh files)
-- Water physics and lighting inherited from `common.xml` in the parent MJPC project
+- MuJoCo 3.2+
+- C++17
+- CMake-based MJPC build
+- Crab model assets under the crab task resources used by `Robot.xml` and `Scene.xml`
 
 ---
 
-## Known Issues & Solutions
+## Known Issues
 
 | Issue | Solution |
 |-------|----------|
-| Build fails: "Cannot find Robot.xml" | Ensure `../../Crab/mujoco_models/Robot.xml` exists relative to build directory |
-| Build fails: "Unrecognized name 'base_cog'" | The patch script may have failed; check that `patch_crab_robot.py` ran successfully |
-| Simulation diverges (NaN in QACC) | Position servo Kp is too high; should be ~30 (patch script should handle this) |
-| Crab feels sluggish | Lower `residual_ControlSmoothingTau` from 0.08 to 0.05 |
-| Crab's legs twitch | Raise `residual_ControlSmoothingTau` from 0.08 to 0.12 |
-| Task not appearing in UI | Ensure `tasks.cc` includes `crab_swimming.h` and registers `std::make_shared<CrabSwimming>()` |
+| Build fails because `base_cog` is missing | Rebuild so `patch_crab_robot.py` regenerates `Robot_modified.xml` |
+| Simulation diverges | Check that the patched model reduced actuator `kp` to 30 |
+| Motion is too twitchy | Raise `residual_ControlRateWeight` or `residual_ControlSmoothingTau` |
+| Motion is too floppy | Raise `residual_AmplitudeWeight` |
+| Task does not appear in MJPC | Rebuild `mjpc` and verify the task is registered in the task list |
+
 
 ---
 
