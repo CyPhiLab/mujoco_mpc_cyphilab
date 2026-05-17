@@ -1,0 +1,189 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="hexapod">
+  <option integrator="implicit" jacobian="sparse" timestep="0.005" gravity="0 0 0" density="1000" viscosity="0.0009" cone="elliptic" /><size memory="4G" />
+  <include file="noground.xml" />
+  <visual>
+    <scale com=".5" framewidth=".05" jointwidth=".01" />
+    <global offheight="2160" offwidth="1920" />
+  </visual>
+  <default>
+    <default class="dynamixel">
+      <position ctrlrange="-3.14 3.14" ctrllimited="true" forcerange="-3.1 3.1" forcelimited="true" kp="80" />
+    </default>
+    <default class="DVL">
+      <camera mode="fixed" resolution="2 2" fovy="45" />
+    </default>
+  </default>
+
+  <asset>
+  </asset>
+  <worldbody>
+      <camera pos="0.026 1.593 4.498" xyaxes="-1.000 0.017 0.000 -0.013 -0.728 0.685" name="main_camera" />
+
+      <body name="plate" pos="0 00 3" euler="0 0 0">
+        <site name="base_cog" pos="0 0 0" size="0.005" rgba="1 0 0 0" type="sphere" /><site name="front_point" pos="0 0.20 0" size="0.015" rgba="0 1 0 1" type="sphere" /><geom fluidshape="ellipsoid" type="box" size=".15 .2 .003" mass="1" contype="0" conaffinity="0" />
+        <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" euler="0 0 45" pos=".15 .2 0" mass=".34" contype="0" conaffinity="0" />
+        <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".15 0 0" mass=".34" contype="0" conaffinity="0" />
+        <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".15 -0.2 0" euler="0 0 -45" mass=".34" contype="0" conaffinity="0" />
+        <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos="-.15 .2 0" euler="0 0 -45" mass=".34" contype="0" conaffinity="0" />
+        <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos="-.15 0 0" euler="0 0 0" mass=".34" contype="0" conaffinity="0" />
+        <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos="-.15 -0.2 0" euler="0 0 45" mass=".34" contype="0" conaffinity="0" />
+        <camera class="DVL" name="DVLcam" pos="0 -0.15 0" euler="0 0 45" />
+
+        <freejoint />
+        <body name="box" pos="0 0 0" euler="0 0 0">
+          <camera pos="-.879 0.100 0.00" euler="0 -90 0" name="plate_camera" mode="track" />
+          <site name="IMU" pos="0 0.051 0" euler="0 0 0" size="0.001 0.001 0.001" rgba="1 0 0 1" type="box" />
+          
+        </body>
+        
+        <body name="proximal segment front right" pos=".15 .2 0" euler="0 0 45">
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 .04" contype="0" conaffinity="0" />
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 -0.04" contype="0" conaffinity="0" />
+          <joint name="psfr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+          <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".12 0 0" euler="90 0 0" mass=".34" contype="0" conaffinity="0" />
+
+          <body name="mid segment front right" pos=".12 0 0" euler="90 0 0">
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 0.04" contype="0" conaffinity="0" />
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 -0.04" contype="0" conaffinity="0" />
+            <joint name="msfr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+            <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".2 0 0" mass=".34" contype="0" conaffinity="0" />
+
+            <body name="distal segment front right" pos=".2 0 0">
+              <joint name="dsfr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+              <geom fluidshape="ellipsoid" type="box" size=".02 .01 0.09887" pos="0.128 0 0" euler="0 90 0" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+
+        
+        <body name="proximal segment center right" pos=".15 0 0" euler="0 0 0">
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 .04" contype="0" conaffinity="0" />
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 -0.04" contype="0" conaffinity="0" />
+          <joint name="pscr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+          <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".12 0 0" euler="90 0 0" mass=".34" contype="0" conaffinity="0" />
+
+          <body name="mid segment center right" pos=".12 0 0" euler="90 0 0">
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 0.04" contype="0" conaffinity="0" />
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 -0.04" contype="0" conaffinity="0" />
+            <joint name="mscr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+            <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".2 0 0" mass=".34" contype="0" conaffinity="0" />
+
+            <body name="distal segment center right" pos=".2 0 0">
+              <joint name="dscr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+              <geom fluidshape="ellipsoid" type="box" size=".02 .01 0.09887" pos="0.128 0 0" euler="0 90 0" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+
+        
+        <body name="proximal segment back right" pos=".15 -.2 0" euler="0 0 -45">
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 .04" contype="0" conaffinity="0" />
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 -0.04" contype="0" conaffinity="0" />
+          <joint name="psbr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+          <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".12 0 0" euler="90 0 0" mass=".34" contype="0" conaffinity="0" />
+
+          <body name="mid segment back right" pos=".12 0 0" euler="90 0 0">
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 0.04" contype="0" conaffinity="0" />
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 -0.04" contype="0" conaffinity="0" />
+            <joint name="msbr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1" />
+            <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".2 0 0" mass=".34" contype="0" conaffinity="0" />
+
+            <body name="distal segment back right" pos=".2 0 0">
+              <joint name="dsbr" type="hinge" axis="1 0 0" pos="0.028 0 0" damping="1" />
+              <geom fluidshape="ellipsoid" type="ellipsoid" size=".07 0.02 0.08" pos="0.15 0 0" euler="0 90 0" mass="0.34" contype="0" conaffinity="0" />
+            </body>
+
+          </body>
+        </body>
+
+        
+        <body name="proximal segment front left" pos="-.15 .2 0" euler="0 180 45">
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 .04" contype="0" conaffinity="0" />
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 -0.04" contype="0" conaffinity="0" />
+          <joint name="psfl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+          <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".12 0 0" euler="90 0 0" mass=".34" contype="0" conaffinity="0" />
+
+          <body name="mid segment front left" pos=".12 0 0" euler="90 0 0">
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 0.04" contype="0" conaffinity="0" />
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 -0.04" contype="0" conaffinity="0" />
+            <joint name="msfl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+            <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".2 0 0" mass=".34" contype="0" conaffinity="0" />
+
+            <body name="distal segment front left" pos=".2 0 0">
+              <joint name="dsfl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+              <geom fluidshape="ellipsoid" type="box" size=".02 .01 0.09887" pos="0.128 0 0" euler="0 90 0" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+
+        
+        <body name="proximal segment center left" pos="-.15 0 0" euler="0 180 0">
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 .04" contype="0" conaffinity="0" />
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 -0.04" contype="0" conaffinity="0" />
+          <joint name="pscl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+          <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".12 0 0" euler="90 0 0" mass=".34" contype="0" conaffinity="0" />
+
+          <body name="mid segment center left" pos=".12 0 0" euler="90 0 0">
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 0.04" contype="0" conaffinity="0" />
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 -0.04" contype="0" conaffinity="0" />
+            <joint name="mscl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+            <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".2 0 0" mass=".34" contype="0" conaffinity="0" />
+
+            <body name="distal segment center left" pos=".2 0 0">
+              <joint name="dscl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+              <geom fluidshape="ellipsoid" type="box" size=".02 .01 0.09887" pos="0.128 0 0" euler="0 90 0" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+
+        
+        <body name="proximal segment back left" pos="-.15 -.2 0" euler="0 180 -45">
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 .04" contype="0" conaffinity="0" />
+          <geom fluidshape="ellipsoid" type="box" size=".04 0.02 .01" pos=".07 0 -0.04" contype="0" conaffinity="0" />
+          <joint name="psbl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+          <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".12 0 0" euler="90 0 0" mass=".34" contype="0" conaffinity="0" />
+
+          <body name="mid segment back left" pos=".12 0 0" euler="90 0 0">
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 0.04" contype="0" conaffinity="0" />
+            <geom fluidshape="ellipsoid" type="box" size=".08 .02 0.01" pos=".1 0 -0.04" contype="0" conaffinity="0" />
+            <joint name="msbl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1" />
+            <geom fluidshape="ellipsoid" type="box" size=".0465 0.0285 .044" pos=".2 0 0" mass=".34" contype="0" conaffinity="0" />
+
+            <body name="distal segment back left" pos=".2 0 0">
+              <joint name="dsbl" type="hinge" axis="-1 0 0" pos="0.028 0 0" damping="1" />
+              <geom fluidshape="ellipsoid" type="ellipsoid" size=".07 0.02 0.08" pos="0.15 0 0" euler="0 90 0" mass="0.34" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+
+      </body>
+
+  </worldbody>
+  <actuator>
+    <position name="R1_1" joint="psfr" class="dynamixel" ctrlrange="-0.9 0.9" ctrllimited="true" />
+    <position name="R1_2" joint="msfr" class="dynamixel" ctrlrange="-0.9 0.9" ctrllimited="true" />
+    <position name="R1_3" joint="dsfr" class="dynamixel" ctrlrange="-0.9 0.9" ctrllimited="true" />
+
+    <position name="R2_1" joint="pscr" class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true" />
+    <position name="R2_2" joint="mscr" class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true" />
+    <position name="R2_3" joint="dscr" class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true" />
+
+    <position name="R3_1" joint="psbr" class="dynamixel" ctrlrange="-1.2 1.2" ctrllimited="true" />
+    <position name="R3_2" joint="msbr" class="dynamixel" ctrlrange="-1.2 1.2" ctrllimited="true" />
+    <position name="R3_3" joint="dsbr" class="dynamixel" ctrlrange="-1.5 1.5" ctrllimited="true" />
+
+    <position name="L1_1" joint="psfl" class="dynamixel" ctrlrange="-0.9 0.9" ctrllimited="true" />
+    <position name="L1_2" joint="msfl" class="dynamixel" ctrlrange="-0.9 0.9" ctrllimited="true" />
+    <position name="L1_3" joint="dsfl" class="dynamixel" ctrlrange="-0.9 0.9" ctrllimited="true" />
+
+    <position name="L2_1" joint="pscl" class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true" />
+    <position name="L2_2" joint="mscl" class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true" />
+    <position name="L2_3" joint="dscl" class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true" />
+
+    <position name="L3_1" joint="psbl" class="dynamixel" ctrlrange="-1.2 1.2" ctrllimited="true" />
+    <position name="L3_2" joint="msbl" class="dynamixel" ctrlrange="-1.2 1.2" ctrllimited="true" />
+    <position name="L3_3" joint="dsbl" class="dynamixel" ctrlrange="-1.5 1.5" ctrllimited="true" />
+    
+  </actuator>
+</mujoco>

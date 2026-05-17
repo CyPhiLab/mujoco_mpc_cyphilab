@@ -1,0 +1,6 @@
+<mujoco>
+  <!-- No ground plane for fluid environments -->
+  <worldbody>
+    <!-- Empty worldbody content - ground plane not included -->
+  </worldbody>
+</mujoco>

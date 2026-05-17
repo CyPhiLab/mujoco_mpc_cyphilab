@@ -1,0 +1,66 @@
+<mujoco model="PaddleCrabSwimming">
+	<include file="../common.xml" />
+	<include file="model.xml" />
+
+	<custom>
+		<numeric name="agent_planner" data="6" />
+		<numeric name="agent_horizon" data="1.5" />
+		<numeric name="agent_timestep" data="0.02" />
+		<numeric name="sampling_trajectories" data="128" />
+		<numeric name="sampling_spline_points" data="8" />
+		<numeric name="sampling_exploration" data="0.12" />
+		<numeric name="gradient_spline_points" data="20" />
+		<numeric name="estimator" data="0" />
+		<numeric name="residual_DesiredSpeed"            data="0.7" />
+		<numeric name="residual_SlowRadius"              data="0.20" />
+		<!-- LocAxis is only a fallback if front_point is unavailable. The primary Align direction is base_cog -> front_point. The robot's intended forward direction is body +Y. -->
+		<numeric name="residual_LocAxisX"                data="0.0" />
+		<numeric name="residual_LocAxisY"                data="1.0" />
+		<numeric name="residual_LocAxisZ"                data="0.0" />
+		<!-- UpAxis: robot body upright axis; for this model, body +Z is normal to the plate -->
+		<numeric name="residual_UpAxisX"                 data="0.0" />
+		<numeric name="residual_UpAxisY"                 data="0.0" />
+		<numeric name="residual_UpAxisZ"                 data="1.0" />
+		<!-- EnvNormal: world upright direction; for this swimming setup, world +Z is height -->
+		<numeric name="residual_EnvNormalX"              data="0.0" />
+		<numeric name="residual_EnvNormalY"              data="0.0" />
+		<numeric name="residual_EnvNormalZ"              data="1.0" />
+		<numeric name="residual_ControlSmoothingEnabled" data="1" />
+		<numeric name="residual_ControlSmoothingTau"     data="0.18" />
+	</custom>
+
+	<worldbody>
+		<!-- Target is initially placed in front of the robot along the front_point direction. The front direction is defined by base_cog -> front_point, while the rear paddle legs remain behind the body. -->
+		<body name="target" mocap="true" pos="0 1.0 3.0">
+			<geom name="target" type="sphere" size="0.05" material="target"/>
+			<light name="target_light" diffuse=".7 .7 .7" pos="0 0 0.5"/>
+		</body>
+	</worldbody>
+
+	<!-- Residual layout (17 + model->nu = 35 total for 18-control hexapod):
+			 [0-2]   Position error
+			 [3]     Progress (one-sided desired speed floor)
+			 [4-6]   Slip velocity perpendicular to target direction
+			 [7-9]   Align: front_point direction from base_cog to front_point
+			 [10-12] Trim: body-up stabilization
+			 [13-15] AngVel damping perpendicular to env_normal
+			 [16]    Control effort (morphology-aware weighted L2 norm)
+			 [17-34] ControlRate: 18 controls with per-actuator rate weights -->
+	<sensor>
+		<!-- Residual weights tuned to restore motion while keeping rear bias -->
+		<user name="Position"       dim="3"  user="0 4.0  0 100.0" />
+		<user name="Progress"       dim="1"  user="0 9.0  0 1.0" />
+		<user name="Slip"           dim="3"  user="0 2.0  0 10.0" />
+		<user name="Align"          dim="3"  user="0 0.5  0 10.0" /> <!-- Moderate heading alignment using front_point -->
+		<user name="Trim"           dim="3"  user="0 0.2  0 10.0" /> <!-- Small trim to discourage tumbling -->
+		<user name="AngVel"         dim="3"  user="0 0.5  0 10.0" />
+		<user name="Control"        dim="1"  user="0 0.04 0 1.0" />
+		<user name="ControlRate"    dim="18" user="0 0.4  0 10.0" />
+		<!-- Diagnostic body sensors -->
+		<framepos    name="base_pos_task"           objtype="site" objname="base_cog" />
+		<framepos    name="front_pos_task"          objtype="site" objname="front_point" />
+		<framepos    name="target_pos_task"         objtype="body" objname="target" />
+		<framelinvel name="base_vel_world_task"     objtype="site" objname="base_cog" />
+		<frameangvel name="base_angvel_world_task"  objtype="site" objname="base_cog" />
+	</sensor>
+</mujoco>

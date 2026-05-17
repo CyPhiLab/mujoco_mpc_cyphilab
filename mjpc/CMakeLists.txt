@@ -40,6 +40,8 @@ add_library(
   tasks/turtle_3dswimming/turtle_3dswimming.h
   tasks/crab_swimming/crab_swimming.cc
   tasks/crab_swimming/crab_swimming.h
+  tasks/paddle_crab_swimming/paddle_crab_swimming.cc
+  tasks/paddle_crab_swimming/paddle_crab_swimming.h
   tasks/acrobot/acrobot.cc
   tasks/acrobot/acrobot.h
   tasks/allegro/allegro.cc
