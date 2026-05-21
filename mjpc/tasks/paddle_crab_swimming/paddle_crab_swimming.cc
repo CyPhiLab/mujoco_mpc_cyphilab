@@ -20,12 +20,12 @@ namespace {
 // still. This keeps the task emergent while allowing motion to reappear.
 double ControlRegularizationWeight(int actuator_index) {
 	constexpr std::array<double, 18> kControlWeights = {
-			3.0, 3.0, 3.0,   // R1 (front right)
-			1.8, 1.8, 1.8,   // R2 (center right)
-			0.7, 0.7, 0.4,   // R3 (back right, distal paddle cheapest)
-			3.0, 3.0, 3.0,   // L1 (front left)
-			1.8, 1.8, 1.8,   // L2 (center left)
-			0.7, 0.7, 0.4    // L3 (back left, distal paddle cheapest)
+			5.0, 5.0, 5.0,   // R1 (front right)
+			3.0, 3.0, 3.0,   // R2 (center right)
+			0.35, 0.35, 0.20, // R3 (back right, distal paddle cheapest)
+			5.0, 5.0, 5.0,   // L1 (front left)
+			3.0, 3.0, 3.0,   // L2 (center left)
+			0.35, 0.35, 0.20  // L3 (back left, distal paddle cheapest)
 	};
 	if (actuator_index < 0 ||
 			actuator_index >= static_cast<int>(kControlWeights.size())) {
@@ -36,12 +36,12 @@ double ControlRegularizationWeight(int actuator_index) {
 
 double ControlRateRegularizationWeight(int actuator_index) {
 	constexpr std::array<double, 18> kRateWeights = {
-			2.5, 2.5, 2.5,  // R1 (front right)
-			1.5, 1.5, 1.5,  // R2 (center right)
-			0.8, 0.8, 0.8,  // R3 (rear paddles)
-			2.5, 2.5, 2.5,  // L1 (front left)
-			1.5, 1.5, 1.5,  // L2 (center left)
-			0.8, 0.8, 0.8   // L3 (rear paddles)
+			4.0, 4.0, 4.0,  // R1 (front right)
+			2.5, 2.5, 2.5,  // R2 (center right)
+			0.5, 0.5, 0.5,  // R3 (rear paddles)
+			4.0, 4.0, 4.0,  // L1 (front left)
+			2.5, 2.5, 2.5,  // L2 (center left)
+			0.5, 0.5, 0.5   // L3 (rear paddles)
 	};
 	if (actuator_index < 0 ||
 			actuator_index >= static_cast<int>(kRateWeights.size())) {
@@ -75,6 +75,7 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 																							 const mjData* data,
 																							 double* residual) const {
 	// Sensor lookups
+	double* base_cog_pos      = SensorByName(model, data, "base_cog_pos_task");
 	double* base_pos          = SensorByName(model, data, "base_pos_task");
 	double* front_pos         = SensorByName(model, data, "front_pos_task");
 	double* target_pos        = SensorByName(model, data, "target_pos_task");
@@ -92,6 +93,7 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	bool bad = false;
 	for (int i = 0; i < 11; ++i) if (is_bad(parameters_[i])) bad = true;
 	for (int i = 0; i < 3; ++i) {
+		if (base_cog_pos && is_bad(base_cog_pos[i])) bad = true;
 		if (is_bad(base_pos[i]) || is_bad(target_pos[i]) ||
 				is_bad(base_vel_world[i]) || is_bad(base_angvel_world[i])) bad = true;
 		if (front_pos && is_bad(front_pos[i])) bad = true;
@@ -167,14 +169,14 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	residual[5] = base_vel_world[1] - v_par_vec[1];
 	residual[6] = base_vel_world[2] - v_par_vec[2];
 
-	// [7-9] Align: front-point-defined body direction only. No fallback axis is
-	// used here; if the direction becomes degenerate, Align contributes zero.
+	// [7-9] Align: body axis is strictly (body center -> forward point).
+	// If either sensor is missing or the direction is degenerate, Align is zero.
 	double body_forward_world[3] = {0, 0, 0};
-	if (front_pos) {
+	if (front_pos && base_cog_pos) {
 		double front_delta[3] = {
-				front_pos[0] - base_pos[0],
-				front_pos[1] - base_pos[1],
-				front_pos[2] - base_pos[2]};
+				front_pos[0] - base_cog_pos[0],
+				front_pos[1] - base_cog_pos[1],
+				front_pos[2] - base_cog_pos[2]};
 		double front_norm = mju_sqrt(front_delta[0]*front_delta[0] +
 										 front_delta[1]*front_delta[1] +
 										 front_delta[2]*front_delta[2] + eps);

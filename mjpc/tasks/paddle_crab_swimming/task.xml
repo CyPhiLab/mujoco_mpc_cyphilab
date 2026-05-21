@@ -4,14 +4,14 @@
 
 	<custom>
 		<numeric name="agent_planner" data="6" />
-		<numeric name="agent_horizon" data="1.5" />
+		<numeric name="agent_horizon" data="2.0" />
 		<numeric name="agent_timestep" data="0.02" />
 		<numeric name="sampling_trajectories" data="128" />
 		<numeric name="sampling_spline_points" data="8" />
 		<numeric name="sampling_exploration" data="0.12" />
 		<numeric name="gradient_spline_points" data="20" />
 		<numeric name="estimator" data="0" />
-		<numeric name="residual_DesiredSpeed"            data="0.7" />
+		<numeric name="residual_DesiredSpeed"            data="0.9" />
 		<numeric name="residual_SlowRadius"              data="0.20" />
 		<!-- LocAxis is only a fallback if front_point is unavailable. The primary Align direction is base_cog -> front_point. The robot's intended forward direction is body +Y. -->
 		<numeric name="residual_LocAxisX"                data="0.0" />
@@ -49,18 +49,19 @@
 	<sensor>
 		<!-- Residual weights tuned to restore motion while keeping rear bias -->
 		<user name="Position"       dim="3"  user="0 4.0  0 100.0" />
-		<user name="Progress"       dim="1"  user="0 9.0  0 1.0" />
+		<user name="Progress"       dim="1"  user="0 12.0  0 1.0" />
 		<user name="Slip"           dim="3"  user="0 2.0  0 10.0" />
-		<user name="Align"          dim="3"  user="0 0.5  0 10.0" /> <!-- Moderate heading alignment using front_point -->
+		<user name="Align"          dim="3"  user="0 0.25  0 10.0" /> <!-- Lower heading rigidity so rear paddles can dominate propulsion -->
 		<user name="Trim"           dim="3"  user="0 0.2  0 10.0" /> <!-- Small trim to discourage tumbling -->
 		<user name="AngVel"         dim="3"  user="0 0.5  0 10.0" />
-		<user name="Control"        dim="1"  user="0 0.04 0 1.0" />
-		<user name="ControlRate"    dim="18" user="0 0.4  0 10.0" />
-		<!-- Diagnostic body sensors -->
-		<framepos    name="base_pos_task"           objtype="site" objname="base_cog" />
+		<user name="Control"        dim="1"  user="0 0.02 0 1.0" />
+		<user name="ControlRate"    dim="18" user="0 0.25  0 10.0" />
+		<!-- Residual-driving sensors (position/velocity bound to forward point) -->
+		<framepos    name="base_cog_pos_task"       objtype="site" objname="base_cog" />
+		<framepos    name="base_pos_task"           objtype="site" objname="front_point" />
 		<framepos    name="front_pos_task"          objtype="site" objname="front_point" />
 		<framepos    name="target_pos_task"         objtype="body" objname="target" />
-		<framelinvel name="base_vel_world_task"     objtype="site" objname="base_cog" />
-		<frameangvel name="base_angvel_world_task"  objtype="site" objname="base_cog" />
+		<framelinvel name="base_vel_world_task"     objtype="site" objname="front_point" />
+		<frameangvel name="base_angvel_world_task"  objtype="site" objname="front_point" />
 	</sensor>
 </mujoco>

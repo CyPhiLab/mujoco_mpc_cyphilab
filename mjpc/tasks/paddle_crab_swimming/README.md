@@ -14,13 +14,13 @@ This is an 18-control paddle crab swimming task for MJPC.
 - `patch_paddle_crab_robot.py`: Patches robot.xml for MJPC compatibility
 
 ## Task Parameters
-- `agent_horizon = 1.5` (1.5 second planning window)
+- `agent_horizon = 2.0` (2.0 second planning window)
 - `agent_timestep = 0.02` (20 millisecond control timestep)
 - `sampling_trajectories = 128` (128 trajectory samples per iteration)
 - `sampling_spline_points = 8` (8-point spline for trajectory generation)
 - `sampling_exploration = 0.12` (exploration noise level for sampling)
 - `gradient_spline_points = 20` (gradient computation spline points)
-- `residual_DesiredSpeed = 0.7` (target forward speed in m/s)
+- `residual_DesiredSpeed = 0.9` (target forward speed in m/s)
 - `residual_SlowRadius = 0.20` (slow-down region radius in meters)
 - `LocAxis = body +Y` (body-frame forward direction)
 - `UpAxis = body +Z` (body-frame up direction)
@@ -34,13 +34,13 @@ This is an 18-control paddle crab swimming task for MJPC.
 | Residual | Dimension | Weight | Notes |
 |----------|-----------|--------|-------|
 | Position | 3 | 4.0 | Track target location (3D error) |
-| Progress | 1 | 9.0 | One-sided penalty for speeds below 0.7 m/s |
+| Progress | 1 | 12.0 | One-sided penalty for speeds below 0.9 m/s |
 | Slip | 3 | 2.0 | Penalize lateral/perpendicular velocity w.r.t. target direction |
-| Align | 3 | 0.5 | Heading alignment using front_point direction from base_cog |
+| Align | 3 | 0.25 | Heading alignment using front_point direction from base_cog |
 | Trim | 3 | 0.2 | Stabilize body upright via cross(body_up, env_normal) |
 | AngVel | 3 | 0.5 | Damp angular velocity perpendicular to environment normal |
-| Control | 1 | 0.04 | Morphology-aware scalar effort with per-actuator weights |
-| ControlRate | 18 | 0.4 | Per-actuator rate penalty with morphology weights |
+| Control | 1 | 0.02 | Morphology-aware scalar effort with per-actuator weights |
+| ControlRate | 18 | 0.25 | Per-actuator rate penalty with morphology weights |
 
 ## Implementation Details
 
@@ -55,33 +55,34 @@ This is an 18-control paddle crab swimming task for MJPC.
 - [17-34]: Control-rate regularization (per-actuator penalties)
 
 **Sensor Setup**
-- `base_pos_task`: Body center-of-mass position (base_cog site)
-- `front_pos_task`: Front reference point (front_point site) for heading direction
+- `base_cog_pos_task`: Body-center reference point (base_cog site) used for body-axis definition
+- `base_pos_task`: Forward reference point position (front_point site) used for position/progress/slip terms
+- `front_pos_task`: Front reference point (front_point site) used with base_cog_pos_task for body-axis direction
 - `target_pos_task`: 3D target position
-- `base_vel_world_task`: Body velocity in world frame
-- `base_angvel_world_task`: Body angular velocity in world frame
+- `base_vel_world_task`: Forward-point velocity in world frame (front_point site)
+- `base_angvel_world_task`: Forward-point angular velocity in world frame (front_point site)
 
 ## Morphology-Aware Control Regularization
 
 **Per-Actuator Control Weights**
 
 The `Control` residual computes `sqrt(sum_i w_i * ctrl[i]^2)` with morphology-aware weights:
-- **Front legs (R1, L1)**: control weight 3.0 — most expensive, used for fine steering
-- **Center legs (R2, L2)**: control weight 1.8 — moderate cost, provide stabilization
-- **Rear support (R3_{1,2}, L3_{1,2})**: control weight 0.7 — cheaper, enable propulsion
-- **Rear distal paddles (R3_3, L3_3)**: control weight 0.4 — cheapest, primary swimming propulsion
+- **Front legs (R1, L1)**: control weight 5.0 — most expensive, used for fine steering
+- **Center legs (R2, L2)**: control weight 3.0 — moderate cost, provide stabilization
+- **Rear support (R3_{1,2}, L3_{1,2})**: control weight 0.35 — cheaper, enable propulsion
+- **Rear distal paddles (R3_3, L3_3)**: control weight 0.20 — cheapest, primary swimming propulsion
 
 **Per-Actuator Rate Weights**
 
-The `ControlRate` residual applies: `0.4 * sqrt(rate_weight[i]) * (ctrl[i] - prev_ctrl[i])`
-- **Front legs (R1, L1)**: rate weight 2.5 — smooth, precise steering
-- **Center legs (R2, L2)**: rate weight 1.5 — moderate rate penalty
-- **Rear support (R3_{1,2}, L3_{1,2})**: rate weight 0.8 — smoother propulsion
-- **Rear distal paddles (R3_3, L3_3)**: rate weight 0.8 — efficient paddle motion
+The `ControlRate` residual applies: `0.25 * sqrt(rate_weight[i]) * (ctrl[i] - prev_ctrl[i])`
+- **Front legs (R1, L1)**: rate weight 4.0 — smooth, precise steering
+- **Center legs (R2, L2)**: rate weight 2.5 — moderate rate penalty
+- **Rear support (R3_{1,2}, L3_{1,2})**: rate weight 0.5 — lower penalty for propulsion
+- **Rear distal paddles (R3_3, L3_3)**: rate weight 0.5 — efficient paddle motion
 
 This biasing encourages:
-- Rear paddles for efficient propulsion (low control cost)
-- Smooth control changes via rate regularization
+- Rear paddles for efficient propulsion (very low control and rate cost)
+- Stronger thrust generation while preserving smooth control changes
 - Front legs reserved for steering corrections (high control cost discourages overuse)
 
 **Actuator Configuration**
@@ -94,12 +95,12 @@ This biasing encourages:
 
 ## Expected Behavior
 
-- **Rear paddles** dominate propulsion due to low control cost (0.4) and enable steering via asymmetric motion
-- **Center legs** provide secondary support and stabilization (control cost 1.8)
-- **Front legs** remain relatively quiet for directional control (highest control cost 3.0)
+- **Rear paddles** dominate propulsion due to very low control cost (0.20 on distal paddles) and low rate penalty
+- **Center legs** provide secondary support and stabilization (control cost 3.0)
+- **Front legs** remain relatively quiet for directional control (highest control cost 5.0)
 - **Smooth motion** achieved via control-rate regularization and first-order smoothing filter (tau=0.18s)
 - **Emergent gait**: No CPG, DMP, phase variables, or hand-coded trajectories—all motion emerges from MPC optimization
-- **Directional control** via asymmetric rear paddle motion; `Align` weight (0.5) provides gentle guidance toward target
+- **Directional control** via asymmetric rear paddle motion; `Align` weight (0.25) provides gentle guidance toward target while allowing stronger thrust behavior
 
 ## Task Running
 
