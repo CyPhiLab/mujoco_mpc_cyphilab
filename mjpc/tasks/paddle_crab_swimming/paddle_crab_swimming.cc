@@ -82,6 +82,13 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	double* base_vel_world    = SensorByName(model, data, "base_vel_world_task");
 	double* base_angvel_world = SensorByName(model, data, "base_angvel_world_task");
 
+	// Required sensors must exist; otherwise return a safe zero residual.
+	if (!base_pos || !target_pos || !base_vel_world || !base_angvel_world) {
+		int n_residuals = 17 + model->nu;
+		for (int r = 0; r < n_residuals; ++r) residual[r] = 0.0;
+		return;
+	}
+
 	// Parameters: [0]=DesiredSpeed [1]=SlowRadius [2-4]=LocAxis [5-7]=UpAxis [8-10]=EnvNormal
 	double desired_speed_param = parameters_[0];
 	double loc_axis_body[3]    = {parameters_[2], parameters_[3], parameters_[4]};

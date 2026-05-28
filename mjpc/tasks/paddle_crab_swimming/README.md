@@ -14,13 +14,13 @@ This is an 18-control paddle crab swimming task for MJPC.
 - `patch_paddle_crab_robot.py`: Patches robot.xml for MJPC compatibility
 
 ## Task Parameters
-- `agent_horizon = 2.0` (2.0 second planning window)
+- `agent_horizon = 1.25` (1.25 second planning window)
 - `agent_timestep = 0.02` (20 millisecond control timestep)
 - `sampling_trajectories = 128` (128 trajectory samples per iteration)
 - `sampling_spline_points = 8` (8-point spline for trajectory generation)
 - `sampling_exploration = 0.12` (exploration noise level for sampling)
 - `gradient_spline_points = 20` (gradient computation spline points)
-- `residual_DesiredSpeed = 0.9` (target forward speed in m/s)
+- `residual_DesiredSpeed = 0.75` (target forward speed in m/s)
 - `residual_SlowRadius = 0.20` (slow-down region radius in meters)
 - `LocAxis = body +Y` (body-frame forward direction)
 - `UpAxis = body +Z` (body-frame up direction)
@@ -34,11 +34,11 @@ This is an 18-control paddle crab swimming task for MJPC.
 | Residual | Dimension | Weight | Notes |
 |----------|-----------|--------|-------|
 | Position | 3 | 4.0 | Track target location (3D error) |
-| Progress | 1 | 12.0 | One-sided penalty for speeds below 0.9 m/s |
-| Slip | 3 | 2.0 | Penalize lateral/perpendicular velocity w.r.t. target direction |
-| Align | 3 | 0.25 | Heading alignment using front_point direction from base_cog |
+| Progress | 1 | 12.0 | One-sided penalty for speeds below 0.75 m/s |
+| Slip | 3 | 0.3 | Penalize lateral/perpendicular velocity w.r.t. target direction |
+| Align | 3 | 0.2 | Heading alignment using front_point direction from base_cog |
 | Trim | 3 | 0.2 | Stabilize body upright via cross(body_up, env_normal) |
-| AngVel | 3 | 0.5 | Damp angular velocity perpendicular to environment normal |
+| AngVel | 3 | 0.3 | Damp angular velocity perpendicular to environment normal |
 | Control | 1 | 0.02 | Morphology-aware scalar effort with per-actuator weights |
 | ControlRate | 18 | 0.25 | Per-actuator rate penalty with morphology weights |
 
@@ -56,11 +56,11 @@ This is an 18-control paddle crab swimming task for MJPC.
 
 **Sensor Setup**
 - `base_cog_pos_task`: Body-center reference point (base_cog site) used for body-axis definition
-- `base_pos_task`: Forward reference point position (front_point site) used for position/progress/slip terms
+- `base_pos_task`: Body-center reference point (base_cog site) used for position/progress/slip terms
 - `front_pos_task`: Front reference point (front_point site) used with base_cog_pos_task for body-axis direction
 - `target_pos_task`: 3D target position
-- `base_vel_world_task`: Forward-point velocity in world frame (front_point site)
-- `base_angvel_world_task`: Forward-point angular velocity in world frame (front_point site)
+- `base_vel_world_task`: Body-center velocity in world frame (base_cog site)
+- `base_angvel_world_task`: Body-center angular velocity in world frame (base_cog site)
 
 ## Morphology-Aware Control Regularization
 
@@ -86,7 +86,7 @@ This biasing encourages:
 - Front legs reserved for steering corrections (high control cost discourages overuse)
 
 **Actuator Configuration**
-- Position actuator `kp = 35` (soft control tracking for smooth motion)
+- Position actuator `kp = 50` (set by patch script for rear-paddle diagnostic control)
 - Actuator control ranges by leg segment:
   - Front legs (R1_*, L1_*): ±0.9
   - Center legs (R2_*, L2_*): ±1.0
@@ -100,7 +100,7 @@ This biasing encourages:
 - **Front legs** remain relatively quiet for directional control (highest control cost 5.0)
 - **Smooth motion** achieved via control-rate regularization and first-order smoothing filter (tau=0.18s)
 - **Emergent gait**: No CPG, DMP, phase variables, or hand-coded trajectories—all motion emerges from MPC optimization
-- **Directional control** via asymmetric rear paddle motion; `Align` weight (0.25) provides gentle guidance toward target while allowing stronger thrust behavior
+- **Directional control** via asymmetric rear paddle motion; `Align` weight (0.2) provides gentle guidance toward target while allowing stronger thrust behavior
 
 ## Task Running
 
