@@ -1,0 +1,266 @@
+<?xml version="1.0" ?>
+<!-- Generated using onshape-to-robot -->
+<!-- Onshape https://cad.onshape.com/documents/10983e84519d457ae82440ea/w/286bda59dae2fbf061500275/e/1ab19f16b069914ec1cc48d7 -->
+<mujoco model="pterosaur">
+  <compiler angle="radian" meshdir="assets" autolimits="true"/>
+  <option integrator="implicit" timestep="0.01"/>
+  <default>
+    <default class="pterosaur">
+      <joint frictionloss="0.1" armature="0.005"/>
+      <!-- <position kp="500" dampratio="5"/> -->
+      <default class="visual">`
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom group="3"/>
+      </default>
+      <default class="foot">
+        <geom size="0.02" pos= "0 0 -0.2" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1.2 0.02 0.01"/>
+      </default>      
+    </default>
+  </default>
+  <worldbody>
+    <!-- Link body -->
+    <body name="body" pos="0 0 0" quat="1 0 0 0" childclass="pterosaur">
+      <freejoint name="body_freejoint"/>
+      <site name="com" rgba="1 0 0 1" pos="-0.329162 0.2607 0.205848" size="0.001"/>
+      <site name="head" pos="-0.029162 0.2607 0.205848" class="task"/>
+      <inertial pos="-0.329162 0.2607 0.205848" mass="21.9159" fullinertia="1.49474 0.542959 1.69386 -0 0.204502 0"/>
+      <!-- Part body -->
+      <geom type="mesh" class="visual" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="body" material="body_material"/>
+      <geom type="mesh" class="collision" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="body" material="body_material"/>
+      <!-- Part housing_bearing -->
+      <geom type="mesh" class="visual" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <geom type="mesh" class="collision" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <!-- Part housing_bearing_2 -->
+      <geom type="mesh" class="visual" pos="-1.31895 1.12179 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <geom type="mesh" class="collision" pos="-1.31895 1.12179 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <!-- Part housing_bearing_3 -->
+      <geom type="mesh" class="visual" pos="-1.31895 0.2607 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <geom type="mesh" class="collision" pos="-1.31895 0.2607 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <!-- Part housing_bearing_4 -->
+      <geom type="mesh" class="visual" pos="-1.16424 1.12179 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <geom type="mesh" class="collision" pos="-1.16424 1.12179 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" mesh="housing_bearing" material="housing_bearing_material"/>
+      <!-- Link smaller_housing -->
+      <body name="smaller_housing" pos="-0.342251 -0.169846 0.214034" quat="0.484652 0 0.874707 -0">
+        <!-- Joint from body to smaller_housing -->
+        <joint axis="0 0 1" name="leftarm_shoulder1" type="hinge"/>
+        <inertial pos="-1.24807e-06 0.00682513 -0.0787398" mass="1.343" fullinertia="0.0135155 0.013795 0.00927768 1.6788e-08 5.6242e-08 3.9866e-08"/>
+        <!-- Part smaller_housing -->
+        <geom type="mesh" class="visual" pos="0.430546 0 -0.969486" quat="0 1 0 0" mesh="smaller_housing" material="smaller_housing_material"/>
+        <!-- <geom type="mesh" class="collision" pos="0.430546 0 -0.969486" quat="0 1 0 0" mesh="smaller_housing" material="smaller_housing_material"/> -->
+        <!-- Link bevel_out -->
+        <body name="bevel_out" pos="0 -0.0762 -0.07874" quat="0.0909266 0.0909266 -0.701236 0.701236">
+          <!-- Joint from smaller_housing to bevel_out -->
+          <joint axis="0 0 1" name="leftarm_shoulder2" type="hinge"/>
+          <inertial pos="-0.0753731 -0 0.0347345" mass="4.75962" fullinertia="0.0153834 0.0797297 0.0750715 -0 0.0171537 0"/>
+          <!-- Part humerus -->
+          <geom type="mesh" class="visual" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 -0 -0" mesh="humerus" material="humerus_material"/>
+          <geom type="mesh" class="collision" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 -0 -0" mesh="humerus" material="humerus_material"/>
+          <!-- Part bevel_out -->
+          <geom type="mesh" class="visual" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 -0 -0" mesh="bevel_out" material="bevel_out_material"/>
+          <!-- <geom type="mesh" class="collision" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 -0 -0" mesh="bevel_out" material="bevel_out_material"/> -->
+          <!-- Link radius_and_ulna -->
+          <body name="radius_and_ulna" pos="-0.381 -0 0.1016" quat="0.943004 -0 0 0.332781">
+            <!-- Joint from bevel_out to radius_and_ulna -->
+            <joint axis="0 0 1" name="leftarm_elbow" type="hinge"/>
+            <inertial pos="-0.306294 0 -0.01905" mass="1.60866" fullinertia="0.000762134 0.0693551 0.0697199 0 0 -0"/>
+            <!-- Part radius_and_ulna -->
+            <geom type="mesh" class="visual" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
+            <geom type="mesh" class="collision" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
+            <geom name="FL" size="0.02" pos= "-0.675 0 -0.02" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01"/>
+            <site name="FL" type="sphere" size="0.02" pos="-0.675 0 -0.02"/>
+            <!-- Link finger -->
+            <!--body name="finger" pos="-0.6604 0 -0.0127" quat="0 0.224528 0.974468 -0"-->
+              <!-- Joint from radius_and_ulna to finger -->
+              <!--joint axis="0 0 1" name="leftarm_finger" type="hinge"/-->
+              <!--inertial pos="-0.346533 0.00351695 -0.00634993" mass="0.0823581" fullinertia="1.11507e-05 0.00430132 0.00431156 0.000126744 9.11e-10 -8.1e-11"/-->
+              <!-- Part finger -->
+              <!--geom type="mesh" class="visual" pos="1.47195 -0.890746 -0.1651" quat="0.707107 0.707107 0 -0" mesh="finger" material="finger_material"/-->
+              <!-- <geom type="mesh" class="collision" pos="1.47195 -0.890746 -0.1651" quat="0.707107 0.707107 0 -0" mesh="finger" material="finger_material"/> -->
+            <!--/body-->
+          </body>
+        </body>
+      </body>
+      <!-- Link smaller_housing_2 -->
+      <body name="smaller_housing_2" pos="-0.342251 0.691246 0.214034" quat="0 0.874707 -0 0.484652">
+        <!-- Joint from body to smaller_housing_2 -->
+        <joint axis="0 0 1" name="rightarm_shoulder1" type="hinge"/>
+        <inertial pos="-1.24807e-06 0.00682513 -0.0787398" mass="1.343" fullinertia="0.0135155 0.013795 0.00927768 1.6788e-08 5.6242e-08 3.9866e-08"/>
+        <!-- Part smaller_housing_2 -->
+        <geom type="mesh" class="visual" pos="0.430546 0 -0.969486" quat="0 1 0 0" mesh="smaller_housing" material="smaller_housing_material"/>
+        <!-- <geom type="mesh" class="collision" pos="0.430546 0 -0.969486" quat="0 1 0 0" mesh="smaller_housing" material="smaller_housing_material"/> -->
+        <!-- Link bevel_out_2 -->
+        <body name="bevel_out_2" pos="0 -0.0762 -0.07874" quat="0.707107 -0.707107 -0 -0">
+          <!-- Joint from smaller_housing_2 to bevel_out_2 -->
+          <joint axis="0 0 1" name="rightarm_shoulder2" type="hinge"/>
+          <inertial pos="-0.0728804 0.0192235 -0.0347345" mass="4.75962" fullinertia="0.019569 0.0755441 0.0750715 0.0158684 -0.0165864 0.00437495"/>
+          <!-- Part humerus_2 -->
+          <geom type="mesh" class="visual" pos="0.643487 0.751481 0.0762" quat="0.701236 -0.701236 0.0909266 -0.0909266" mesh="humerus" material="humerus_material"/>
+          <geom type="mesh" class="collision" pos="0.643487 0.751481 0.0762" quat="0.701236 -0.701236 0.0909266 -0.0909266" mesh="humerus" material="humerus_material"/>
+          <!-- Part bevel_out_2 -->
+          <geom type="mesh" class="visual" pos="-0.751481 0.643487 0.0762" quat="0.560144 -0.560144 -0.431554 0.431554" mesh="bevel_out" material="bevel_out_material"/>
+          <!-- <geom type="mesh" class="collision" pos="-0.751481 0.643487 0.0762" quat="0.560144 -0.560144 -0.431554 0.431554" mesh="bevel_out" material="bevel_out_material"/> -->
+          <!-- Link radius_and_ulna_2 -->
+          <body name="radius_and_ulna_2" pos="-0.3684 0.0971719 -0.0635" quat="0.977967 0 -0 0.208758">
+            <!-- Joint from bevel_out_2 to radius_and_ulna_2 -->
+            <joint axis="0 0 1" name="rightarm_elbow" type="hinge"/>
+            <inertial pos="-0.306294 0 -0.01905" mass="1.60866" fullinertia="0.000762134 0.0693551 0.0697199 0 -0 -0"/>
+            <!-- Part radius_and_ulna_2 -->
+            <geom type="mesh" class="visual" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 -0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
+            <geom type="mesh" class="collision" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 -0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
+            <geom name="FR" size="0.02" pos="-0.675 0 -0.02" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01"/>
+            <site name="FR" type="sphere" size="0.02" pos="-0.675 0 -0.02" />
+            <!-- Link finger_2 -->
+            <!--body name="finger_2" pos="-0.6604 0 -0.0127" quat="0 0.224528 0.974468 -0"-->
+              <!-- Joint from radius_and_ulna_2 to finger_2 -->
+              <!--joint axis="0 0 1" name="rightarm_finger" type="hinge"/-->
+              <!--inertial pos="-0.346533 0.00351695 -0.00634993" mass="0.0823581" fullinertia="1.11507e-05 0.00430132 0.00431156 0.000126744 9.11e-10 -8.1e-11"/-->
+              <!-- Part finger_2 -->
+              <!--geom type="mesh" class="visual" pos="1.47195 -0.890746 -0.1651" quat="0.707107 0.707107 0 -0" mesh="finger" material="finger_material"/-->
+              <!-- <geom type="mesh" class="collision" pos="1.47195 -0.890746 -0.1651" quat="0.707107 0.707107 0 -0" mesh="finger" material="finger_material"/> -->
+            <!--/body-->
+          </body>
+        </body>
+      </body>
+      <!-- Link leg_motor_1 -->
+      <body name="leg_motor_1" pos="-0.124306 0.1575 0.0777372" quat="0.618511 -0.342701 -0.342701 0.618511">
+        <!-- Joint from body to leg_motor_1 -->
+        <joint axis="0 0 1" name="leftleg_hip1" type="hinge"/>
+        <inertial pos="-0.0085028 -1.1347e-08 -0.0878363" mass="2.7422" fullinertia="0.0167106 0.0181836 0.00941714 3.926e-09 -0.00137046 -7.7e-10"/>
+        <!-- Part hip -->
+        <geom type="mesh" class="visual" pos="0.1032 0 1.22654" quat="1 0 -0 0" mesh="hip" material="hip_material"/>
+        <geom type="mesh" class="collision" pos="0.1032 0 1.22654" quat="1 0 -0 0" mesh="hip" material="hip_material"/>
+        <!-- Part leg_motor_1 -->
+        <geom type="mesh" class="visual" pos="0.1032 0 1.22654" quat="1 -0 0 0" mesh="leg_motor_1" material="leg_motor_1_material"/>
+        <geom type="mesh" class="collision" pos="0.1032 0 1.22654" quat="1 -0 0 0" mesh="leg_motor_1" material="leg_motor_1_material"/>
+        <!-- Link leg_motor_2 -->
+        <body name="leg_motor_2" pos="-0.1075 -0 -0.146612" quat="0.399172 -0.583663 -0.399172 0.583663">
+          <!-- Joint from leg_motor_1 to leg_motor_2 -->
+          <joint axis="0 0 1" name="leftleg_hip2" type="hinge"/>
+          <inertial pos="0.0727822 -0 0.0216101" mass="3.21492" fullinertia="0.0045526 0.0395144 0.0412537 0 -0.00371806 -0"/>
+          <!-- Part femur -->
+          <geom type="mesh" class="visual" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="femur" material="femur_material"/>
+          <geom type="mesh" class="collision" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="femur" material="femur_material"/>
+          <!-- Part leg_motor_3 -->
+          <geom type="mesh" class="visual" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="leg_motor_3" material="leg_motor_3_material"/>
+          <geom type="mesh" class="collision" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="leg_motor_3" material="leg_motor_3_material"/>
+          <!-- Part leg_motor_2 -->
+          <geom type="mesh" class="visual" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="leg_motor_2" material="leg_motor_2_material"/>
+          <geom type="mesh" class="collision" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="leg_motor_2" material="leg_motor_2_material"/>
+          <!-- Link tibia -->
+          <body name="tibia" pos="0.3302 -0 0.03115" quat="0 0.962486 0.271331 0">
+            <!-- Joint from leg_motor_2 to tibia -->
+            <joint axis="0 0 1" name="leftleg_knee" type="hinge"/>
+            <inertial pos="0.164731 0 -0.00635" mass="0.440746" fullinertia="0.000126716 0.00537275 0.00548761 0 0 0"/>
+            <geom name="HL" class="foot" pos= "0.3681 0 0"/> 
+            <site name="RL" type="sphere" size="0.02" pos="0.3681 0 0"/>
+            <!-- Part tibia -->
+            <geom type="mesh" class="visual" pos="-0.3302 1.37315 0.24185" quat="0.5 -0.5 -0.5 -0.5" mesh="tibia" material="tibia_material"/>
+            <geom type="mesh" class="collision" pos="-0.3302 1.37315 0.24185" quat="0.5 -0.5 -0.5 -0.5" mesh="tibia" material="tibia_material"/>
+          </body>
+        </body>
+      </body>
+      <!-- Link hip -->
+      <body name="hip" pos="-0.124306 0.3639 0.0777372" quat="0.618511 -0.342701 -0.342701 0.618511">
+        <!-- Joint from body to hip -->
+        <joint axis="0 0 1" name="rightleg_hip1" type="hinge"/>
+        <inertial pos="0.0085028 1.1347e-08 -0.0878363" mass="2.7422" fullinertia="0.0167106 0.0181836 0.00941714 3.926e-09 0.00137046 7.7e-10"/>
+        <!-- Part leg_motor_1_2 -->
+        <geom type="mesh" class="visual" pos="0.1032 0 1.22654" quat="1 0 0 0" mesh="leg_motor_1" material="leg_motor_1_material"/>
+        <geom type="mesh" class="collision" pos="0.1032 0 1.22654" quat="1 0 0 0" mesh="leg_motor_1" material="leg_motor_1_material"/>
+        <!-- Part hip_2 -->
+        <geom type="mesh" class="visual" pos="-0.1032 0 1.22654" quat="0 0 0 1" mesh="hip" material="hip_material"/>
+        <geom type="mesh" class="collision" pos="-0.1032 0 1.22654" quat="0 0 0 1" mesh="hip" material="hip_material"/>
+        <!-- Link femur -->
+        <body name="femur" pos="0.1075 0 -0.146612" quat="0.5 0.5 -0.5 -0.5">
+          <!-- Joint from hip to femur -->
+          <joint axis="0 0 1" name="rightleg_hip2" type="hinge"/>
+          <inertial pos="-0.0678277 -0.0263943 -0.0216101" mass="3.21492" fullinertia="0.00915055 0.0349165 0.0412537 -0.0118157 -0.00346496 -0.00134835"/>
+          <!-- Part leg_motor_2_2 -->
+          <geom type="mesh" class="visual" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" mesh="leg_motor_2" material="leg_motor_2_material"/>
+          <geom type="mesh" class="collision" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" mesh="leg_motor_2" material="leg_motor_2_material"/>
+          <!-- Part femur_2 -->
+          <geom type="mesh" class="visual" pos="0.497971 -1.27968 0.2107" quat="0.399172 0.583663 -0.399172 0.583663" mesh="femur" material="femur_material"/>
+          <geom type="mesh" class="collision" pos="0.497971 -1.27968 0.2107" quat="0.399172 0.583663 -0.399172 0.583663" mesh="femur" material="femur_material"/>
+          <!-- Part leg_motor_3_2 -->
+          <geom type="mesh" class="visual" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" mesh="leg_motor_3" material="leg_motor_3_material"/>
+          <geom type="mesh" class="collision" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" mesh="leg_motor_3" material="leg_motor_3_material"/>
+          <!-- Link tibia_2 -->
+          <body name="tibia_2" pos="-0.307722 -0.119746 -0.04385" quat="0 0.444243 -0.895906 -0">
+            <!-- Joint from femur to tibia_2 -->
+            <joint axis="0 0 1" name="rightleg_knee" type="hinge"/>
+            <inertial pos="0.164731 -0 -0.00635" mass="0.440746" fullinertia="0.000126716 0.00537275 0.00548761 -0 -0 -0"/>
+            <geom name="HR" class="foot" pos="0.3681 0 0"/>
+            <site name="RR" type="sphere" size="0.02" pos="0.3681 0 0"/>
+            <!-- Part tibia_2 -->
+            <geom type="mesh" class="visual" pos="-0.3302 -1.37315 -0.25455" quat="0.5 0.5 0.5 -0.5" mesh="tibia" material="tibia_material"/>
+            <geom type="mesh" class="collision" pos="-0.3302 -1.37315 -0.25455" quat="0.5 0.5 0.5 -0.5" mesh="tibia" material="tibia_material"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <asset>
+    <mesh file="femur.stl"/>
+    <mesh file="hip.stl"/>
+    <mesh file="housing_bearing.stl"/>
+    <mesh file="smaller_housing.stl"/>
+    <mesh file="finger.stl"/>
+    <mesh file="body.stl"/>
+    <mesh file="humerus.stl"/>
+    <mesh file="tibia.stl"/>
+    <mesh file="radius_and_ulna.stl"/>
+    <mesh file="bevel_out.stl"/>
+    <mesh file="leg_motor_2.stl"/>
+    <mesh file="leg_motor_1.stl"/>
+    <mesh file="leg_motor_3.stl"/>
+    <material name="body_material" rgba="0.980392 0.713725 0.00392157 1"/>
+    <material name="housing_bearing_material" rgba="0.768627 0.886275 0.952941 1"/>
+    <material name="smaller_housing_material" rgba="0.917647 0.917647 0.917647 1"/>
+    <material name="humerus_material" rgba="0.498039 0.498039 0.498039 1"/>
+    <material name="bevel_out_material" rgba="0.615686 0.811765 0.929412 1"/>
+    <material name="radius_and_ulna_material" rgba="0.498039 0.498039 0.498039 1"/>
+    <material name="finger_material" rgba="0.980392 0.713725 0.00392157 1"/>
+    <material name="hip_material" rgba="0.647059 0.647059 0.647059 1"/>
+    <material name="leg_motor_1_material" rgba="0.615686 0.811765 0.929412 1"/>
+    <material name="femur_material" rgba="0.768627 0.886275 0.952941 1"/>
+    <material name="leg_motor_3_material" rgba="0.917647 0.917647 0.917647 1"/>
+    <material name="leg_motor_2_material" rgba="0.231373 0.380392 0.705882 1"/>
+    <material name="tibia_material" rgba="0.498039 0.498039 0.498039 1"/>
+  </asset>
+  <!-- if uncommenting this part just know the fingers need to be commented out
+  <actuator>
+    <motor class="pterosaur" name="leftarm_shoulder1" joint="leftarm_shoulder1" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="leftarm_shoulder2" joint="leftarm_shoulder2" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="leftarm_elbow" joint="leftarm_elbow" ctrlrange="-40 40"/>
+    <motor class="pterosaur" name="leftarm_finger" joint="leftarm_finger" ctrlrange="-10 10"/>
+    <motor class="pterosaur" name="rightarm_shoulder1" joint="rightarm_shoulder1" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="rightarm_shoulder2" joint="rightarm_shoulder2" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="rightarm_elbow" joint="rightarm_elbow" ctrlrange="-40 40"/>
+    <motor class="pterosaur" name="rightarm_finger" joint="rightarm_finger" ctrlrange="-10 10"/>
+    <motor class="pterosaur" name="leftleg_hip1" joint="leftleg_hip1" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="leftleg_hip2" joint="leftleg_hip2" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="leftleg_knee" joint="leftleg_knee" ctrlrange="-40 40"/>
+    <motor class="pterosaur" name="rightleg_hip1" joint="rightleg_hip1" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="rightleg_hip2" joint="rightleg_hip2" ctrlrange="-120 120"/>
+    <motor class="pterosaur" name="rightleg_knee" joint="rightleg_knee" ctrlrange="-40 40"/>
+  </actuator>
+  -->
+  <actuator>
+    <general class="pterosaur" name="leftarm_shoulder1" joint="leftarm_shoulder1" ctrllimited ="true" gainprm="100" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="leftarm_shoulder2" joint="leftarm_shoulder2" ctrllimited ="true" gainprm="100" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="leftarm_elbow" joint="leftarm_elbow" ctrllimited ="true" gainprm="40" ctrlrange="-1 1"/>
+    <!-- <motor class="pterosaur" name="leftarm_finger" joint="leftarm_finger" ctrlrange="-10 10"/> -->
+    <general class="pterosaur" name="rightarm_shoulder1" joint="rightarm_shoulder1" ctrllimited ="true" gainprm="100" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="rightarm_shoulder2" joint="rightarm_shoulder2" ctrllimited ="true" gainprm="100" ctrlrange="-1 1" />
+    <general class="pterosaur" name="rightarm_elbow" joint="rightarm_elbow" ctrllimited ="true" gainprm="40" ctrlrange="-1 1"/>
+    <!-- <motor class="pterosaur" name="rightarm_finger" joint="rightarm_finger" ctrlrange="-10 10"/> -->
+    <general class="pterosaur" name="leftleg_hip1" joint="leftleg_hip1"  ctrllimited ="true" gainprm="50" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="leftleg_hip2" joint="leftleg_hip2" ctrllimited ="true" gainprm="50" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="leftleg_knee" joint="leftleg_knee"  ctrllimited ="true" gainprm= "25" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="rightleg_hip1" joint="rightleg_hip1" ctrllimited ="true" gainprm="50" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="rightleg_hip2" joint="rightleg_hip2"  ctrllimited ="true" gainprm="50" ctrlrange="-1 1"/>
+    <general class="pterosaur" name="rightleg_knee" joint="rightleg_knee" ctrllimited ="true" gainprm="25"  ctrlrange="-1 1"/>
+  </actuator>
+</mujoco>

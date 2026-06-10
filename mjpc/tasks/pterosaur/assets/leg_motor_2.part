@@ -1,0 +1,13 @@
+{
+    "configuration": "default",
+    "documentId": "10983e84519d457ae82440ea",
+    "documentMicroversion": "90a80cbcc5d54d9d9b0646c8",
+    "elementId": "c0e7fe719d202f1662bfa4a3",
+    "fullConfiguration": "default",
+    "id": "MFUQY9RerGR2nR/x8",
+    "isStandardContent": false,
+    "name": "Leg motor 2 <2>",
+    "partId": "R5BD",
+    "suppressed": false,
+    "type": "Part"
+}
