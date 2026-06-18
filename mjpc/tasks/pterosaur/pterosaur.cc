@@ -115,7 +115,8 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     double pivot_end = rise_end + pivot_time_;
     if (launch_time < preload_time_) {
       double alpha = launch_time / preload_time_;
-      double preload_shift = -0.05 + 0.10 * alpha;
+      double alpha_smooth = alpha * alpha * (3.0 - 2.0 * alpha);
+      double preload_shift = -0.05 + 0.10 * alpha_smooth;
       target[0] = position_[0] + forward[0] * preload_shift;
       target[1] = position_[1] + forward[1] * preload_shift;
     } else if (launch_time < rise_end) {
@@ -258,11 +259,28 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   mju_scl(residual + counter, data->actuator_force, 2e-2, model->nu);
   if (current_mode_ == kModeLaunch) {
     double launch_time = data->time - mode_start_time_;
-    if (launch_time < preload_time_) {
+    double rise_end = preload_time_ + rise_time_;
+    if (launch_time < rise_end) {
       const double crouch_effort_scale = 3.0;
       const int abduction_dofs[4] = {0, 3, 6, 9};
       for (int i = 0; i < 4; ++i) {
         residual[counter + abduction_dofs[i]] *= crouch_effort_scale;
+      }
+
+      if (launch_time >= preload_time_) {
+        // rise: encourage leg hip2 more strongly while keeping leg hip1 costly.
+        const double arm_and_knee_effort_scale = 0.5;
+        const int arm_and_knee_dofs[6] = {1, 2, 4, 5, 8, 11};
+        for (int i = 0; i < 6; ++i) {
+          residual[counter + arm_and_knee_dofs[i]] *=
+              arm_and_knee_effort_scale;
+        }
+
+        const double leg_hip2_effort_scale = 0.35;
+        const int leg_hip2_dofs[2] = {7, 10};
+        for (int i = 0; i < 2; ++i) {
+          residual[counter + leg_hip2_dofs[i]] *= leg_hip2_effort_scale;
+        }
       }
     }
   }
@@ -657,7 +675,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
     } else if (launch_time < rise_end) {
       // rise: keep strong balance/contact while still suppressing launch velocity
       weight[CostTermByName(model, "Balance")] = 1.0;
-      weight[CostTermByName(model, "GroundContact")] = 1.2;
+      weight[CostTermByName(model, "GroundContact")] = 1.8;
       weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
       weight[CostTermByName(model, "Posture")] = 0.05;
     } else if (launch_time < pivot_end) {
@@ -994,7 +1012,7 @@ double Pterosaur::ResidualFn::FlipHeight(double time) const {
 // height during launch
 double Pterosaur::ResidualFn::LaunchHeight(double time) const {
   double start_h = position_[2];
-  double crouch_h = ground_ + 0.4;
+  double crouch_h = ground_ + 0.5;
   double rise_h = ground_ + 0.6;
   double pivot_h = ground_ + 0.85;
   double jump_h = ground_ + 1.25;
@@ -1004,14 +1022,16 @@ double Pterosaur::ResidualFn::LaunchHeight(double time) const {
   }
   if (time < preload_time_) {
     double alpha = time / preload_time_;
-    // Ease-out descent: slows near crouch and reaches zero terminal velocity.
-    double alpha_eased = 1.0 - (1.0 - alpha) * (1.0 - alpha);
-    return start_h + (crouch_h - start_h) * alpha_eased;
+    // Smoothstep gives zero velocity at start/end of preload.
+    double alpha_smooth = alpha * alpha * (3.0 - 2.0 * alpha);
+    return start_h + (crouch_h - start_h) * alpha_smooth;
   }
   time -= preload_time_;
   if (time < rise_time_) {
     double alpha = time / rise_time_;
-    return crouch_h + (rise_h - crouch_h) * alpha;
+    // Smoothstep avoids an instantaneous velocity jump after preload.
+    double alpha_smooth = alpha * alpha * (3.0 - 2.0 * alpha);
+    return crouch_h + (rise_h - crouch_h) * alpha_smooth;
   }
   time -= rise_time_;
   if (time < pivot_time_) {

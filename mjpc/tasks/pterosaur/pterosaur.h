@@ -142,7 +142,7 @@ class Pterosaur : public Task {
 
     // launch: preload, rise, pivot, push, land durations
     constexpr static double kLaunchPreloadTime = 0.5;  // second
-    constexpr static double kLaunchRiseTime = 0.125;    // second
+    constexpr static double kLaunchRiseTime = 0.25;    // second
     constexpr static double kLaunchPivotTime = 0.25;    // second
     constexpr static double kLaunchPushTime = 0.18;     // second
     constexpr static double kLaunchLandTime = 0.25;     // second
