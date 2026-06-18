@@ -1013,7 +1013,7 @@ double Pterosaur::ResidualFn::FlipHeight(double time) const {
 double Pterosaur::ResidualFn::LaunchHeight(double time) const {
   double start_h = position_[2];
   double crouch_h = ground_ + 0.5;
-  double rise_h = ground_ + 0.6;
+  double rise_h = ground_ + kHeightQuadruped;
   double pivot_h = ground_ + 0.85;
   double jump_h = ground_ + 1.25;
   double landing_h = ground_ + 0.85;
