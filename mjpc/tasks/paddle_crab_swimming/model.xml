@@ -1,0 +1,5 @@
+<!-- Wrapper for cross-domain paddle crab swimming robot -->
+<!-- This file includes the patched robot model which has reference sites added -->
+<mujoco model="paddle_crab_model_wrapper">
+  <include file="robot_xdomain_modified.xml" />
+</mujoco>

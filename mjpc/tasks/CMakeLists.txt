@@ -15,6 +15,7 @@
 # Copy the model files to the binary directory to make them available to the
 # built binary.
 
+
 add_custom_target(
   copy_model_resources ALL
   ## dm_control models
@@ -237,7 +238,53 @@ add_custom_target(
   COMMAND patch -o ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene_modified.xml
           ${CMAKE_CURRENT_BINARY_DIR}/spirob/spirob_scene.xml
           <${CMAKE_CURRENT_SOURCE_DIR}/spirob/spirob_scene.xml.patch
-          
+
+  # Crab swimming robot (floating base swimming in fluid)
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/crab_swimming/Robot.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Robot.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/crab_swimming/Scene.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Scene.xml
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_CURRENT_SOURCE_DIR}/crab_swimming/asset
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/asset
+  COMMAND ${Python_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/crab_swimming/patch_crab_robot.py
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Robot.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/crab_swimming/Robot_modified.xml
+
+  # PaddleCrabSwimming cross-domain robot
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/paddle_crab_swimming/robot_xdomain.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/paddle_crab_swimming/robot_xdomain.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/paddle_crab_swimming/model.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/paddle_crab_swimming/model.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/paddle_crab_swimming/task.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/paddle_crab_swimming/task.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/paddle_crab_swimming/noground.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/paddle_crab_swimming/noground.xml
+  COMMAND ${Python_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/paddle_crab_swimming/patch_paddle_crab_robot.py
+          ${CMAKE_CURRENT_BINARY_DIR}/paddle_crab_swimming/robot_xdomain.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/paddle_crab_swimming/robot_xdomain_modified.xml
+
+  # Turtle 3D swimming robot (generic locomotion controller)
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/turtle_3dswimming/turtle_3dswimming_body.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/turtle_3dswimming/turtle_3dswimming_body.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/turtle_3dswimming/turtle_3dswimming_actuators.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/turtle_3dswimming/turtle_3dswimming_actuators.xml
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/turtle_3dswimming/turtle_3dswimming_model.xml
+          ${CMAKE_CURRENT_BINARY_DIR}/turtle_3dswimming/turtle_3dswimming_model.xml
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_CURRENT_SOURCE_DIR}/turtle_3dswimming/assets
+          ${CMAKE_CURRENT_BINARY_DIR}/turtle_3dswimming/assets
   COMMENT "Copying Menagerie and dm_control assets into binary directory")
 
 add_custom_target(copy_resources ALL

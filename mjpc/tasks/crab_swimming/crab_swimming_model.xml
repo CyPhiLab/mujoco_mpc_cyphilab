@@ -1,0 +1,5 @@
+<!-- Wrapper for crab swimming model resources -->
+<!-- This file includes the patched Robot model which has reference sites added -->
+<mujoco model="crab_model_wrapper">
+  <include file="Robot_modified.xml" />
+</mujoco>

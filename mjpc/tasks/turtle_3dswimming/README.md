@@ -1,0 +1,209 @@
+# Turtle 3D Swimming Task for MJPC
+
+Generic body-motion locomotion controller for 3D target-tracking with morphology-agnostic design.
+
+## Overview
+
+**Turtle3DSwimming** is a fully-tuned MPC task implementing a generic body-motion controller for autonomous vehicles (swimming or walking). The robot reaches a 3D target using configurable locomotion axes and environmental parameters, making it reusable across different morphologies (turtle, crab, etc.) by changing a few axis parameters.
+
+### Key Features
+- **Morphology-agnostic:** Body-frame locomotion axis, body-up axis, and environment normal are all configurable parameters
+- **Head-based targeting:** Tracks distance and direction from head position (end-effector) to target
+- **One-sided progress floor:** Penalizes only being too slow; does not penalize overspeed
+- **Soft attitude control:** Cross-product alignment and trim constraints avoid over-constraining orientation
+- **Angular rate damping:** Reduces body tumbling perpendicular to the environment normal
+- **Control smoothing:** First-order low-pass filtering reduces abrupt actuator changes without changing the locomotion objective
+- **Real robot geometry:** 6.33 kg Onshape CAD model with velocity-controlled XW540-T260 actuators
+
+### Performance
+- **Planning Horizon:** 2.0 seconds
+- **Sampling:** 64 trajectories, 5 spline points (Sampling Gradient planner)
+- **Approach Speed:** 0.60 m/s (configurable via `residual_DesiredSpeed`)
+- **Slow Radius:** 0.20 m (distance to start decelerating)
+
+---
+
+## Files
+
+**`turtle_3dswimming.h`** — Task class header
+- Defines `Turtle3DSwimming` inheriting from MJPC `Task`
+- Declares `ResidualFn` with 17 residuals
+
+**`turtle_3dswimming.cc`** — Generic body-motion controller implementation
+- `[0-2]` **3D position error:** Vector from head to target (not scalar distance)
+- `[3]` **One-sided forward progress floor:** Penalizes only being slower than desired; ignores overspeed
+- `[4-6]` **Cross-track / slip velocity:** Perpendicular component of base velocity relative to target direction
+- `[7-9]` **Locomotion-axis alignment:** `cross(locomotion_axis_world, target_direction)` — zero when locomotion axis points at target
+- `[10-12]` **Trim relative to environment normal:** `cross(body_up_world, environment_normal)` — zero when body-up aligns with environment normal
+- `[13-15]` **Angular-rate damping orthogonal to environment:** Penalizes rolling/tumbling perpendicular to environment normal
+- `[16]` **Scalar control effort:** Equal weighting across all actuators (no morphology-specific discounts)
+
+**`task.xml`** — MJPC configuration and configurable parameters
+- **Target Reference:** Head position (`head_pos` site) for position and velocity sensing
+- **Residual parameters (configurable):**
+  - `residual_DesiredSpeed` (default 0.60 m/s): target cruise speed
+  - `residual_SlowRadius` (default 0.20 m): distance at which to start decelerating toward goal
+  - `residual_LocAxisX/Y/Z` (default `0 -1 0`): forward direction in body frame (head-to-tail axis)
+  - `residual_UpAxisX/Y/Z` (default `0 0 1`): "up" direction in body frame (used for trim)
+  - `residual_EnvNormalX/Y/Z` (default `0 0 1`): environment normal in world frame
+  - `residual_ControlSmoothingEnabled` (default `1`): enables first-order actuator smoothing
+  - `residual_ControlSmoothingTau` (default `0.08` s): low-pass filter time constant for applied controls
+- **Cost weights:**
+  - Position: 2.0 (3D error to target)
+  - Progress: 8.0 (forward progress floor)
+  - Slip: 3.0 (cross-track velocity)
+  - Align: 2.5 (locomotion-axis alignment)
+  - Trim: 1.0 (body orientation relative to environment normal)
+  - AngVel: 0.5 (angular velocity damping)
+  - Control: 0.01 (actuator command effort)
+- Includes `turtle_3dswimming_model.xml`
+
+**`turtle_3dswimming_model.xml`** — Include wrapper
+- Combines `turtle_3dswimming_body.xml` + `turtle_3dswimming_actuators.xml`
+
+**`turtle_3dswimming_body.xml`** — Robot kinematics and geometry
+- 10 revolute joints (3 per front flipper chain, 2 per rear flipper pair)
+- Sites: `base_cog`, `head_pos`, `tail_pos`
+- Ellipsoid fluid drag on flippers
+- Root body: `fr13_s105k` (free joint, 6.33 kg)
+
+**`turtle_3dswimming_actuators.xml`** — Motor specs
+- 10 velocity-controlled actuators, forcerange ±12 N, ctrlrange ±4.3 rad/s, kv=10
+
+---
+
+## Cost Weights (task.xml)
+
+| Residual | Name | Weight | Description |
+|----------|------|--------|-------------|
+| [0-2] | Position | 2.0 | 3D vector error (head → target) |
+| [3] | Progress | 8.0 | One-sided forward progress floor |
+| [4-6] | Slip | 3.0 | Cross-track / slip velocity vector |
+| [7-9] | Align | 2.5 | Locomotion-axis alignment cross-product |
+| [10-12] | Trim | 1.0 | Trim relative to environment normal |
+| [13-15] | AngVel | 0.5 | Angular-rate damping orthogonal to environment |
+| [16] | Control | 0.01 | Scalar control effort (all actuators equal) |
+
+---
+
+## Customization for Other Morphologies
+
+To adapt this controller to a different robot (e.g., crab, quadruped, biped), only change the three axis parameters in `task.xml`:
+
+```xml
+<!-- For turtle (default) -->
+<numeric name="residual_LocomotionAxisBody" data="0 -1 0" />
+<numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
+
+<!-- For crab (side-facing) -->
+<numeric name="residual_LocomotionAxisBody" data="1 0 0" />  <!-- Claws point forward -->
+<numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
+
+<!-- For biped (walking on ground, Z is up) -->
+<numeric name="residual_LocomotionAxisBody" data="0 1 0" />  <!-- Forward walking -->
+<numeric name="residual_BodyUpAxisBody"     data="0 0 1" />
+<numeric name="residual_EnvNormalWorld"     data="0 0 1" />
+```
+
+The cost function logic automatically transforms these axes into world frame and computes alignment/trim relative to them, regardless of robot morphology.
+
+---
+
+## Quick Start
+
+### 1. Copy Files to MJPC
+```bash
+mkdir -p mujoco_mpc/mjpc/tasks/turtle_3dswimming
+cp turtle_3dswimming.{h,cc} task.xml turtle_3dswimming_*.xml \
+   mujoco_mpc/mjpc/tasks/turtle_3dswimming/
+```
+
+### 2. Copy Mesh Assets
+```bash
+# Copy from the original TurtleReal3D task
+cp -r /path/to/turtle_real3d/assets/ mujoco_mpc/mjpc/tasks/turtle_3dswimming/
+```
+
+### 3. Register Task
+Edit `mjpc/tasks/task_factory.cc`:
+```cpp
+#include "mjpc/tasks/turtle_3dswimming/turtle_3dswimming.h"
+// Add to factory: std::make_unique<Turtle3DSwimming>()
+```
+Edit `mjpc/tasks/CMakeLists.txt` to add `turtle_3dswimming/turtle_3dswimming.cc`.
+
+### 4. Build and Run
+```bash
+cd build-clean
+cmake --build . --target mjpc -j$(sysctl -n hw.logicalcpu)
+cmake --build . --target copy_resources
+./bin/mjpc  # Select "Turtle3DSwimming" from UI
+```
+
+### 5. Tune Parameters (if needed)
+Edit `turtle_3dswimming/task.xml` to adjust:
+- `residual_DesiredSpeed`: Increase for faster swimming, decrease for slower
+- `residual_SlowRadius`: Distance at which to start decelerating near goal
+- `residual_ControlSmoothingTau`: Lower toward `0.05` for quicker response, raise toward `0.10` for smoother but slower actuation
+- `residual_ControlSmoothingEnabled`: Set to `0` to bypass smoothing entirely
+- Cost weights in `<user>` elements to balance different objectives
+
+---
+
+## Implementation Notes
+
+- **Head-based targeting:** The controller uses `head_pos_task` sensor (not `base_pos_task`) to compute target distance and direction, allowing the "nose" of the robot to aim at the goal
+- **Body-frame axes:** `residual_LocomotionAxisBody` and `residual_BodyUpAxisBody` are defined in the robot's body frame and transformed to world frame using the root body's rotation matrix
+- **No hard quaternion constraint:** Unlike older versions, this does not enforce full quaternion matching; soft cross-product residuals allow natural attitude variations
+- **Angular velocity feedback:** Uses `base_angvel_world_task` sensor to damp unwanted tumbling perpendicular to the environment normal
+- **Applied-control smoothing:** `TransitionLocked()` filters `data->ctrl` with a first-order low-pass filter so planner rollouts and executed controls see the same smoothed commands
+
+
+## Tuning
+
+### Speed schedule
+```xml
+<numeric name="residual_DesiredSpeed" data="0.60" />
+<numeric name="residual_SlowRadius"   data="0.35" />
+```
+
+The progress term stays one-sided: the controller asks for at least the scheduled forward speed toward the target but does not penalize overspeed.
+
+### Control smoothing
+```xml
+<numeric name="residual_ControlSmoothingEnabled" data="1" />
+<numeric name="residual_ControlSmoothingTau"     data="0.08" />
+```
+
+`0.08` is a medium smoothing setting. Try `0.05` first if the robot feels too sluggish, or `0.10` if you want a slightly softer command trace.
+
+### Cost Weights
+```xml
+<!-- task.xml — increase Progress weight for more aggressive chasing -->
+<user name="Progress" dim="1" user="0 8.0 0 1.0" />
+
+<!-- Increase Align weight for tighter travel-direction hold -->
+<user name="Align" dim="3" user="0 2.5 0 10.0" />
+
+<!-- Increase Trim for a stronger upright bias -->
+<user name="Trim" dim="3" user="0 1.0 0 10.0" />
+```
+
+---
+
+## Dependencies & Assets
+
+- **MuJoCo 3.x**, **C++17**, **CMake 3.15+**
+- Mesh files referenced in `turtle_3dswimming_body.xml` must be provided separately (copy `assets/` from the original TurtleReal3D project)
+- Water physics and lighting inherited from `common.xml` in the parent MJPC project
+
+---
+
+## Known Issues
+
+| Issue | Solution |
+|-------|----------|
+| Robot feels sluggish | Lower `residual_ControlSmoothingTau` from `0.08` to `0.05` |
+| Actuation still looks twitchy | Raise `residual_ControlSmoothingTau` from `0.08` to `0.10` |
+| Drifting sideways | Increase `Align` or `Slip` weight modestly |
+| Rolls excessively | Increase `Trim` weight modestly |
