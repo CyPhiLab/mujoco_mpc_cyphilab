@@ -15,6 +15,8 @@
 #include "mjpc/tasks/pterosaur/pterosaur.h"
 
 #include <string>
+#include <vector>
+#include <cmath>
 
 #include <mujoco/mujoco.h>
 #include "mjpc/task.h"
@@ -89,7 +91,6 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     double flip_time = data->time - mode_start_time_;
     residual[counter++] = torso_pos[2] - FlipHeight(flip_time);
   } else if (current_mode_ == kModeLaunch) {
-    // height target for Launch
     double launch_time = data->time - mode_start_time_;
     residual[counter++] = torso_pos[2] - LaunchHeight(launch_time);
   } else {
@@ -104,6 +105,40 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     // follow prescribed Walk trajectory
     double mode_time = data->time - mode_start_time_;
     Walk(target, mode_time);
+  } else if (current_mode_ == kModeLaunch) {
+    double launch_time = data->time - mode_start_time_;
+    double forward[3] = {torso_xmat[0], torso_xmat[3], torso_xmat[6]};
+    mju_normalize(forward, 3);
+    double horizontal_speed = ResidualFn::kLaunchSpeed *
+        mju_cos(ResidualFn::kLaunchAngle);
+    double rise_end = preload_time_ + rise_time_;
+    double pivot_end = rise_end + pivot_time_;
+    if (launch_time < preload_time_) {
+      double alpha = launch_time / preload_time_;
+      double preload_shift = -0.05 + 0.10 * alpha;
+      target[0] = position_[0] + forward[0] * preload_shift;
+      target[1] = position_[1] + forward[1] * preload_shift;
+    } else if (launch_time < rise_end) {
+      // rise: maintain near-crouch horizontal position while extending upward
+      target[0] = position_[0] + forward[0] * 0.05;
+      target[1] = position_[1] + forward[1] * 0.05;
+    } else if (launch_time < pivot_end) {
+      double time_in_pivot = launch_time - rise_end;
+      double pivot_speed = horizontal_speed * 1.5;
+      double pivot_start = 0.05;
+      target[0] = position_[0] + forward[0] *
+          (pivot_start + pivot_speed * time_in_pivot);
+      target[1] = position_[1] + forward[1] *
+          (pivot_start + pivot_speed * time_in_pivot);
+    } else {
+      double elapsed = launch_time - pivot_end;
+      double pivot_distance = 0.05 + 1.5 * horizontal_speed * pivot_time_;
+      target[0] = position_[0] + forward[0] *
+          (pivot_distance + horizontal_speed * elapsed);
+      target[1] = position_[1] + forward[1] *
+          (pivot_distance + horizontal_speed * elapsed);
+    }
+    target[2] = head[2];
   } else {
     // go to the goal mocap body
     target[0] = goal_pos[0];
@@ -114,6 +149,40 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   residual[counter++] = head[1] - target[1];
   residual[counter++] =
       current_mode_ == kModeScramble ? 2 * (head[2] - target[2]) : 0;
+
+  double* comvel = SensorByName(model, data, "torso_subtreelinvel");
+
+  // ---------- Launch velocity ----------
+  if (current_mode_ == kModeLaunch) {
+    double launch_time = data->time - mode_start_time_;
+    double forward[3] = {torso_xmat[0], torso_xmat[3], torso_xmat[6]};
+    double up[3] = {torso_xmat[2], torso_xmat[5], torso_xmat[8]};
+    mju_normalize(forward, 3);
+    mju_normalize(up, 3);
+    double desired_dir[3];
+    double desired_speed = 0;
+    double rise_end = preload_time_ + rise_time_;
+    double pivot_end = rise_end + pivot_time_;
+    if (launch_time < pivot_end) {
+      mju_add3(desired_dir, forward, up);
+      desired_speed = ResidualFn::kLaunchPivotSpeed;
+    } else if (launch_time < pivot_end + jump_time_) {
+      mju_add3(desired_dir, forward, up);
+      desired_speed = ResidualFn::kLaunchSpeed;
+    } else if (launch_time < pivot_end + jump_time_ +
+               flight_time_) {
+      mju_add3(desired_dir, forward, up);
+      desired_speed = ResidualFn::kLaunchSpeed;
+    } else {
+      mju_zero(desired_dir, 3);
+    }
+    if (desired_speed > 0) {
+      mju_normalize(desired_dir, 3);
+    }
+    residual[counter++] = mju_dot(comvel, desired_dir, 3) - desired_speed;
+  } else {
+    residual[counter++] = 0;
+  }
 
   // ---------- Gait ----------
   A1Gait gait = GetGait();
@@ -155,16 +224,48 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
 
   // ---------- Balance ----------
-  double* comvel = SensorByName(model, data, "torso_subtreelinvel");
   double capture_point[3];
   double fall_time = mju_sqrt(2*height_goal / 9.81);
   mju_addScl3(capture_point, compos, comvel, fall_time);
-  residual[counter++] = capture_point[0] - avg_foot_pos[0];
-  residual[counter++] = capture_point[1] - avg_foot_pos[1];
+  if (current_mode_ == kModeLaunch) {
+    double launch_time = data->time - mode_start_time_;
+    double rise_end = preload_time_ + rise_time_;
+    double pivot_end = rise_end + pivot_time_;
+    if (launch_time < preload_time_) {
+      residual[counter++] = capture_point[0] - avg_foot_pos[0];
+      residual[counter++] = capture_point[1] - avg_foot_pos[1];
+    } else if (launch_time < rise_end) {
+      residual[counter++] = capture_point[0] - avg_foot_pos[0];
+      residual[counter++] = capture_point[1] - avg_foot_pos[1];
+    } else if (launch_time < pivot_end) {
+      double front_support[3] = {0};
+      front_support[0] = 0.5 * (foot_pos[kFootFL][0] + foot_pos[kFootFR][0]);
+      front_support[1] = 0.5 * (foot_pos[kFootFL][1] + foot_pos[kFootFR][1]);
+      front_support[2] = 0.5 * (foot_pos[kFootFL][2] + foot_pos[kFootFR][2]);
+      residual[counter++] = capture_point[0] - front_support[0];
+      residual[counter++] = capture_point[1] - front_support[1];
+    } else {
+      residual[counter++] = capture_point[0] - avg_foot_pos[0];
+      residual[counter++] = capture_point[1] - avg_foot_pos[1];
+    }
+  } else {
+    residual[counter++] = capture_point[0] - avg_foot_pos[0];
+    residual[counter++] = capture_point[1] - avg_foot_pos[1];
+  }
 
 
   // ---------- Effort ----------
   mju_scl(residual + counter, data->actuator_force, 2e-2, model->nu);
+  if (current_mode_ == kModeLaunch) {
+    double launch_time = data->time - mode_start_time_;
+    if (launch_time < preload_time_) {
+      const double crouch_effort_scale = 3.0;
+      const int abduction_dofs[4] = {0, 3, 6, 9};
+      for (int i = 0; i < 4; ++i) {
+        residual[counter + abduction_dofs[i]] *= crouch_effort_scale;
+      }
+    }
+  }
   counter += model->nu;
 
 
@@ -183,13 +284,23 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     }
   } else if (current_mode_ == kModeLaunch) {
     double launch_time = data->time - mode_start_time_;
-    if (launch_time < crouch_time_) {
-      double* crouch = KeyQPosByName(model, data, "crouch");
-      mju_sub(residual + counter, data->qpos + 7, crouch + 7, model->nu);
-    } else if (launch_time >= crouch_time_ &&
-               launch_time < jump_time_ + flight_time_) {
-      // free legs during flight phase
+    double* crouch = KeyQPosByName(model, data, "crouch");
+    if (launch_time < preload_time_) {
+      double alpha = launch_time / preload_time_;
+      std::vector<double> target(model->nu);
+      for (int i = 0; i < model->nu; ++i) {
+        double home_val = home[7 + i];
+        double crouch_val = crouch[7 + i];
+        target[i] = (1.0 - alpha) * home_val + alpha * crouch_val;
+      }
+      mju_sub(residual + counter, data->qpos + 7, target.data(), model->nu);
+    } else {
       mju_zero(residual + counter, model->nu);
+    }
+    // normalize posture residual so its L2 contribution scales with single-dim costs
+    double norm_scale = 1.0 / std::sqrt((double)model->nu);
+    for (int i = 0; i < model->nu; ++i) {
+      residual[counter + i] *= norm_scale;
     }
   }
   for (A1Foot foot : kFootAll) {
@@ -221,22 +332,96 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
 
   // ---------- Yaw ----------
-  double torso_heading[2] = {torso_xmat[0], torso_xmat[3]};
+  double torso_heading[3] = {torso_xmat[0], torso_xmat[3], torso_xmat[6]};
   if (current_mode_ == kModeBiped) {
     int handstand =
         ReinterpretAsInt(parameters_[biped_type_param_id_]) ? 1 : -1;
     torso_heading[0] = handstand * torso_xmat[2];
     torso_heading[1] = handstand * torso_xmat[5];
+    torso_heading[2] = handstand * torso_xmat[8];
   }
-  mju_normalize(torso_heading, 2);
+  mju_normalize(torso_heading, 3);
   double heading_goal = parameters_[ParameterIndex(model, "Heading")];
   residual[counter++] = torso_heading[0] - mju_cos(heading_goal);
   residual[counter++] = torso_heading[1] - mju_sin(heading_goal);
+  residual[counter++] = torso_heading[2];
 
 
   // ---------- Angular momentum ----------
   mju_copy3(residual + counter, SensorByName(model, data, "torso_angmom"));
   counter +=3;
+
+
+  // ---------- Ground Contact ----------
+  if (current_mode_ == kModeLaunch) {
+    double launch_time = data->time - mode_start_time_;
+    double* fr_touch = SensorByName(model, data, "FR_touch");
+    double* fl_touch = SensorByName(model, data, "FL_touch");
+    double* rr_touch = SensorByName(model, data, "RR_touch");
+    double* rl_touch = SensorByName(model, data, "RL_touch");
+    double rise_end = preload_time_ + rise_time_;
+    double pivot_end = rise_end + pivot_time_;
+    
+    // penalize lack of contact: cost = max(0, threshold - touch_force)
+    double contact_threshold = 0.05;
+    auto touch_penalty = [contact_threshold](double* touch) {
+      return mju_max(0.0, contact_threshold - touch[0]);
+    };
+    
+    if (launch_time < preload_time_) {
+      // preload: all four feet must touch
+      residual[counter++] = touch_penalty(fr_touch);
+      residual[counter++] = touch_penalty(fl_touch);
+      residual[counter++] = touch_penalty(rr_touch);
+      residual[counter++] = touch_penalty(rl_touch);
+    } else if (launch_time < rise_end) {
+      // rise: keep all four feet loaded while extending upward
+      residual[counter++] = touch_penalty(fr_touch);
+      residual[counter++] = touch_penalty(fl_touch);
+      residual[counter++] = touch_penalty(rr_touch);
+      residual[counter++] = touch_penalty(rl_touch);
+    } else if (launch_time < pivot_end) {
+      // pivot: front feet maintain contact, rear feet unload
+      residual[counter++] = touch_penalty(fr_touch);
+      residual[counter++] = touch_penalty(fl_touch);
+      residual[counter++] = 0.0;
+      residual[counter++] = 0.0;
+    } else if (launch_time < pivot_end + jump_time_) {
+      // jump: front two early, then disable
+      double jump_elapsed = launch_time - pivot_end;
+      bool jump_second_half = jump_elapsed > 0.5 * jump_time_;
+      if (jump_second_half) {
+        residual[counter++] = 0.0;
+        residual[counter++] = 0.0;
+        residual[counter++] = 0.0;
+        residual[counter++] = 0.0;
+      } else {
+        residual[counter++] = touch_penalty(fr_touch);
+        residual[counter++] = touch_penalty(fl_touch);
+        residual[counter++] = 0.0;
+        residual[counter++] = 0.0;
+      }
+    } else if (launch_time < pivot_end + jump_time_ + flight_time_) {
+      // flight: no ground contact requirement
+      residual[counter++] = 0.0;
+      residual[counter++] = 0.0;
+      residual[counter++] = 0.0;
+      residual[counter++] = 0.0;
+    } else {
+      // land: front two early, then all four
+      double land_elapsed = launch_time - pivot_end - jump_time_ - flight_time_;
+      bool land_second_half = land_elapsed > 0.5 * land_time_;
+      residual[counter++] = touch_penalty(fr_touch);
+      residual[counter++] = touch_penalty(fl_touch);
+      residual[counter++] = land_second_half ? touch_penalty(rr_touch) : 0.0;
+      residual[counter++] = land_second_half ? touch_penalty(rl_touch) : 0.0;
+    }
+  } else {
+    residual[counter++] = 0.0;
+    residual[counter++] = 0.0;
+    residual[counter++] = 0.0;
+    residual[counter++] = 0.0;
+  }
 
 
   // sensor dim sanity check
@@ -420,16 +605,36 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
                 data->xquat + 4 * residual_.torso_body_id_);
       residual_.ground_ = Ground(model, data, compos);
 
+      // save launch origin for horizontal target
+      double* head = data->site_xpos + 3*residual_.head_site_id_;
+      residual_.position_[0] = head[0];
+      residual_.position_[1] = head[1];
+      residual_.position_[2] = head[2];
+
       // save parameters
       residual_.save_weight_ = weight;
       residual_.save_gait_switch_ = parameters[residual_.gait_switch_param_id_];
 
-      // set parameters
+      // set launch phase timings
+      residual_.preload_time_ = ResidualFn::kLaunchPreloadTime;
+        residual_.rise_time_ = ResidualFn::kLaunchRiseTime;
+      residual_.pivot_time_ = ResidualFn::kLaunchPivotTime;
+      residual_.jump_time_ = ResidualFn::kLaunchPushTime;
+      residual_.flight_time_ = 2 * ResidualFn::kLaunchSpeed *
+          mju_sin(ResidualFn::kLaunchAngle) / residual_.gravity_;
+      residual_.land_time_ = ResidualFn::kLaunchLandTime;
+
+      // set velocities used in cost targets
+      residual_.jump_vel_ = ResidualFn::kLaunchSpeed *
+          mju_sin(ResidualFn::kLaunchAngle);
+
+      // set weights for launch
       weight[CostTermByName(model, "Upright")] = 0.2;
-      weight[CostTermByName(model, "Height")] = 5;
-      weight[CostTermByName(model, "Position")] = 0;
+      weight[CostTermByName(model, "Height")] = 1.0;
+      weight[CostTermByName(model, "Position")] = 0.4;
+      weight[CostTermByName(model, "LaunchVelocity")] = 1.0;
       weight[CostTermByName(model, "Gait")] = 0;
-      weight[CostTermByName(model, "Balance")] = 0;
+      weight[CostTermByName(model, "Balance")] = 0.6;
       weight[CostTermByName(model, "Effort")] = 0.005;
       weight[CostTermByName(model, "Posture")] = 0.1;
       parameters[residual_.gait_switch_param_id_] = ReinterpretAsDouble(0);
@@ -437,9 +642,39 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
 
     // time from start of Launch
     double launch_time = data->time - residual_.mode_start_time_;
+    double rise_end = residual_.preload_time_ + residual_.rise_time_;
+    double pivot_end = rise_end + residual_.pivot_time_;
+    double launch_duration = pivot_end + residual_.jump_time_ +
+      residual_.flight_time_ + residual_.land_time_;
 
-    if (launch_time >=
-        residual_.jump_time_ + residual_.flight_time_ + residual_.land_time_) {
+    // adjust weights per phase
+    if (launch_time < residual_.preload_time_) {
+      // preload: disable launch velocity and posture, increase balance and ground contact
+      weight[CostTermByName(model, "Balance")] = 1.2;
+      weight[CostTermByName(model, "GroundContact")] = 1.5;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
+      weight[CostTermByName(model, "Posture")] = 0.0;
+    } else if (launch_time < rise_end) {
+      // rise: keep strong balance/contact while still suppressing launch velocity
+      weight[CostTermByName(model, "Balance")] = 1.0;
+      weight[CostTermByName(model, "GroundContact")] = 1.2;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
+      weight[CostTermByName(model, "Posture")] = 0.05;
+    } else if (launch_time < pivot_end) {
+      // pivot: shift toward launch behavior
+      weight[CostTermByName(model, "Balance")] = 0.8;
+      weight[CostTermByName(model, "GroundContact")] = 0.8;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0.6;
+      weight[CostTermByName(model, "Posture")] = 0.1;
+    } else {
+      // jump/flight/land: use default launch weights
+      weight[CostTermByName(model, "Balance")] = 0.6;
+      weight[CostTermByName(model, "GroundContact")] = 0.5;
+      weight[CostTermByName(model, "LaunchVelocity")] = 1.0;
+      weight[CostTermByName(model, "Posture")] = 0.1;
+    }
+
+    if (launch_time >= launch_duration) {
       // Launch ended, back to Quadruped, restore values
       mode = ResidualFn::kModeQuadruped;
       weight = residual_.save_weight_;
@@ -590,6 +825,7 @@ void Pterosaur::ResetLocked(const mjModel* model) {
   residual_.balance_cost_id_ = CostTermByName(model, "Balance");
   residual_.upright_cost_id_ = CostTermByName(model, "Upright");
   residual_.height_cost_id_ = CostTermByName(model, "Height");
+  residual_.launch_velocity_cost_id_ = CostTermByName(model, "LaunchVelocity");
 
   // ----------  model identifiers  ----------
   residual_.torso_body_id_ = mj_name2id(model, mjOBJ_XBODY, "body");
@@ -757,20 +993,50 @@ double Pterosaur::ResidualFn::FlipHeight(double time) const {
 }
 // height during launch
 double Pterosaur::ResidualFn::LaunchHeight(double time) const {
-  if (time >= jump_time_ + flight_time_ + land_time_) {
-    return kHeightQuadruped + ground_;
+  double start_h = position_[2];
+  double crouch_h = ground_ + 0.4;
+  double rise_h = ground_ + 0.6;
+  double pivot_h = ground_ + 0.85;
+  double jump_h = ground_ + 1.25;
+  double landing_h = ground_ + 0.85;
+  if (time < 0) {
+    return start_h;
   }
-  double h = 0;
+  if (time < preload_time_) {
+    double alpha = time / preload_time_;
+    // Ease-out descent: slows near crouch and reaches zero terminal velocity.
+    double alpha_eased = 1.0 - (1.0 - alpha) * (1.0 - alpha);
+    return start_h + (crouch_h - start_h) * alpha_eased;
+  }
+  time -= preload_time_;
+  if (time < rise_time_) {
+    double alpha = time / rise_time_;
+    return crouch_h + (rise_h - crouch_h) * alpha;
+  }
+  time -= rise_time_;
+  if (time < pivot_time_) {
+    double alpha = time / pivot_time_;
+    return rise_h + (pivot_h - rise_h) * alpha;
+  }
+  time -= pivot_time_;
   if (time < jump_time_) {
-    h = kHeightQuadruped + time * crouch_vel_ + 0.5 * time * time * jump_acc_;
-  } else if (time >= jump_time_ && time < jump_time_ + flight_time_) {
-    time -= jump_time_;
-    h = kLeapHeight + jump_vel_*time - 0.5*9.81*time*time;
-  } else if (time >= jump_time_ + flight_time_) {
-    time -= jump_time_ + flight_time_;
-    h = kLeapHeight - jump_vel_*time + 0.5*land_acc_*time*time;
+    double alpha = time / jump_time_;
+    return pivot_h + (jump_h - pivot_h) * alpha;
   }
-  return h + ground_;
+  time -= jump_time_;
+  if (time < flight_time_) {
+    double mid = flight_time_ * 0.5;
+    if (time <= mid) {
+      return jump_h + (2.8 - jump_h) * (time / mid);
+    }
+    return 2.8 + (landing_h - 2.8) * ((time - mid) / mid);
+  }
+  time -= flight_time_;
+  if (time < land_time_) {
+    double alpha = time / land_time_;
+    return landing_h + (ground_ + kHeightQuadruped - landing_h) * alpha;
+  }
+  return ground_ + kHeightQuadruped;
 }
 
 // orientation during flip
@@ -797,22 +1063,6 @@ void Pterosaur::ResidualFn::FlipQuat(double quat[4], double time) const {
 }
 
 void Pterosaur::ResidualFn::LaunchQuat(double quat[4], double time) const {
-  double angle = 0;
-  if (time >= jump_time_ + flight_time_ + land_time_) {
-    angle = 2*mjPI;
-  } else if (time >= crouch_time_ && time < jump_time_) {
-    time -= crouch_time_;
-    angle = 0.5 * jump_rot_acc_ * time * time + jump_rot_vel_ * time;
-  } else if (time >= jump_time_ && time < jump_time_ + flight_time_) {
-    time -= jump_time_;
-    angle = mjPI/2 + flight_rot_vel_ * time;
-  } else if (time >= jump_time_ + flight_time_) {
-    time -= jump_time_ + flight_time_;
-    angle = 1.75*mjPI + flight_rot_vel_*time - 0.5*land_rot_acc_ * time * time;
-  }
-  int launch_dir = 0;
-  double axis[3] = {0, launch_dir ? 1.0 : -1.0, 0};
-  mju_axisAngle2Quat(quat, axis, angle);
-  mju_mulQuat(quat, orientation_, quat);
+  mju_copy4(quat, orientation_);
 }
 }  // namespace mjpc

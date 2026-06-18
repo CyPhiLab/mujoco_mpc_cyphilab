@@ -118,7 +118,7 @@ class Pterosaur : public Task {
     constexpr static double kAutoGaitMinTime = 1;     // second
 
     // target torso height over feet when quadrupedal
-    constexpr static double kHeightQuadruped = 0.905848;  // meter
+    constexpr static double kHeightQuadruped = 0.8;  // meter
 
     // target torso height over feet when bipedal
     constexpr static double kHeightBiped = 1.8;       // meter
@@ -139,6 +139,18 @@ class Pterosaur : public Task {
 
     // flip: maximum height of flight phase
     constexpr static double kMaxHeight = 2.8;         // meter
+
+    // launch: preload, rise, pivot, push, land durations
+    constexpr static double kLaunchPreloadTime = 0.5;  // second
+    constexpr static double kLaunchRiseTime = 0.125;    // second
+    constexpr static double kLaunchPivotTime = 0.25;    // second
+    constexpr static double kLaunchPushTime = 0.18;     // second
+    constexpr static double kLaunchLandTime = 0.25;     // second
+
+    // launch: target speeds
+    constexpr static double kLaunchPivotSpeed = 7.0;    // m/s
+    constexpr static double kLaunchSpeed = 12.96;       // m/s
+    constexpr static double kLaunchAngle = 35 * mjPI / 180.0;
 
     //  ============  methods  ============
     // return internal phase clock
@@ -214,6 +226,7 @@ class Pterosaur : public Task {
     int upright_cost_id_      = -1;
     int balance_cost_id_      = -1;
     int height_cost_id_       = -1;
+    int launch_velocity_cost_id_ = -1;
     int foot_geom_id_[kNumFoot];
     int shoulder_body_id_[kNumFoot];
 
@@ -224,6 +237,8 @@ class Pterosaur : public Task {
     double jump_acc_          = 0;
     double crouch_time_       = 0;
     double preload_time_      = 0;
+    double rise_time_         = 0;
+    double pivot_time_        = 0;
     double leap_time_         = 0;
     double jump_time_         = 0;
     double crouch_vel_        = 0;
