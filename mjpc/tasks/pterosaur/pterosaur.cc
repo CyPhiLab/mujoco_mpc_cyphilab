@@ -70,10 +70,17 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   } else {
     // special handling of launch orientation
     double launch_time = data->time - mode_start_time_;
-    double quat[4];
-    LaunchQuat(quat, launch_time);
-    double* torso_xquat = data->xquat + 4*torso_body_id_;
-    mju_subQuat(residual + counter, torso_xquat, quat);
+    double rise_end_upright = preload_time_ + rise_time_;
+    double pivot_end_upright = rise_end_upright + pivot_time_;
+    if (launch_time >= rise_end_upright && launch_time < pivot_end_upright) {
+      // pivot: disable upright cost
+      mju_zero(residual + counter, 3);
+    } else {
+      double quat[4];
+      LaunchQuat(quat, launch_time);
+      double* torso_xquat = data->xquat + 4*torso_body_id_;
+      mju_subQuat(residual + counter, torso_xquat, quat);
+    }
     counter += 3;
   }
 
@@ -125,12 +132,11 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
       target[1] = position_[1] + forward[1] * 0.05;
     } else if (launch_time < pivot_end) {
       double time_in_pivot = launch_time - rise_end;
-      double pivot_speed = horizontal_speed * 1.5;
-      double pivot_start = 0.05;
-      target[0] = position_[0] + forward[0] *
-          (pivot_start + pivot_speed * time_in_pivot);
-      target[1] = position_[1] + forward[1] *
-          (pivot_start + pivot_speed * time_in_pivot);
+      double alpha = time_in_pivot / pivot_time_;
+      // Interpolate distance from 0 to 0.5 m over the pivot phase
+      double pivot_distance = 0.5 * alpha;
+      target[0] = position_[0] + forward[0] * pivot_distance;
+      target[1] = position_[1] + forward[1] * pivot_distance;
     } else {
       double elapsed = launch_time - pivot_end;
       double pivot_distance = 0.05 + 1.5 * horizontal_speed * pivot_time_;
@@ -260,14 +266,15 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   if (current_mode_ == kModeLaunch) {
     double launch_time = data->time - mode_start_time_;
     double rise_end = preload_time_ + rise_time_;
-    if (launch_time < rise_end) {
+    double pivot_end = rise_end + pivot_time_;
+    if (launch_time < pivot_end) {
       const double crouch_effort_scale = 3.0;
       const int abduction_dofs[4] = {0, 3, 6, 9};
       for (int i = 0; i < 4; ++i) {
         residual[counter + abduction_dofs[i]] *= crouch_effort_scale;
       }
 
-      if (launch_time >= preload_time_) {
+      if (launch_time >= preload_time_ && launch_time < rise_end) {
         // rise: encourage leg hip2 more strongly while keeping leg hip1 costly.
         const double arm_and_knee_effort_scale = 0.5;
         const int arm_and_knee_dofs[6] = {1, 2, 4, 5, 8, 11};
@@ -394,10 +401,12 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
       residual[counter++] = touch_penalty(rl_touch);
     } else if (launch_time < rise_end) {
       // rise: keep all four feet loaded while extending upward
+      // front two: penalize lack of contact (minimum threshold)
+      // rear two: reward contact force (negative residual to maximize contact)
       residual[counter++] = touch_penalty(fr_touch);
       residual[counter++] = touch_penalty(fl_touch);
-      residual[counter++] = touch_penalty(rr_touch);
-      residual[counter++] = touch_penalty(rl_touch);
+      residual[counter++] = -rr_touch[0];
+      residual[counter++] = -rl_touch[0];
     } else if (launch_time < pivot_end) {
       // pivot: front feet maintain contact, rear feet unload
       residual[counter++] = touch_penalty(fr_touch);
@@ -679,17 +688,39 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
       weight[CostTermByName(model, "Posture")] = 0.05;
     } else if (launch_time < pivot_end) {
-      // pivot: shift toward launch behavior
-      weight[CostTermByName(model, "Balance")] = 0.8;
+      // pivot: shift toward launch behavior, balance and launch velocity off
+      weight[CostTermByName(model, "Balance")] = 0;
       weight[CostTermByName(model, "GroundContact")] = 0.8;
-      weight[CostTermByName(model, "LaunchVelocity")] = 0.6;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0;
       weight[CostTermByName(model, "Posture")] = 0.1;
-    } else {
-      // jump/flight/land: use default launch weights
+    } else if (launch_time < pivot_end + residual_.jump_time_) {
+      // jump/push: effort only, everything else off
+      weight[CostTermByName(model, "Upright")] = 0;
+      weight[CostTermByName(model, "Height")] = 0;
+      weight[CostTermByName(model, "Position")] = 0;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0;
+      weight[CostTermByName(model, "Balance")] = 0;
+      weight[CostTermByName(model, "GroundContact")] = 0;
+      weight[CostTermByName(model, "Posture")] = 0;
+    } else if (launch_time < pivot_end + residual_.jump_time_ +
+                              residual_.flight_time_) {
+      // flight: use default launch weights
+      weight[CostTermByName(model, "Upright")] = 0.2;
+      weight[CostTermByName(model, "Height")] = 1.0;
+      weight[CostTermByName(model, "Position")] = 0.4;
+      weight[CostTermByName(model, "LaunchVelocity")] = 1.0;
       weight[CostTermByName(model, "Balance")] = 0.6;
       weight[CostTermByName(model, "GroundContact")] = 0.5;
-      weight[CostTermByName(model, "LaunchVelocity")] = 1.0;
       weight[CostTermByName(model, "Posture")] = 0.1;
+    } else {
+      // land: effort only, everything else off
+      weight[CostTermByName(model, "Upright")] = 0;
+      weight[CostTermByName(model, "Height")] = 0;
+      weight[CostTermByName(model, "Position")] = 0;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0;
+      weight[CostTermByName(model, "Balance")] = 0;
+      weight[CostTermByName(model, "GroundContact")] = 0;
+      weight[CostTermByName(model, "Posture")] = 0;
     }
 
     if (launch_time >= launch_duration) {
@@ -1014,7 +1045,7 @@ double Pterosaur::ResidualFn::LaunchHeight(double time) const {
   double start_h = position_[2];
   double crouch_h = ground_ + 0.5;
   double rise_h = ground_ + kHeightQuadruped;
-  double pivot_h = ground_ + 0.85;
+  double pivot_h = ground_ + 1.1;
   double jump_h = ground_ + 1.25;
   double landing_h = ground_ + 0.85;
   if (time < 0) {
