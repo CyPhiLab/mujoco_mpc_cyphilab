@@ -276,6 +276,13 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
       if (launch_time >= preload_time_ && launch_time < rise_end) {
         // rise: encourage leg hip2 more strongly while keeping leg hip1 costly.
+        const double leg_abduction_extra_scale = 1.5;
+        const int leg_abduction_dofs[2] = {6, 9};
+        for (int i = 0; i < 2; ++i) {
+          residual[counter + leg_abduction_dofs[i]] *=
+              leg_abduction_extra_scale;
+        }
+
         const double arm_and_knee_effort_scale = 0.5;
         const int arm_and_knee_dofs[6] = {1, 2, 4, 5, 8, 11};
         for (int i = 0; i < 6; ++i) {
@@ -402,11 +409,11 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     } else if (launch_time < rise_end) {
       // rise: keep all four feet loaded while extending upward
       // front two: penalize lack of contact (minimum threshold)
-      // rear two: reward contact force (negative residual to maximize contact)
+      // rear two: same penalty style as front feet
       residual[counter++] = touch_penalty(fr_touch);
       residual[counter++] = touch_penalty(fl_touch);
-      residual[counter++] = -rr_touch[0];
-      residual[counter++] = -rl_touch[0];
+      residual[counter++] = touch_penalty(rr_touch);
+      residual[counter++] = touch_penalty(rl_touch);
     } else if (launch_time < pivot_end) {
       // pivot: front feet maintain contact, rear feet unload
       residual[counter++] = touch_penalty(fr_touch);
@@ -579,6 +586,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
 
   // ---------- Flip ----------
   double* compos = SensorByName(model, data, "torso_subtreecom");
+
   if (mode == ResidualFn::kModeFlip) {
     // switching into Flip, reset task state
     if (mode != residual_.current_mode_) {

@@ -15,7 +15,7 @@
         <geom group="3"/>
       </default>
       <default class="foot">
-        <geom size="0.02" pos= "0 0 -0.2" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1.2 0.02 0.01"/>
+        <geom size="0.02" pos= "0 0 -0.2" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1.2 0.02 0.01" contype="2" conaffinity="1"/>
       </default>      
     </default>
   </default>
@@ -24,6 +24,9 @@
     <body name="body" pos="0 0 0" quat="1 0 0 0" childclass="pterosaur">
       <freejoint name="body_freejoint"/>
       <site name="com" rgba="1 0 0 1" pos="-0.329162 0.2607 0.205848" size="0.001"/>
+      <geom name="height_probe_visual" type="sphere" size="0.03"
+        pos="-0.329162 0.2607 0.205848" contype="0" conaffinity="0"
+        rgba="1 1 0 0.6" group="2"/>
       <site name="head" pos="-0.029162 0.2607 0.205848" class="task"/>
       <inertial pos="-0.329162 0.2607 0.205848" mass="21.9159" fullinertia="1.49474 0.542959 1.69386 -0 0.204502 0"/>
       <!-- Part body -->
@@ -68,7 +71,7 @@
             <!-- Part radius_and_ulna -->
             <geom type="mesh" class="visual" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
             <geom type="mesh" class="collision" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
-            <geom name="FL" size="0.02" pos= "-0.675 0 -0.02" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01"/>
+            <geom name="FL" size="0.02" pos= "-0.675 0 -0.02" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01" contype="2" conaffinity="1"/>
             <site name="FL" type="sphere" size="0.02" pos="-0.675 0 -0.02"/>
             <!-- Link finger -->
             <!--body name="finger" pos="-0.6604 0 -0.0127" quat="0 0.224528 0.974468 -0"-->
@@ -109,7 +112,7 @@
             <!-- Part radius_and_ulna_2 -->
             <geom type="mesh" class="visual" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 -0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
             <geom type="mesh" class="collision" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 -0" mesh="radius_and_ulna" material="radius_and_ulna_material"/>
-            <geom name="FR" size="0.02" pos="-0.675 0 -0.02" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01"/>
+            <geom name="FR" size="0.02" pos="-0.675 0 -0.02" type="sphere" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01" contype="2" conaffinity="1"/>
             <site name="FR" type="sphere" size="0.02" pos="-0.675 0 -0.02" />
             <!-- Link finger_2 -->
             <!--body name="finger_2" pos="-0.6604 0 -0.0127" quat="0 0.224528 0.974468 -0"-->
@@ -148,6 +151,11 @@
           <!-- Part leg_motor_2 -->
           <geom type="mesh" class="visual" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="leg_motor_2" material="leg_motor_2_material"/>
           <geom type="mesh" class="collision" pos="-0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" mesh="leg_motor_2" material="leg_motor_2_material"/>
+          <!-- Knee joint touch sensor visualization -->
+          <geom name="LK_visual" type="sphere" size="0.03" pos="0.353 0 0.033" rgba="0 1 1 0.3"/>
+          <!-- Knee joint collision sensor (ground only) -->
+          <geom name="LK" type="sphere" size="0.03" pos="0.353 0 0.033" contype="2" conaffinity="1" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01"/>
+          <site name="LK" type="sphere" size="0.03" pos="0.353 0 0.033"/>
           <!-- Link tibia -->
           <body name="tibia" pos="0.3302 -0 0.03115" quat="0 0.962486 0.271331 0">
             <!-- Joint from leg_motor_2 to tibia -->
@@ -186,6 +194,11 @@
           <!-- Part leg_motor_3_2 -->
           <geom type="mesh" class="visual" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" mesh="leg_motor_3" material="leg_motor_3_material"/>
           <geom type="mesh" class="collision" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" mesh="leg_motor_3" material="leg_motor_3_material"/>
+          <!-- Knee joint touch sensor visualization -->
+          <geom name="RK_visual" type="sphere" size="0.03" pos="-0.329 -0.128 -0.047" rgba="0 1 1 0.3"/>
+          <!-- Knee joint collision sensor (ground only) -->
+          <geom name="RK" type="sphere" size="0.03" pos="-0.329 -0.128 -0.047" contype="2" conaffinity="1" priority="1" solimp="0.015 1 0.031" condim="6" friction="1 0.02 0.01"/>
+          <site name="RK" type="sphere" size="0.03" pos="-0.329 -0.128 -0.047"/>
           <!-- Link tibia_2 -->
           <body name="tibia_2" pos="-0.307722 -0.119746 -0.04385" quat="0 0.444243 -0.895906 -0">
             <!-- Joint from femur to tibia_2 -->

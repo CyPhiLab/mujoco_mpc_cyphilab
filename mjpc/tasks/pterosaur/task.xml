@@ -107,6 +107,8 @@
     <touch name="FL_touch" site="FL"/>
     <touch name="RR_touch" site="RR"/>
     <touch name="RL_touch" site="RL"/>
+    <touch name="RK_touch" site="RK"/>
+    <touch name="LK_touch" site="LK"/>
 
 
     <!-- trace -->
