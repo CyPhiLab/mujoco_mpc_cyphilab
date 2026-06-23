@@ -421,11 +421,11 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     };
     
     if (launch_time < preload_time_) {
-      // preload: all four feet must touch
+      // preload: only front two feet must touch during crouch
       residual[counter++] = touch_penalty(fr_touch);
       residual[counter++] = touch_penalty(fl_touch);
-      residual[counter++] = touch_penalty(rr_touch);
-      residual[counter++] = touch_penalty(rl_touch);
+      residual[counter++] = 0.0;
+      residual[counter++] = 0.0;
     } else if (launch_time < rise_end) {
       // rise: keep all four feet loaded while extending upward
       // front two: penalize lack of contact (minimum threshold)
@@ -705,7 +705,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
     // adjust weights per phase
     if (launch_time < residual_.preload_time_) {
       // preload: disable launch velocity and posture, increase balance and ground contact
-      weight[CostTermByName(model, "Balance")] = 1.2;
+      weight[CostTermByName(model, "Balance")] = 0.0;
       weight[CostTermByName(model, "GroundContact")] = 1.5;
       weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
       weight[CostTermByName(model, "Posture")] = 0.055;
