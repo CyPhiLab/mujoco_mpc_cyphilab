@@ -317,22 +317,42 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   } else if (current_mode_ == kModeLaunch) {
     double launch_time = data->time - mode_start_time_;
     double* crouch = KeyQPosByName(model, data, "crouch");
-    if (launch_time < preload_time_) {
-      double alpha = launch_time / preload_time_;
+    double rise_end = preload_time_ + rise_time_;
+    if (launch_time < rise_end) {
       std::vector<double> target(model->nu);
-      for (int i = 0; i < model->nu; ++i) {
-        double home_val = home[7 + i];
-        double crouch_val = crouch[7 + i];
-        target[i] = (1.0 - alpha) * home_val + alpha * crouch_val;
+      if (launch_time < preload_time_) {
+        // preload: interpolate home -> crouch
+        double alpha = launch_time / preload_time_;
+        alpha = mju_min(1.0, mju_max(0.0, alpha));
+        for (int i = 0; i < model->nu; ++i) {
+          double home_val = home[7 + i];
+          double crouch_val = crouch[7 + i];
+          target[i] = (1.0 - alpha) * home_val + alpha * crouch_val;
+        }
+      } else {
+        // rise: interpolate crouch -> home
+        double alpha = (launch_time - preload_time_) / rise_time_;
+        alpha = mju_min(1.0, mju_max(0.0, alpha));
+        for (int i = 0; i < model->nu; ++i) {
+          double home_val = home[7 + i];
+          double crouch_val = crouch[7 + i];
+          target[i] = (1.0 - alpha) * crouch_val + alpha * home_val;
+        }
       }
       mju_sub(residual + counter, data->qpos + 7, target.data(), model->nu);
+
+      // Launch posture term is leg-only: zero arm joints.
+      for (int i = 0; i < 6; ++i) {
+        residual[counter + i] = 0.0;
+      }
+
+      // Normalize by active leg dimensions only.
+      double norm_scale = 1.0 / std::sqrt(6.0);
+      for (int i = 6; i < model->nu; ++i) {
+        residual[counter + i] *= norm_scale;
+      }
     } else {
       mju_zero(residual + counter, model->nu);
-    }
-    // normalize posture residual so its L2 contribution scales with single-dim costs
-    double norm_scale = 1.0 / std::sqrt((double)model->nu);
-    for (int i = 0; i < model->nu; ++i) {
-      residual[counter + i] *= norm_scale;
     }
   }
   for (A1Foot foot : kFootAll) {
@@ -688,7 +708,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[CostTermByName(model, "Balance")] = 1.2;
       weight[CostTermByName(model, "GroundContact")] = 1.5;
       weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
-      weight[CostTermByName(model, "Posture")] = 0.0;
+      weight[CostTermByName(model, "Posture")] = 0.055;
     } else if (launch_time < rise_end) {
       // rise: keep strong balance/contact while still suppressing launch velocity
       weight[CostTermByName(model, "Balance")] = 1.0;
