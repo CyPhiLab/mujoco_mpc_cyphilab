@@ -70,11 +70,26 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   } else {
     // special handling of launch orientation
     double launch_time = data->time - mode_start_time_;
+    double rise_start_upright = preload_time_;
     double rise_end_upright = preload_time_ + rise_time_;
     double pivot_end_upright = rise_end_upright + pivot_time_;
     if (launch_time >= rise_end_upright && launch_time < pivot_end_upright) {
       // pivot: disable upright cost
       mju_zero(residual + counter, 3);
+    } else if (launch_time >= rise_start_upright &&
+               launch_time < rise_end_upright) {
+      // rise: interpolate body orientation crouch -> pivot
+      double alpha = (launch_time - rise_start_upright) / rise_time_;
+      alpha = mju_min(1.0, mju_max(0.0, alpha));
+      double* crouch = KeyQPosByName(model, data, "crouch");
+      double* pivot = KeyQPosByName(model, data, "pivot");
+      double quat[4];
+      for (int i = 0; i < 4; ++i) {
+        quat[i] = (1.0 - alpha) * crouch[3 + i] + alpha * pivot[3 + i];
+      }
+      mju_normalize4(quat);
+      double* torso_xquat = data->xquat + 4*torso_body_id_;
+      mju_subQuat(residual + counter, torso_xquat, quat);
     } else {
       double quat[4];
       LaunchQuat(quat, launch_time);
@@ -317,7 +332,9 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
   } else if (current_mode_ == kModeLaunch) {
     double launch_time = data->time - mode_start_time_;
     double* crouch = KeyQPosByName(model, data, "crouch");
+    double* pivot = KeyQPosByName(model, data, "pivot");
     double rise_end = preload_time_ + rise_time_;
+    double pivot_end = rise_end + pivot_time_;
     if (launch_time < rise_end) {
       std::vector<double> target(model->nu);
       if (launch_time < preload_time_) {
@@ -341,16 +358,21 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
       }
       mju_sub(residual + counter, data->qpos + 7, target.data(), model->nu);
 
-      // Launch posture term is leg-only: zero arm joints.
-      for (int i = 0; i < 6; ++i) {
-        residual[counter + i] = 0.0;
-      }
+      if (launch_time < preload_time_) {
+        // preload remains leg-only.
+        for (int i = 0; i < 6; ++i) {
+          residual[counter + i] = 0.0;
+        }
 
-      // Normalize by active leg dimensions only.
-      double norm_scale = 1.0 / std::sqrt(6.0);
-      for (int i = 6; i < model->nu; ++i) {
-        residual[counter + i] *= norm_scale;
+        // Normalize by active leg dimensions only in preload.
+        double norm_scale = 1.0 / std::sqrt(6.0);
+        for (int i = 6; i < model->nu; ++i) {
+          residual[counter + i] *= norm_scale;
+        }
       }
+    } else if (launch_time < pivot_end) {
+      // pivot: track pivot keyframe posture directly.
+      mju_sub(residual + counter, data->qpos + 7, pivot + 7, model->nu);
     } else {
       mju_zero(residual + counter, model->nu);
     }
@@ -706,13 +728,13 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
     if (launch_time < residual_.preload_time_) {
       // preload: disable launch velocity and posture, increase balance and ground contact
       weight[CostTermByName(model, "Balance")] = 0.0;
-      weight[CostTermByName(model, "GroundContact")] = 1.5;
+      weight[CostTermByName(model, "GroundContact")] = 3.0;
       weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
       weight[CostTermByName(model, "Posture")] = 0.055;
     } else if (launch_time < rise_end) {
       // rise: keep strong balance/contact while still suppressing launch velocity
       weight[CostTermByName(model, "Balance")] = 1.0;
-      weight[CostTermByName(model, "GroundContact")] = 1.8;
+      weight[CostTermByName(model, "GroundContact")] = 3.6;
       weight[CostTermByName(model, "LaunchVelocity")] = 0.0;
       weight[CostTermByName(model, "Posture")] = 0.05;
     } else if (launch_time < pivot_end) {
