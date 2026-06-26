@@ -310,6 +310,27 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
         for (int i = 0; i < 2; ++i) {
           residual[counter + leg_hip2_dofs[i]] *= leg_hip2_effort_scale;
         }
+      } else if (launch_time >= rise_end && launch_time < pivot_end) {
+        // pivot: use same effort scaling as rise
+        const double leg_abduction_extra_scale = 1.5;
+        const int leg_abduction_dofs[2] = {6, 9};
+        for (int i = 0; i < 2; ++i) {
+          residual[counter + leg_abduction_dofs[i]] *=
+              leg_abduction_extra_scale;
+        }
+
+        const double arm_and_knee_effort_scale = 0.5;
+        const int arm_and_knee_dofs[6] = {1, 2, 4, 5, 8, 11};
+        for (int i = 0; i < 6; ++i) {
+          residual[counter + arm_and_knee_dofs[i]] *=
+              arm_and_knee_effort_scale;
+        }
+
+        const double leg_hip2_effort_scale = 0.35;
+        const int leg_hip2_dofs[2] = {7, 10};
+        for (int i = 0; i < 2; ++i) {
+          residual[counter + leg_hip2_dofs[i]] *= leg_hip2_effort_scale;
+        }
       }
     }
   }
@@ -317,17 +338,22 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
 
   // ---------- Posture ----------
+  constexpr int kPostureOrientDim = 3;
   double* home = KeyQPosByName(model, data, "home");
-  mju_sub(residual + counter, data->qpos + 7, home + 7, model->nu);
+  double* posture_residual = residual + counter;
+  mju_zero(posture_residual, kPostureOrientDim + model->nu);
+  mju_sub(posture_residual + kPostureOrientDim, data->qpos + 7, home + 7,
+          model->nu);
   if (current_mode_ == kModeFlip) {
     double flip_time = data->time - mode_start_time_;
     if (flip_time < crouch_time_) {
       double* crouch = KeyQPosByName(model, data, "crouch");
-      mju_sub(residual + counter, data->qpos + 7, crouch + 7, model->nu);
+      mju_sub(posture_residual + kPostureOrientDim, data->qpos + 7,
+              crouch + 7, model->nu);
     } else if (flip_time >= crouch_time_ &&
                flip_time < jump_time_ + flight_time_) {
       // free legs during flight phase
-      mju_zero(residual + counter, model->nu);
+      mju_zero(posture_residual + kPostureOrientDim, model->nu);
     }
   } else if (current_mode_ == kModeLaunch) {
     double launch_time = data->time - mode_start_time_;
@@ -356,30 +382,39 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
           target[i] = (1.0 - alpha) * crouch_val + alpha * home_val;
         }
       }
-      mju_sub(residual + counter, data->qpos + 7, target.data(), model->nu);
+      mju_sub(posture_residual + kPostureOrientDim, data->qpos + 7,
+              target.data(), model->nu);
 
       if (launch_time < preload_time_) {
         // preload remains leg-only.
         for (int i = 0; i < 6; ++i) {
-          residual[counter + i] = 0.0;
+          posture_residual[kPostureOrientDim + i] = 0.0;
         }
 
         // Normalize by active leg dimensions only in preload.
         double norm_scale = 1.0 / std::sqrt(6.0);
         for (int i = 6; i < model->nu; ++i) {
-          residual[counter + i] *= norm_scale;
+          posture_residual[kPostureOrientDim + i] *= norm_scale;
         }
       }
     } else if (launch_time < pivot_end) {
       // pivot: track pivot keyframe posture directly.
-      mju_sub(residual + counter, data->qpos + 7, pivot + 7, model->nu);
+      mju_sub(posture_residual + kPostureOrientDim, data->qpos + 7,
+              pivot + 7, model->nu);
+
+      // Add torso orientation tracking only during pivot.
+      double target_quat[4] = {pivot[3], pivot[4], pivot[5], pivot[6]};
+      mju_normalize4(target_quat);
+      double* torso_xquat = data->xquat + 4 * torso_body_id_;
+      mju_subQuat(posture_residual, torso_xquat, target_quat);
     } else {
-      mju_zero(residual + counter, model->nu);
+      mju_zero(posture_residual + kPostureOrientDim, model->nu);
     }
   }
   for (A1Foot foot : kFootAll) {
     for (int joint = 0; joint < 3; joint++) {
-      residual[counter + 3*foot + joint] *= kJointPostureGain[joint];
+      posture_residual[kPostureOrientDim + 3 * foot + joint] *=
+          kJointPostureGain[joint];
     }
   }
   if (current_mode_ == kModeBiped) {
@@ -387,22 +422,22 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     bool handstand = ReinterpretAsInt(parameters_[biped_type_param_id_]);
     double arm_posture = parameters_[arm_posture_param_id_];
     if (handstand) {
-      residual[counter + 6] *= arm_posture;
-      residual[counter + 7] *= arm_posture;
-      residual[counter + 8] *= arm_posture;
-      residual[counter + 9] *= arm_posture;
-      residual[counter + 10] *= arm_posture;
-      residual[counter + 11] *= arm_posture;
+      posture_residual[kPostureOrientDim + 6] *= arm_posture;
+      posture_residual[kPostureOrientDim + 7] *= arm_posture;
+      posture_residual[kPostureOrientDim + 8] *= arm_posture;
+      posture_residual[kPostureOrientDim + 9] *= arm_posture;
+      posture_residual[kPostureOrientDim + 10] *= arm_posture;
+      posture_residual[kPostureOrientDim + 11] *= arm_posture;
     } else {
-      residual[counter + 0] *= arm_posture;
-      residual[counter + 1] *= arm_posture;
-      residual[counter + 2] *= arm_posture;
-      residual[counter + 3] *= arm_posture;
-      residual[counter + 4] *= arm_posture;
-      residual[counter + 5] *= arm_posture;
+      posture_residual[kPostureOrientDim + 0] *= arm_posture;
+      posture_residual[kPostureOrientDim + 1] *= arm_posture;
+      posture_residual[kPostureOrientDim + 2] *= arm_posture;
+      posture_residual[kPostureOrientDim + 3] *= arm_posture;
+      posture_residual[kPostureOrientDim + 4] *= arm_posture;
+      posture_residual[kPostureOrientDim + 5] *= arm_posture;
     }
   }
-  counter += model->nu;
+  counter += kPostureOrientDim + model->nu;
 
 
   // ---------- Yaw ----------
@@ -742,7 +777,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[CostTermByName(model, "Balance")] = 0;
       weight[CostTermByName(model, "GroundContact")] = 0.8;
       weight[CostTermByName(model, "LaunchVelocity")] = 0;
-      weight[CostTermByName(model, "Posture")] = 0.1;
+      weight[CostTermByName(model, "Posture")] = 2.0;
     } else if (launch_time < pivot_end + residual_.jump_time_) {
       // jump/push: effort only, everything else off
       weight[CostTermByName(model, "Upright")] = 0;
@@ -754,14 +789,14 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[CostTermByName(model, "Posture")] = 0;
     } else if (launch_time < pivot_end + residual_.jump_time_ +
                               residual_.flight_time_) {
-      // flight: use default launch weights
-      weight[CostTermByName(model, "Upright")] = 0.2;
-      weight[CostTermByName(model, "Height")] = 1.0;
-      weight[CostTermByName(model, "Position")] = 0.4;
-      weight[CostTermByName(model, "LaunchVelocity")] = 1.0;
-      weight[CostTermByName(model, "Balance")] = 0.6;
-      weight[CostTermByName(model, "GroundContact")] = 0.5;
-      weight[CostTermByName(model, "Posture")] = 0.1;
+      // flight: effort only, everything else off
+      weight[CostTermByName(model, "Upright")] = 0;
+      weight[CostTermByName(model, "Height")] = 0;
+      weight[CostTermByName(model, "Position")] = 0;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0;
+      weight[CostTermByName(model, "Balance")] = 0;
+      weight[CostTermByName(model, "GroundContact")] = 0;
+      weight[CostTermByName(model, "Posture")] = 0;
     } else {
       // land: effort only, everything else off
       weight[CostTermByName(model, "Upright")] = 0;
