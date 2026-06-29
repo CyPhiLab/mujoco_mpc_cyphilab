@@ -398,9 +398,35 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
         }
       }
     } else if (launch_time < pivot_end) {
-      // pivot: track pivot keyframe posture directly.
+      // pivot: interpolate home -> pivot posture target.
+      double time_in_pivot = launch_time - rise_end;
+      double alpha = time_in_pivot / pivot_time_;
+      alpha = mju_min(1.0, mju_max(0.0, alpha));
+      std::vector<double> target(model->nu);
+      for (int i = 0; i < model->nu; ++i) {
+        double home_val = home[7 + i];
+        double pivot_val = pivot[7 + i];
+        target[i] = (1.0 - alpha) * home_val + alpha * pivot_val;
+      }
       mju_sub(posture_residual + kPostureOrientDim, data->qpos + 7,
-              pivot + 7, model->nu);
+              target.data(), model->nu);
+
+      // Do not penalize shoulder2 joint positions in pivot.
+      posture_residual[kPostureOrientDim + 1] = 0.0;
+      posture_residual[kPostureOrientDim + 4] = 0.0;
+
+      // Add pivot shoulder2 velocity targets from pivot keyframe qvel.
+      int pivot_key_id = mj_name2id(model, mjOBJ_KEY, "pivot");
+      if (pivot_key_id >= 0 && model->key_qvel) {
+        const double* pivot_qvel = model->key_qvel + pivot_key_id * model->nv;
+        const double qvel_gain = 0.25;
+        const int shoulder2_dofs[2] = {1, 4};
+        for (int i = 0; i < 2; ++i) {
+          int dof = shoulder2_dofs[i];
+          posture_residual[kPostureOrientDim + dof] += qvel_gain *
+              (data->qvel[6 + dof] - pivot_qvel[6 + dof]);
+        }
+      }
 
       // Add torso orientation tracking only during pivot.
       double target_quat[4] = {pivot[3], pivot[4], pivot[5], pivot[6]};
@@ -777,7 +803,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[CostTermByName(model, "Balance")] = 0;
       weight[CostTermByName(model, "GroundContact")] = 0.8;
       weight[CostTermByName(model, "LaunchVelocity")] = 0;
-      weight[CostTermByName(model, "Posture")] = 2.0;
+      weight[CostTermByName(model, "Posture")] = 3.0;
     } else if (launch_time < pivot_end + residual_.jump_time_) {
       // jump/push: effort only, everything else off
       weight[CostTermByName(model, "Upright")] = 0;
