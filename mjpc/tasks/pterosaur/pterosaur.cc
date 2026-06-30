@@ -433,6 +433,12 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
       mju_normalize4(target_quat);
       double* torso_xquat = data->xquat + 4 * torso_body_id_;
       mju_subQuat(posture_residual, torso_xquat, target_quat);
+
+      // Reduce posture contribution during pivot.
+      const double kPivotPostureScale = 0.5;
+      for (int i = 0; i < kPostureOrientDim + model->nu; ++i) {
+        posture_residual[i] *= kPivotPostureScale;
+      }
     } else {
       mju_zero(posture_residual + kPostureOrientDim, model->nu);
     }
@@ -1171,14 +1177,14 @@ double Pterosaur::ResidualFn::LaunchHeight(double time) const {
   time -= preload_time_;
   if (time < rise_time_) {
     double alpha = time / rise_time_;
-    // Smoothstep avoids an instantaneous velocity jump after preload.
-    double alpha_smooth = alpha * alpha * (3.0 - 2.0 * alpha);
+    // Quadratic rise interpolation.
+    double alpha_smooth = alpha * alpha;
     return crouch_h + (rise_h - crouch_h) * alpha_smooth;
   }
   time -= rise_time_;
   if (time < pivot_time_) {
     double alpha = time / pivot_time_;
-    return rise_h + (pivot_h - rise_h) * alpha;
+    return rise_h + (pivot_h - rise_h) * alpha * alpha;
   }
   time -= pivot_time_;
   if (time < jump_time_) {
