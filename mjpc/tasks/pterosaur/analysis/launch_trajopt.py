@@ -66,7 +66,9 @@ W_CLEAR = 500.0     # clearance violation integrated over time (per m s)
 W_CALM = 0.5        # mean joint speed after takeoff (per rad/s)
 W_EFFORT = 0.1      # mean squared control
 W_SMOOTH = 20.0     # mean control change per step (per unit per 2 ms)
-W_TAP = 0.5         # each hand/foot liftoff before takeoff (tapping)
+W_TAP = 0.2         # each hand/foot liftoff before takeoff (tapping)
+W_GAP = 20.0        # time a hand/foot is off the ground before its final
+                    # liftoff (per second, summed over limbs): planted limbs
 
 
 def reference():
@@ -264,9 +266,14 @@ class LaunchOpt:
       jitter = np.abs(np.diff(ctrl[i], axis=0)).mean()
       # each limb should lift off once: extra liftoffs are taps/bounces
       taps = max(int(liftoffs[i, :k].sum()) - 4, 0)
+      gap = 0.0
+      for c in range(4):
+        down = np.flatnonzero(limbs[i, :k + 1, c])
+        if len(down):
+          gap += (down[-1] + 1 - len(down)) * SIM_DT
       s = (along - W_PERP * perp - W_SPIN * spin - W_PITCH * pitch_excess
            - W_CLEAR * clear - W_CALM * calm - W_EFFORT * effort
-           - W_SMOOTH * jitter - W_TAP * taps)
+           - W_SMOOTH * jitter - W_TAP * taps - W_GAP * gap)
       if not took_off:
         s -= 5
       scores[i] = s
@@ -278,6 +285,7 @@ class LaunchOpt:
             'spin_per_mass': float(spin), 'max_pitch_deg': float(np.degrees(pitch[i, window].max())),
             'clearance_violation_ms': float(clear), 'calm_rad_s': float(calm),
             'effort': float(effort), 'jitter': float(jitter), 'taps': taps,
+            'gap_s': float(gap),
             'score': float(s)})
     return (scores, details) if detail else scores
 
