@@ -8,10 +8,11 @@ velocity along a launch direction, subject to (as penalties):
   - knees, shins and forearms staying clear of the ground (push on feet),
   - calm limbs after takeoff (no flailing).
 
-The optimizer is sampling-based (smooth control perturbations, elite
-averaging) around a warm start: the reference joint motion, time-compressed
-to several push durations and tracked with a joint PD controller, recorded
-as open-loop controls.
+Controls are piecewise linear between knots every KNOT_DT. The optimizer is
+sampling-based (knot perturbations, elite averaging) around a warm start:
+the reference joint motion, time-compressed to several push durations and
+tracked with a joint PD controller, recorded as open-loop controls and fit
+to the knots.
 
 Usage:
   launch_trajopt.py [--torque 2] [--angle 30] [--iters 150] [--out result.npz]
@@ -32,7 +33,8 @@ SIM_DT = 0.002
 HORIZON = 1.0           # seconds from the deepest crouch
 JOINT_MARGIN = 0.3      # hard joint limits: reference range +- margin
 MIN_FLIGHT = 0.15       # airborne this long counts as takeoff
-KNOT_DT = 0.04          # control perturbation knot spacing
+KNOT_DT = 0.05          # control knot spacing: controls are piecewise linear
+                        # between knots, so they cannot jitter
 # MuJoCo default contact impedance for the feet: the model's soft feet
 # (solimp width 3.1 cm) sink onto the shins; much stiffer (1 mm) bounces
 FOOT_SOLIMP = [0.9, 0.95, 0.001]
@@ -130,6 +132,32 @@ def push_start_index(ref):
 def symmetrize(ctrl):
   """Full (.., 12) controls -> (.., 6) symmetric left-side channels."""
   return 0.5 * (ctrl[..., LEFT] + MIRROR * ctrl[..., RIGHT])
+
+
+def knot_count():
+  return int(round(HORIZON / KNOT_DT)) + 1
+
+
+def from_knots(knots):
+  """(.., nknot, 6) knots -> (.., nstep, 6) piecewise-linear controls."""
+  nstep = int(round(HORIZON / SIM_DT))
+  t_knot = np.linspace(0, HORIZON, knots.shape[-2])
+  t = np.arange(nstep) * SIM_DT
+  flat = knots.reshape(-1, knots.shape[-2], 6)
+  out = np.stack([np.stack([np.interp(t, t_knot, k[:, c]) for c in range(6)], axis=1)
+                  for k in flat])
+  return out.reshape(knots.shape[:-2] + (nstep, 6))
+
+
+def to_knots(half):
+  """(nstep, 6) controls -> (nknot, 6) knots (averaged around each knot)."""
+  t = np.arange(half.shape[0]) * SIM_DT
+  t_knot = np.linspace(0, HORIZON, knot_count())
+  out = np.empty((len(t_knot), 6))
+  for j, tk in enumerate(t_knot):
+    window = np.abs(t - tk) <= KNOT_DT / 2
+    out[j] = half[window].mean(axis=0)
+  return out
 
 
 def expand(half):
@@ -296,22 +324,17 @@ class LaunchOpt:
   # ----- optimization ----- #
   def optimize(self, init, iters=150, pop=192, elite=16, sigma0=0.25,
                sigma_min=0.03, seed=0, verbose=True):
+    """Optimize knots (nknot, 6) from init knots; returns best knots."""
     rng = np.random.default_rng(seed)
-    nknot = int(round(HORIZON / KNOT_DT)) + 1
-    t_knot = np.linspace(0, 1, nknot)
-    t = np.linspace(0, 1, self.nstep)
     base = init.copy()
-    best, best_score = base.copy(), self.evaluate(base[None])[0]
+    best, best_score = base.copy(), self.evaluate(from_knots(base)[None])[0]
     sigma = sigma0
     history = []
     for it in range(iters):
-      knots = sigma * rng.standard_normal((pop, nknot, 6))
-      noise = np.empty((pop, self.nstep, 6))
-      for c in range(6):
-        noise[:, :, c] = np.array([np.interp(t, t_knot, knots[p, :, c]) for p in range(pop)])
-      noise[0] = 0  # keep the current base in the population
-      samples = np.clip(base + noise, -1, 1)
-      scores = self.evaluate(samples)
+      samples = base + sigma * rng.standard_normal((pop,) + base.shape)
+      samples[0] = base  # keep the current base in the population
+      samples = np.clip(samples, -1, 1)
+      scores = self.evaluate(from_knots(samples))
       order = np.argsort(scores)[::-1]
       if scores[order[0]] > best_score:
         best_score, best = scores[order[0]], samples[order[0]].copy()
@@ -376,16 +399,24 @@ def main():
   args = parser.parse_args()
 
   opt = LaunchOpt(args.torque, args.angle)
-  if args.init:
-    init = smooth(np.load(args.init))
-    _, det = opt.evaluate(init[None], detail=True)
-    print(f'refining from {args.init} (smoothed): {det[0]}', flush=True)
-    best, _, _ = opt.optimize(init, iters=args.iters, sigma0=0.1)
-    _, det = opt.evaluate(best[None], detail=True)
-    print(f'done: {det[0]}', flush=True)
-    opt.record(best, args.out)
-    np.save(os.path.splitext(args.out)[0] + '_controls.npy', best)
+
+  def save(knots):
+    half = from_knots(knots)
+    _, det = opt.evaluate(half[None], detail=True)
+    print(f'result: {det[0]}', flush=True)
+    opt.record(half, args.out)
+    base = os.path.splitext(args.out)[0]
+    np.save(base + '_controls.npy', half)
+    np.save(base + '_knots.npy', knots)
     print('wrote', args.out)
+
+  if args.init:
+    loaded = np.load(args.init)
+    init = loaded if loaded.shape[0] == knot_count() else to_knots(loaded)
+    _, det = opt.evaluate(from_knots(init)[None], detail=True)
+    print(f'refining from {args.init}: {det[0]}', flush=True)
+    best, _, _ = opt.optimize(init, iters=args.iters, sigma0=0.1)
+    save(best)
     return
 
   print(f'start at reference t={opt.ref["time"][opt.i0]:.2f}s, horizon {HORIZON}s')
@@ -393,9 +424,9 @@ def main():
   # warm starts: reference push compressed to several durations
   candidates = {}
   for push_time in [0.3, 0.4, 0.5, 0.7, 1.06]:
-    half = opt.pd_warm_start(push_time)
-    _, det = opt.evaluate(half[None], detail=True)
-    candidates[push_time] = (half, det[0])
+    knots = to_knots(opt.pd_warm_start(push_time))
+    _, det = opt.evaluate(from_knots(knots)[None], detail=True)
+    candidates[push_time] = (knots, det[0])
     print(f'warm start push {push_time:.2f}s: {det[0]}')
   ranked = sorted(candidates, key=lambda p: candidates[p][1].get('score', -1e9),
                   reverse=True)
@@ -403,14 +434,12 @@ def main():
   for init_time in ranked[:2]:
     print(f'optimizing from push {init_time}s warm start', flush=True)
     t0 = time.time()
-    half, score, _ = opt.optimize(candidates[init_time][0], iters=args.iters)
-    _, det = opt.evaluate(half[None], detail=True)
+    knots, score, _ = opt.optimize(candidates[init_time][0], iters=args.iters)
+    _, det = opt.evaluate(from_knots(knots)[None], detail=True)
     print(f'done in {time.time() - t0:.0f}s: {det[0]}', flush=True)
     if score > best_score:
-      best, best_score = half, score
-  opt.record(best, args.out)
-  np.save(os.path.splitext(args.out)[0] + '_controls.npy', best)
-  print('wrote', args.out)
+      best, best_score = knots, score
+  save(best)
 
 
 if __name__ == '__main__':
