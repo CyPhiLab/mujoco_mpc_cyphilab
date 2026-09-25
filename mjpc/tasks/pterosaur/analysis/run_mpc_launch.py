@@ -63,7 +63,8 @@ def joint_limits(ref):
 
 
 def run(driver, torque, spring, speed, angle, out, duration=2.0, sim_dt=0.002,
-        iters=1, threads=4, horizon=None, weights=None, plan_dt=None):
+        iters=1, threads=4, horizon=None, weights=None, plan_dt=None,
+        foot_solimp=None, foot_solref=None, push_time=None):
   ref = reference()
   stiffness, springref = spring_design(ref, spring)
   fmt = lambda a: ','.join(f'{x:.6g}' for x in a)
@@ -77,6 +78,12 @@ def run(driver, torque, spring, speed, angle, out, duration=2.0, sim_dt=0.002,
     cmd += ['--horizon', str(horizon)]
   if plan_dt:
     cmd += ['--plan_dt', str(plan_dt)]
+  if push_time:
+    cmd += ['--push_time', str(push_time)]
+  if foot_solimp:
+    cmd += ['--foot_solimp', foot_solimp]
+  if foot_solref:
+    cmd += ['--foot_solref', foot_solref]
   if weights:
     cmd += ['--weights', weights]
   proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -125,6 +132,52 @@ def evaluate(traj, min_flight=0.15):
         'landed_in_run': bool(len(land)),
     })
   return result
+
+
+def diagnose(traj, end_time=None):
+  """Push quality until end_time (default: takeoff): non-foot ground
+  contact, left/right mismatch, and actuator use."""
+  import mujoco
+  m = mujoco.MjModel.from_xml_path(os.path.join(TASK_DIR, 'task.xml'))
+  d = mujoco.MjData(m)
+  floor = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, 'floor')
+  feet = {mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, n)
+          for n in ['FL', 'FR', 'HL', 'HR']}
+  t = traj['time']
+  if end_time is None:
+    end_time = evaluate(traj).get('takeoff_time', t[-1])
+  push = t <= end_time
+  qpos = np.stack([traj[f'qpos{i}'] for i in range(m.nq)], axis=1)
+  ctrl = np.stack([traj[f'ctrl{i}'] for i in range(m.nu)], axis=1)
+  dt = t[1] - t[0]
+  touching = {}
+  for k in np.flatnonzero(push)[::5]:
+    d.qpos[:] = qpos[k]
+    mujoco.mj_forward(m, d)
+    bodies = set()
+    for c in d.contact[:d.ncon]:
+      if floor not in (c.geom1, c.geom2) or c.dist > 0:
+        continue
+      g = c.geom2 if c.geom1 == floor else c.geom1
+      if g not in feet:
+        bodies.add(m.body(m.geom_bodyid[g]).name)
+    for name in bodies:
+      touching[name] = touching.get(name, 0) + 5 * dt
+  sign = np.array([-1, 1, 1, 1, 1, 1])
+  left = qpos[push][:, 7 + np.array([0, 1, 2, 6, 7, 8])]
+  right = qpos[push][:, 7 + np.array([3, 4, 5, 9, 10, 11])] * sign
+  mismatch = np.abs(left - right)
+  u = np.abs(ctrl[push])
+  return {
+      'push_end': float(end_time),
+      'nonfoot_contact_s': {k: round(v, 2) for k, v in sorted(touching.items())},
+      'arm_LR_mismatch_rad': [round(float(mismatch[:, :3].mean()), 3),
+                              round(float(mismatch[:, :3].max()), 3)],
+      'leg_LR_mismatch_rad': [round(float(mismatch[:, 3:].mean()), 3),
+                              round(float(mismatch[:, 3:].max()), 3)],
+      'mean_abs_ctrl': round(float(u.mean()), 2),
+      'saturated_frac': round(float((u > 0.95).mean()), 2),
+  }
 
 
 def render(traj, title, path):
@@ -187,6 +240,10 @@ def main():
   parser.add_argument('--horizon', type=float, default=None)
   parser.add_argument('--weights', default=None)
   parser.add_argument('--plan_dt', type=float, default=None)
+  parser.add_argument('--push_time', type=float, default=None,
+                      help='compress the push to this many seconds')
+  parser.add_argument('--foot_solimp', default=None, help='e.g. 0.9,0.95,0.001')
+  parser.add_argument('--foot_solref', default=None, help='e.g. 0.005,1')
   parser.add_argument('--out', default='mpc_launch.csv')
   parser.add_argument('--video', default=None)
   parser.add_argument('--grid', default=None,
@@ -200,12 +257,15 @@ def main():
 
   log = run(args.driver, args.torque, args.spring, args.speed, args.angle,
             args.out, duration=args.duration, iters=args.iters,
-            horizon=args.horizon, weights=args.weights, plan_dt=args.plan_dt)
+            horizon=args.horizon, weights=args.weights, plan_dt=args.plan_dt,
+            foot_solimp=args.foot_solimp, foot_solref=args.foot_solref,
+            push_time=args.push_time)
   if log:
     print(log)
   traj = load(args.out)
   result = evaluate(traj)
   print(result)
+  print(diagnose(traj))
   if args.video:
     title = (f'MPC  torque x{args.torque:g}, spring {args.spring:g} J, '
              f'target {args.speed:g} m/s @ {args.angle:g} deg')

@@ -159,6 +159,27 @@ class Pterosaur : public Task {
     // launch track: base position tracking scale during the push
     constexpr static double kRefPushBaseScale = 0.3;   // unitless
 
+    // launch track: weight of takeoff angular momentum (per unit mass)
+    // relative to takeoff velocity
+    constexpr static double kRefSpinScale = 5.0;       // 1/meter
+
+    // launch track: leg joint tracking scale once the feet have lifted off
+    constexpr static double kRefLegLiftoffScale = 3.0; // unitless
+
+    // launch track: joint tracking scale in flight, holds the limbs still
+    constexpr static double kRefFlightJointScale = 4.0; // unitless
+
+    // launch track: left/right mirror sign per limb joint
+    // (shoulder1 axes are mirrored, so the arm abduction sign flips)
+    constexpr static double kMirrorSign[3] = {-1, 1, 1};  // arm
+    constexpr static double kMirrorSignLeg[3] = {1, 1, 1};
+
+    // launch track: minimum height above ground of knee, mid-shin and
+    // mid-forearm points (reference minima are 18, 10 and 21 cm)
+    constexpr static double kClearKnee = 0.12;         // meter
+    constexpr static double kClearShin = 0.06;         // meter
+    constexpr static double kClearForearm = 0.15;      // meter
+
     //  ============  methods  ============
     // return internal phase clock
     double GetPhase(double time) const;
@@ -190,6 +211,13 @@ class Pterosaur : public Task {
 
     // orientation during launch
     void LaunchQuat(double quat[4], double time) const;
+
+    // launch track: reference time for time in mode; the push (deepest
+    // crouch to takeoff) is compressed to the "Push time" parameter
+    double RefTime(double launch_time) const;
+
+    // launch track: rate of reference time per time in mode
+    double RefRate(double launch_time) const;
 
     // launch track: aligned reference state and contact flags at time
     void LaunchReference(const mjModel* model, double time, double* qpos,
@@ -245,9 +273,14 @@ class Pterosaur : public Task {
     int ref_base_vel_cost_id_ = -1;
     int ref_joint_vel_cost_id_ = -1;
     int ref_takeoff_cost_id_ = -1;
+    int symmetry_cost_id_ = -1;
+    int clearance_cost_id_ = -1;
+    int tibia_body_id_[2] = {-1, -1};
+    int forearm_body_id_[2] = {-1, -1};
     int launch_speed_param_id_ = -1;
     int launch_angle_param_id_ = -1;
     int ref_start_param_id_ = -1;
+    int push_time_param_id_ = -1;
     int foot_geom_id_[kNumFoot];
     int shoulder_body_id_[kNumFoot];
 

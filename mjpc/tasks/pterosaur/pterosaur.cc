@@ -563,9 +563,9 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     }
   } else if (current_mode_ == kModeLaunchTrack && ref_key_start_ >= 0) {
     // require contact wherever the reference has it
-    double launch_time = data->time - mode_start_time_;
+    double ref_time = RefTime(data->time - mode_start_time_);
     bool hands_contact, feet_contact;
-    LaunchReference(model, launch_time, nullptr, nullptr, &hands_contact,
+    LaunchReference(model, ref_time, nullptr, nullptr, &hands_contact,
                     &feet_contact);
     double contact_threshold = 0.05;
     auto touch_penalty = [&](const char* name, bool active) {
@@ -586,21 +586,25 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
   // ---------- Launch Track reference ----------
   // base pos (3), base orientation (3), joint pos (nu), base vel (6),
-  // joint vel (nu), takeoff CoM velocity (3)
-  int ref_dim = 3 + 3 + model->nu + 6 + model->nu + 3;
+  // joint vel (nu), takeoff CoM velocity and angular momentum (6),
+  // symmetry (12), clearance (6)
+  int ref_dim = 3 + 3 + model->nu + 6 + model->nu + 6 + 12 + 6;
   if (current_mode_ == kModeLaunchTrack && ref_key_start_ >= 0) {
     double launch_time = data->time - mode_start_time_;
+    double ref_time = RefTime(launch_time);
     std::vector<double> ref_qpos(model->nq), ref_qvel(model->nv);
-    LaunchReference(model, launch_time, ref_qpos.data(), ref_qvel.data(),
+    LaunchReference(model, ref_time, ref_qpos.data(), ref_qvel.data(),
                     nullptr, nullptr);
+    // reference velocities scale with the time compression
+    mju_scl(ref_qvel.data(), ref_qvel.data(), RefRate(launch_time), model->nv);
 
     // push: from the deepest crouch to takeoff the reference base motion is
     // replaced by a takeoff velocity target, so the launch speed comes from
     // the push rather than the reference. after takeoff the reference base
     // motion is not ballistic (it assumes aerodynamic forces): track only
     // posture and trunk orientation.
-    bool airborne = launch_time >= ref_takeoff_time_;
-    bool push = !airborne && launch_time >= ref_push_start_;
+    bool airborne = ref_time >= ref_takeoff_time_;
+    bool push = !airborne && ref_time >= ref_push_start_;
 
     // base position
     if (airborne) {
@@ -617,9 +621,21 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     mju_subQuat(residual + counter, data->qpos + 3, ref_qpos.data() + 3);
     counter += 3;
 
-    // joint position
+    // joint position; hold the legs firmly once the feet have lifted off
+    // so they do not flail while the arms vault
     mju_sub(residual + counter, data->qpos + 7, ref_qpos.data() + 7,
             model->nu);
+    bool hands_contact, feet_contact;
+    LaunchReference(model, ref_time, nullptr, nullptr, &hands_contact,
+                    &feet_contact);
+    if (!feet_contact) {
+      mju_scl(residual + counter + 6, residual + counter + 6,
+              kRefLegLiftoffScale, 6);
+    }
+    if (airborne) {
+      mju_scl(residual + counter, residual + counter, kRefFlightJointScale,
+              model->nu);
+    }
     counter += model->nu;
 
     // base linear and angular velocity
@@ -635,9 +651,9 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     counter += model->nu;
 
     // takeoff: CoM velocity ramps to the launch velocity at takeoff time,
-    // along the reference heading
+    // along the reference heading, with no whole-body spin
     if (push) {
-      double alpha = (launch_time - ref_push_start_) /
+      double alpha = (ref_time - ref_push_start_) /
                      (ref_takeoff_time_ - ref_push_start_);
       double speed = alpha * parameters_[launch_speed_param_id_];
       double angle = parameters_[launch_angle_param_id_] * mjPI / 180;
@@ -646,10 +662,50 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
       mju_rotVecQuat(target, direction, ref_yaw_quat_);
       mju_scl3(target, target, speed);
       mju_sub3(residual + counter, comvel, target);
+      // angular momentum about the CoM, normalized by mass
+      double* angmom = SensorByName(model, data, "torso_subtreeangmom");
+      double mass = model->body_subtreemass[torso_body_id_];
+      mju_scl3(residual + counter + 3, angmom, kRefSpinScale / mass);
     } else {
-      mju_zero(residual + counter, 3);
+      mju_zero(residual + counter, 6);
     }
-    counter += 3;
+    counter += 6;
+
+    // symmetry: left limbs mirror right limbs (joint position, velocity),
+    // so both arms and both legs push together
+    for (int limb = 0; limb < 2; limb++) {
+      const double* sign = limb == 0 ? kMirrorSign : kMirrorSignLeg;
+      int left = 6 * limb, right = 6 * limb + 3;
+      for (int j = 0; j < 3; j++) {
+        residual[counter + 3*limb + j] = data->qpos[7 + left + j] -
+                                         sign[j] * data->qpos[7 + right + j];
+        residual[counter + 6 + 3*limb + j] =
+            0.1 * (data->qvel[6 + left + j] - sign[j] * data->qvel[6 + right + j]);
+      }
+    }
+    counter += 12;
+
+    // clearance: knees, shins and forearms stay off the ground, the robot
+    // pushes on its feet
+    struct {
+      int body;
+      double point[3];
+      double clearance;
+    } points[6] = {
+        {tibia_body_id_[0], {0, 0, 0}, kClearKnee},
+        {tibia_body_id_[1], {0, 0, 0}, kClearKnee},
+        {tibia_body_id_[0], {0.184, 0, 0}, kClearShin},
+        {tibia_body_id_[1], {0.184, 0, 0}, kClearShin},
+        {forearm_body_id_[0], {-0.34, 0, -0.01}, kClearForearm},
+        {forearm_body_id_[1], {-0.34, 0, -0.01}, kClearForearm},
+    };
+    for (const auto& p : points) {
+      double pos[3];
+      mju_mulMatVec3(pos, data->xmat + 9*p.body, p.point);
+      mju_addTo3(pos, data->xpos + 3*p.body);
+      double height = pos[2] - Ground(model, data, pos);
+      residual[counter++] = mju_max(0, p.clearance - height);
+    }
   } else {
     mju_zero(residual + counter, ref_dim);
     counter += ref_dim;
@@ -997,15 +1053,18 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[residual_.ref_base_vel_cost_id_] = 0.5;
       weight[residual_.ref_joint_vel_cost_id_] = 0.05;
       weight[residual_.ref_takeoff_cost_id_] = 2;
+      weight[residual_.symmetry_cost_id_] = 5;
+      weight[residual_.clearance_cost_id_] = 20;
       parameters[residual_.gait_switch_param_id_] = ReinterpretAsDouble(0);
     }
 
     // time from start of Launch Track
-    double launch_time = data->time - residual_.mode_start_time_;
+    double ref_time =
+        residual_.RefTime(data->time - residual_.mode_start_time_);
     double duration =
         (residual_.ref_num_frames_ - 1) * residual_.ref_dt_;
 
-    if (launch_time >= duration) {
+    if (ref_time >= duration) {
       // reference ended, back to Quadruped, restore values
       mode = ResidualFn::kModeQuadruped;
       weight = residual_.save_weight_;
@@ -1051,9 +1110,10 @@ void Pterosaur::ModifyScene(const mjModel* model, const mjData* data,
   // launch track reference base pose
   if (residual_.current_mode_ == ResidualFn::kModeLaunchTrack &&
       residual_.ref_key_start_ >= 0) {
-    double launch_time = data->time - residual_.mode_start_time_;
+    double ref_time =
+        residual_.RefTime(data->time - residual_.mode_start_time_);
     std::vector<double> ref_qpos(model->nq);
-    residual_.LaunchReference(model, launch_time, ref_qpos.data(), nullptr,
+    residual_.LaunchReference(model, ref_time, ref_qpos.data(), nullptr,
                               nullptr, nullptr);
     double mat[9];
     mju_quat2Mat(mat, ref_qpos.data() + 3);
@@ -1180,9 +1240,21 @@ void Pterosaur::ResetLocked(const mjModel* model) {
   residual_.ref_base_vel_cost_id_ = CostTermByName(model, "RefBaseVel");
   residual_.ref_joint_vel_cost_id_ = CostTermByName(model, "RefJointVel");
   residual_.ref_takeoff_cost_id_ = CostTermByName(model, "RefTakeoff");
+  residual_.symmetry_cost_id_ = CostTermByName(model, "Symmetry");
+  residual_.clearance_cost_id_ = CostTermByName(model, "Clearance");
+  const char* tibias[2] = {"tibia", "tibia_2"};
+  const char* forearms[2] = {"radius_and_ulna", "radius_and_ulna_2"};
+  for (int i = 0; i < 2; i++) {
+    residual_.tibia_body_id_[i] = mj_name2id(model, mjOBJ_BODY, tibias[i]);
+    residual_.forearm_body_id_[i] = mj_name2id(model, mjOBJ_BODY, forearms[i]);
+    if (residual_.tibia_body_id_[i] < 0 || residual_.forearm_body_id_[i] < 0) {
+      mju_error("pterosaur: tibia/forearm body not found");
+    }
+  }
   residual_.launch_speed_param_id_ = ParameterIndex(model, "Launch speed");
   residual_.launch_angle_param_id_ = ParameterIndex(model, "Launch angle");
   residual_.ref_start_param_id_ = ParameterIndex(model, "Ref start");
+  residual_.push_time_param_id_ = ParameterIndex(model, "Push time");
 
   // ----------  launch track reference  ----------
   // keyframes launch_ref_000, launch_ref_001, ... from launch_reference.xml
@@ -1469,6 +1541,28 @@ void Pterosaur::ResidualFn::FlipQuat(double quat[4], double time) const {
 
 void Pterosaur::ResidualFn::LaunchQuat(double quat[4], double time) const {
   mju_copy4(quat, orientation_);
+}
+
+// launch track: the push (deepest crouch to takeoff) plays back in "Push
+// time" seconds; 0 keeps the reference timing
+double Pterosaur::ResidualFn::RefRate(double launch_time) const {
+  double push_time = parameters_[push_time_param_id_];
+  double ref_push = ref_takeoff_time_ - ref_push_start_;
+  if (push_time <= 0 || launch_time < ref_push_start_ ||
+      launch_time >= ref_push_start_ + push_time) {
+    return 1;
+  }
+  return ref_push / push_time;
+}
+
+double Pterosaur::ResidualFn::RefTime(double launch_time) const {
+  double push_time = parameters_[push_time_param_id_];
+  if (push_time <= 0 || launch_time < ref_push_start_) return launch_time;
+  double ref_push = ref_takeoff_time_ - ref_push_start_;
+  if (launch_time < ref_push_start_ + push_time) {
+    return ref_push_start_ + (launch_time - ref_push_start_) * ref_push / push_time;
+  }
+  return ref_takeoff_time_ + (launch_time - ref_push_start_ - push_time);
 }
 
 // launch track: reference state at time, interpolated between keyframes and

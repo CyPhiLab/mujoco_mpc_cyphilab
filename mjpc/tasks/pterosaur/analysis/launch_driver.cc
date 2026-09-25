@@ -10,6 +10,8 @@
 //     [--speed 5] [--angle 30] [--ref_start 1.02] [--duration 2.5]
 //     [--sim_dt 0.002] [--iters_per_step 1] [--threads 4]
 //     [--horizon 0.35] [--plan_dt 0.01]
+//     [--foot_solimp 0.9,0.95,0.001] [--foot_solref 0.005,1]
+//     [--push_time 0.4]
 //     [--weights RefTakeoff=10,RefJointPos=0.5]
 
 #include <cstdio>
@@ -50,7 +52,8 @@ int main(int argc, char** argv) {
   double gain_scale = 1, speed = 5, angle = 30, ref_start = 1.02;
   double duration = 2.5, sim_dt = 0.002;
   int iters_per_step = 1, threads = 4;
-  double horizon = -1, plan_dt = -1;
+  double horizon = -1, plan_dt = -1, push_time = 0;
+  std::vector<double> foot_solimp, foot_solref;
   std::string weights;
   std::vector<double> stiffness, springref, limits;
   for (int i = 1; i + 1 < argc; i += 2) {
@@ -69,6 +72,9 @@ int main(int argc, char** argv) {
     else if (key == "--limits") limits = ParseList(val);
     else if (key == "--horizon") horizon = std::stod(val);
     else if (key == "--plan_dt") plan_dt = std::stod(val);
+    else if (key == "--push_time") push_time = std::stod(val);
+    else if (key == "--foot_solimp") foot_solimp = ParseList(val);
+    else if (key == "--foot_solref") foot_solref = ParseList(val);
     else if (key == "--weights") weights = val;
     else {
       std::cerr << "unknown flag " << key << "\n";
@@ -100,6 +106,13 @@ int main(int argc, char** argv) {
     }
   }
 
+  // foot contact parameters
+  for (const char* foot : {"FL", "FR", "HL", "HR"}) {
+    int g = mj_name2id(model, mjOBJ_GEOM, foot);
+    for (int i = 0; i < (int)foot_solimp.size(); i++) model->geom_solimp[mjNIMP*g + i] = foot_solimp[i];
+    for (int i = 0; i < (int)foot_solref.size(); i++) model->geom_solref[mjNREF*g + i] = foot_solref[i];
+  }
+
   if (horizon > 0) {
     double* h = mjpc::GetCustomNumericData(model, "agent_horizon");
     if (h) h[0] = horizon;
@@ -129,6 +142,7 @@ int main(int argc, char** argv) {
   task->parameters[mjpc::ParameterIndex(model, "Launch speed")] = speed;
   task->parameters[mjpc::ParameterIndex(model, "Launch angle")] = angle;
   task->parameters[mjpc::ParameterIndex(model, "Ref start")] = ref_start;
+  task->parameters[mjpc::ParameterIndex(model, "Push time")] = push_time;
 
   // the first transition initializes the task in Quadruped; switch after it
   task->Transition(model, data);
