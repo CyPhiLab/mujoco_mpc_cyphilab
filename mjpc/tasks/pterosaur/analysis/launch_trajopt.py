@@ -71,6 +71,11 @@ W_SMOOTH = 20.0     # mean control change per step (per unit per 2 ms)
 W_TAP = 0.2         # each hand/foot liftoff before takeoff (tapping)
 W_GAP = 20.0        # time a hand/foot is off the ground before its final
                     # liftoff (per second, summed over limbs): planted limbs
+W_SCHED = 20.0      # with a push time set: time a limb's ground contact
+                    # differs from the schedule (per second, summed)
+# contact schedule, as fractions of the push (reference: crouch 0.88 s, feet
+# lift at 1.59 s, hands at 1.94 s)
+FEET_LIFT_FRAC = (1.59 - 0.88) / (1.94 - 0.88)
 
 
 def reference():
@@ -170,7 +175,8 @@ def expand(half):
 
 class LaunchOpt:
 
-  def __init__(self, torque=2.0, angle=30.0, nthread=4):
+  def __init__(self, torque=2.0, angle=30.0, nthread=4, push_time=0.0):
+    self.push_time = push_time
     self.m = load_model(torque)
     self.ref = reference()
     self.i0 = push_start_index(self.ref)
@@ -299,9 +305,22 @@ class LaunchOpt:
         down = np.flatnonzero(limbs[i, :k + 1, c])
         if len(down):
           gap += (down[-1] + 1 - len(down)) * SIM_DT
+      sched = 0.0
+      if self.push_time > 0:
+        # hands (0, 1) down until the push time, feet (2, 3) until
+        # FEET_LIFT_FRAC of it, all off for 50 ms after
+        n_push = int(round(self.push_time / SIM_DT))
+        n_feet = int(round(FEET_LIFT_FRAC * self.push_time / SIM_DT))
+        n_end = min(n_push + int(0.05 / SIM_DT), self.nstep)
+        want = np.zeros((n_end, 4), bool)
+        want[:n_push, :2] = True
+        want[:n_feet, 2:] = True
+        sched = (limbs[i, :n_end] != want).sum() * SIM_DT
+        gap = 0.0  # the schedule replaces the gap measure
       s = (along - W_PERP * perp - W_SPIN * spin - W_PITCH * pitch_excess
            - W_CLEAR * clear - W_CALM * calm - W_EFFORT * effort
-           - W_SMOOTH * jitter - W_TAP * taps - W_GAP * gap)
+           - W_SMOOTH * jitter - W_TAP * taps - W_GAP * gap
+           - W_SCHED * sched)
       if not took_off:
         s -= 5
       scores[i] = s
@@ -313,7 +332,7 @@ class LaunchOpt:
             'spin_per_mass': float(spin), 'max_pitch_deg': float(np.degrees(pitch[i, window].max())),
             'clearance_violation_ms': float(clear), 'calm_rad_s': float(calm),
             'effort': float(effort), 'jitter': float(jitter), 'taps': taps,
-            'gap_s': float(gap),
+            'gap_s': float(gap), 'schedule_error_s': float(sched),
             'score': float(s)})
     return (scores, details) if detail else scores
 
@@ -394,11 +413,13 @@ def main():
   parser.add_argument('--angle', type=float, default=30.0)
   parser.add_argument('--iters', type=int, default=150)
   parser.add_argument('--out', default='launch_trajopt.npz')
+  parser.add_argument('--push_time', type=float, default=0.0,
+                      help='enforce a contact schedule with this push time')
   parser.add_argument('--init', default=None,
                       help='refine from saved controls (*_controls.npy)')
   args = parser.parse_args()
 
-  opt = LaunchOpt(args.torque, args.angle)
+  opt = LaunchOpt(args.torque, args.angle, push_time=args.push_time)
 
   def save(knots):
     half = from_knots(knots)
@@ -423,7 +444,9 @@ def main():
 
   # warm starts: reference push compressed to several durations
   candidates = {}
-  for push_time in [0.3, 0.4, 0.5, 0.7, 1.06]:
+  pushes = ([args.push_time] if args.push_time > 0 else
+            [0.3, 0.4, 0.5, 0.7, 1.06])
+  for push_time in pushes:
     knots = to_knots(opt.pd_warm_start(push_time))
     _, det = opt.evaluate(from_knots(knots)[None], detail=True)
     candidates[push_time] = (knots, det[0])
@@ -431,7 +454,7 @@ def main():
   ranked = sorted(candidates, key=lambda p: candidates[p][1].get('score', -1e9),
                   reverse=True)
   best, best_score = None, -np.inf
-  for init_time in ranked[:2]:
+  for init_time in ranked[:2 if len(ranked) > 1 else 1]:
     print(f'optimizing from push {init_time}s warm start', flush=True)
     t0 = time.time()
     knots, score, _ = opt.optimize(candidates[init_time][0], iters=args.iters)
