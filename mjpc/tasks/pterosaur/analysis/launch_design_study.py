@@ -316,7 +316,8 @@ def main():
         runs = [r[1] for r in runs]
         row = {'torque_scale': ts, 'spring_energy_J': es,
                'motor': 'ideal' if not no_load else f'dc_{no_load:g}rad/s',
-               **best, 'run_scores': [r['score'] for r in runs], **info}
+               **best, 'run_scores': [r['score'] for r in runs],
+               'controls': warm.tolist(), **info}
         results.append(row)
         print(f"{row['motor']:>12s} torque x{ts:<3g} spring {es:6.0f} J -> "
               f"takeoff {best['speed']:5.2f} m/s @ {best['angle_deg']:5.1f} deg "
