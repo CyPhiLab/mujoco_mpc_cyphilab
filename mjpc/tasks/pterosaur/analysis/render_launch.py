@@ -75,11 +75,11 @@ def render_reference(path):
   rec.save(path)
 
 
-def render_trajectory(time, qpos, title, path, comvel=None):
+def render_trajectory(time, qpos, title, path, comvel=None, slow=1.0):
   m = mujoco.MjModel.from_xml_path(os.path.join(TASK_DIR, 'task.xml'))
   d = mujoco.MjData(m)
   rec = Recorder(m)
-  for ft in np.arange(time[0], time[-1], 1 / FPS):
+  for ft in np.arange(time[0], time[-1], 1 / (FPS * slow)):
     k = min(int(np.searchsorted(time, ft)), len(time) - 1)
     d.qpos[:] = qpos[k]
     mujoco.mj_forward(m, d)
@@ -96,13 +96,16 @@ def main():
   parser.add_argument('npz', nargs='?')
   parser.add_argument('--out', default='launch.mp4')
   parser.add_argument('--title', default='trajectory')
+  parser.add_argument('--slow', type=float, default=1.0,
+                      help='slow-motion factor, e.g. 4')
   args = parser.parse_args()
   if args.what == 'reference':
     render_reference(args.out)
   else:
     data = np.load(args.npz)
     render_trajectory(data['time'], data['qpos'], args.title, args.out,
-                      data['comvel'] if 'comvel' in data else None)
+                      data['comvel'] if 'comvel' in data else None,
+                      slow=args.slow)
 
 
 if __name__ == '__main__':

@@ -66,7 +66,7 @@ W_CLEAR = 500.0     # clearance violation integrated over time (per m s)
 W_CALM = 0.5        # mean joint speed after takeoff (per rad/s)
 W_EFFORT = 0.1      # mean squared control
 W_SMOOTH = 20.0     # mean control change per step (per unit per 2 ms)
-W_TAP = 0.2         # each hand/foot liftoff before takeoff (tapping)
+W_TAP = 0.5         # each hand/foot liftoff before takeoff (tapping)
 
 
 def reference():
