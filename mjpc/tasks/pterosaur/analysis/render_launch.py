@@ -6,6 +6,8 @@ renders the kinematic reference trajectory.
 
 Usage (headless: MUJOCO_GL=osmesa or egl):
   render_launch.py reference [--out launch_reference.mp4]
+  render_launch.py npz trajectory.npz [--out launch.mp4] [--title text]
+    (any npz with time and qpos arrays, e.g. from launch_trajopt.py)
 """
 import argparse
 import os
@@ -73,12 +75,34 @@ def render_reference(path):
   rec.save(path)
 
 
+def render_trajectory(time, qpos, title, path, comvel=None):
+  m = mujoco.MjModel.from_xml_path(os.path.join(TASK_DIR, 'task.xml'))
+  d = mujoco.MjData(m)
+  rec = Recorder(m)
+  for ft in np.arange(time[0], time[-1], 1 / FPS):
+    k = min(int(np.searchsorted(time, ft)), len(time) - 1)
+    d.qpos[:] = qpos[k]
+    mujoco.mj_forward(m, d)
+    text = f'{title}  t={ft - time[0]:.2f}s'
+    if comvel is not None:
+      text += f'  |v_com|={np.linalg.norm(comvel[k]):.2f} m/s'
+    rec.capture(d, text)
+  rec.save(path)
+
+
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('what', choices=['reference'])
-  parser.add_argument('--out', default='launch_reference.mp4')
+  parser.add_argument('what', choices=['reference', 'npz'])
+  parser.add_argument('npz', nargs='?')
+  parser.add_argument('--out', default='launch.mp4')
+  parser.add_argument('--title', default='trajectory')
   args = parser.parse_args()
-  render_reference(args.out)
+  if args.what == 'reference':
+    render_reference(args.out)
+  else:
+    data = np.load(args.npz)
+    render_trajectory(data['time'], data['qpos'], args.title, args.out,
+                      data['comvel'] if 'comvel' in data else None)
 
 
 if __name__ == '__main__':
