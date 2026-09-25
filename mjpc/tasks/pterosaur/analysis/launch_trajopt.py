@@ -63,6 +63,7 @@ PITCH_MAX = np.deg2rad(45)
 W_CLEAR = 500.0     # clearance violation integrated over time (per m s)
 W_CALM = 0.5        # mean joint speed after takeoff (per rad/s)
 W_EFFORT = 0.1      # mean squared control
+W_SMOOTH = 20.0     # mean control change per step (per unit per 2 ms)
 
 
 def reference():
@@ -248,8 +249,10 @@ class LaunchOpt:
       clear = violation[i, :k + 1].sum() * SIM_DT
       calm = np.abs(qvel[i, k:k + calm_steps, 6:]).mean() if took_off else 0
       effort = np.mean(ctrl[i] ** 2)
+      jitter = np.abs(np.diff(ctrl[i], axis=0)).mean()
       s = (along - W_PERP * perp - W_SPIN * spin - W_PITCH * pitch_excess
-           - W_CLEAR * clear - W_CALM * calm - W_EFFORT * effort)
+           - W_CLEAR * clear - W_CALM * calm - W_EFFORT * effort
+           - W_SMOOTH * jitter)
       if not took_off:
         s -= 5
       scores[i] = s
@@ -260,7 +263,8 @@ class LaunchOpt:
             'angle_deg': float(np.degrees(np.arctan2(v[2], np.hypot(v[0], v[1])))),
             'spin_per_mass': float(spin), 'max_pitch_deg': float(np.degrees(pitch[i, window].max())),
             'clearance_violation_ms': float(clear), 'calm_rad_s': float(calm),
-            'effort': float(effort), 'score': float(s)})
+            'effort': float(effort), 'jitter': float(jitter),
+            'score': float(s)})
     return (scores, details) if detail else scores
 
   def evaluate(self, halves, detail=False):
@@ -330,15 +334,38 @@ class LaunchOpt:
     return out
 
 
+def smooth(half, window=0.03):
+  """Moving-average low-pass of a control sequence (nstep, 6)."""
+  n = max(1, int(round(window / SIM_DT)))
+  kernel = np.ones(n) / n
+  padded = np.pad(half, ((n // 2, n - 1 - n // 2), (0, 0)), mode='edge')
+  return np.stack([np.convolve(padded[:, c], kernel, mode='valid')
+                   for c in range(half.shape[1])], axis=1)
+
+
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--torque', type=float, default=2.0)
   parser.add_argument('--angle', type=float, default=30.0)
   parser.add_argument('--iters', type=int, default=150)
   parser.add_argument('--out', default='launch_trajopt.npz')
+  parser.add_argument('--init', default=None,
+                      help='refine from saved controls (*_controls.npy)')
   args = parser.parse_args()
 
   opt = LaunchOpt(args.torque, args.angle)
+  if args.init:
+    init = smooth(np.load(args.init))
+    _, det = opt.evaluate(init[None], detail=True)
+    print(f'refining from {args.init} (smoothed): {det[0]}', flush=True)
+    best, _, _ = opt.optimize(init, iters=args.iters, sigma0=0.1)
+    _, det = opt.evaluate(best[None], detail=True)
+    print(f'done: {det[0]}', flush=True)
+    opt.record(best, args.out)
+    np.save(os.path.splitext(args.out)[0] + '_controls.npy', best)
+    print('wrote', args.out)
+    return
+
   print(f'start at reference t={opt.ref["time"][opt.i0]:.2f}s, horizon {HORIZON}s')
 
   # warm starts: reference push compressed to several durations

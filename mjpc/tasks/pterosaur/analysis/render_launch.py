@@ -28,7 +28,7 @@ def make_camera():
   cam = mujoco.MjvCamera()
   cam.type = mujoco.mjtCamera.mjCAMERA_FREE
   cam.azimuth = 90      # side view of the sagittal (x-z) plane
-  cam.elevation = -10
+  cam.elevation = -2      # near-horizontal, so body pitch reads true
   cam.distance = 4.5
   return cam
 
