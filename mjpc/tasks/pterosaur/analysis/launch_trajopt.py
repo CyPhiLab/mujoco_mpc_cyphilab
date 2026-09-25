@@ -33,8 +33,10 @@ HORIZON = 1.0           # seconds from the deepest crouch
 JOINT_MARGIN = 0.3      # hard joint limits: reference range +- margin
 MIN_FLIGHT = 0.15       # airborne this long counts as takeoff
 KNOT_DT = 0.04          # control perturbation knot spacing
-FOOT_SOLIMP = [0.95, 0.99, 0.001]
-FOOT_SOLREF = [0.005, 1]
+# MuJoCo default contact impedance for the feet: the model's soft feet
+# (solimp width 3.1 cm) sink onto the shins; much stiffer (1 mm) bounces
+FOOT_SOLIMP = [0.9, 0.95, 0.001]
+FOOT_SOLREF = [0.02, 1]
 
 # left/right mirror sign per limb joint (shoulder1 axes are mirrored)
 MIRROR = np.array([-1, 1, 1, 1, 1, 1])
@@ -64,6 +66,7 @@ W_CLEAR = 500.0     # clearance violation integrated over time (per m s)
 W_CALM = 0.5        # mean joint speed after takeoff (per rad/s)
 W_EFFORT = 0.1      # mean squared control
 W_SMOOTH = 20.0     # mean control change per step (per unit per 2 ms)
+W_TAP = 0.2         # each hand/foot liftoff before takeoff (tapping)
 
 
 def reference():
@@ -81,6 +84,10 @@ def load_model(torque):
   <include file="task.xml"/>
   <sensor>
     <contact name="to_floor" subtree1="body" geom2="floor" num="1" data="found"/>
+    <contact name="to_hand_l" body1="radius_and_ulna" geom2="floor" num="1" data="found"/>
+    <contact name="to_hand_r" body1="radius_and_ulna_2" geom2="floor" num="1" data="found"/>
+    <contact name="to_foot_l" body1="tibia" geom2="floor" num="1" data="found"/>
+    <contact name="to_foot_r" body1="tibia_2" geom2="floor" num="1" data="found"/>
     <subtreeangmom name="to_angmom" body="body"/>
     <framexaxis name="to_body_x" objtype="xbody" objname="body"/>
     {frames}
@@ -145,7 +152,8 @@ class LaunchOpt:
     m = self.m
     self.s = {n: sensor(m, n) for n in
               ['to_floor', 'to_angmom', 'to_body_x', 'torso_subtreelinvel',
-               'torso_subtreecom']}
+               'torso_subtreecom', 'to_hand_l', 'to_hand_r', 'to_foot_l',
+               'to_foot_r']}
     for b in {b for b, _, _ in CLEARANCE}:
       for k in ('pos', 'x', 'z'):
         self.s[f'{k}_{b}'] = sensor(m, f'to_{k}_{b}')
@@ -220,6 +228,10 @@ class LaunchOpt:
     thresholds = np.array([c for _, _, c in CLEARANCE])
     violation = np.maximum(thresholds - heights, 0).sum(axis=-1)  # (n, nstep)
     pitch = np.abs(np.arcsin(np.clip(body_x[..., 2], -1, 1)))    # (n, nstep)
+    limbs = np.stack([sens[:, :, self.s[k]][:, :, 0] > 0 for k in
+                      ('to_hand_l', 'to_hand_r', 'to_foot_l', 'to_foot_r')],
+                     axis=-1)                                     # (n, nstep, 4)
+    liftoffs = limbs[:, :-1] & ~limbs[:, 1:]                       # (n, nstep-1, 4)
 
     scores = np.empty(n)
     details = []
@@ -250,9 +262,11 @@ class LaunchOpt:
       calm = np.abs(qvel[i, k:k + calm_steps, 6:]).mean() if took_off else 0
       effort = np.mean(ctrl[i] ** 2)
       jitter = np.abs(np.diff(ctrl[i], axis=0)).mean()
+      # each limb should lift off once: extra liftoffs are taps/bounces
+      taps = max(int(liftoffs[i, :k].sum()) - 4, 0)
       s = (along - W_PERP * perp - W_SPIN * spin - W_PITCH * pitch_excess
            - W_CLEAR * clear - W_CALM * calm - W_EFFORT * effort
-           - W_SMOOTH * jitter)
+           - W_SMOOTH * jitter - W_TAP * taps)
       if not took_off:
         s -= 5
       scores[i] = s
@@ -263,7 +277,7 @@ class LaunchOpt:
             'angle_deg': float(np.degrees(np.arctan2(v[2], np.hypot(v[0], v[1])))),
             'spin_per_mass': float(spin), 'max_pitch_deg': float(np.degrees(pitch[i, window].max())),
             'clearance_violation_ms': float(clear), 'calm_rad_s': float(calm),
-            'effort': float(effort), 'jitter': float(jitter),
+            'effort': float(effort), 'jitter': float(jitter), 'taps': taps,
             'score': float(s)})
     return (scores, details) if detail else scores
 
