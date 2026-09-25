@@ -45,6 +45,7 @@ class Pterosaur : public Task {
       kModeScramble,
       kModeFlip,
       kModeLaunch,
+      kModeLaunchTrack,
       kNumMode
     };
 
@@ -152,6 +153,13 @@ class Pterosaur : public Task {
     constexpr static double kLaunchSpeed = 12.96;       // m/s
     constexpr static double kLaunchAngle = 35 * mjPI / 180.0;
 
+    // launch track: floor height the reference was recorded on
+    constexpr static double kRefGroundHeight = -1.0;  // meter
+
+    // launch track: window before takeoff with emphasized base velocity
+    constexpr static double kRefTakeoffWindow = 0.2;   // second
+    constexpr static double kRefTakeoffVelScale = 3.0; // unitless
+
     //  ============  methods  ============
     // return internal phase clock
     double GetPhase(double time) const;
@@ -183,6 +191,11 @@ class Pterosaur : public Task {
 
     // orientation during launch
     void LaunchQuat(double quat[4], double time) const;
+
+    // launch track: aligned reference state and contact flags at time
+    void LaunchReference(const mjModel* model, double time, double* qpos,
+                         double* qvel, bool* hands_contact,
+                         bool* feet_contact) const;
 
     //  ============  task state variables, managed by Transition  ============
     A1Mode current_mode_       = kModeQuadruped;
@@ -227,6 +240,11 @@ class Pterosaur : public Task {
     int balance_cost_id_      = -1;
     int height_cost_id_       = -1;
     int launch_velocity_cost_id_ = -1;
+    int ref_base_pos_cost_id_ = -1;
+    int ref_base_ori_cost_id_ = -1;
+    int ref_joint_pos_cost_id_ = -1;
+    int ref_base_vel_cost_id_ = -1;
+    int ref_joint_vel_cost_id_ = -1;
     int foot_geom_id_[kNumFoot];
     int shoulder_body_id_[kNumFoot];
 
@@ -248,6 +266,19 @@ class Pterosaur : public Task {
     double jump_rot_vel_      = 0;
     double jump_rot_acc_      = 0;
     double land_rot_acc_      = 0;
+
+    // launch track reference, from launch_reference.xml
+    int ref_key_start_        = -1;    // key id of launch_ref_000
+    int ref_num_frames_       = 0;
+    double ref_dt_            = 0;
+    double ref_takeoff_time_  = 0;
+    int ref_hands_contact_adr_ = -1;   // numeric_data address
+    int ref_feet_contact_adr_  = -1;   // numeric_data address
+
+    // launch track alignment of reference to robot, set on mode entry
+    double ref_origin_[3]     = {0};   // reference base position, frame 0
+    double ref_offset_[3]     = {0};   // translation after yaw rotation
+    double ref_yaw_quat_[4]   = {1, 0, 0, 0};
   };
 
   Pterosaur() : residual_(this) {}

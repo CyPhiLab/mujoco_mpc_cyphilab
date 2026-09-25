@@ -14,6 +14,8 @@
 
 #include "mjpc/tasks/pterosaur/pterosaur.h"
 
+#include <algorithm>
+#include <cstdio>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -559,11 +561,79 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
       residual[counter++] = land_second_half ? touch_penalty(rr_touch) : 0.0;
       residual[counter++] = land_second_half ? touch_penalty(rl_touch) : 0.0;
     }
+  } else if (current_mode_ == kModeLaunchTrack && ref_key_start_ >= 0) {
+    // require contact wherever the reference has it
+    double launch_time = data->time - mode_start_time_;
+    bool hands_contact, feet_contact;
+    LaunchReference(model, launch_time, nullptr, nullptr, &hands_contact,
+                    &feet_contact);
+    double contact_threshold = 0.05;
+    auto touch_penalty = [&](const char* name, bool active) {
+      double* touch = SensorByName(model, data, name);
+      return active ? mju_max(0.0, contact_threshold - touch[0]) : 0.0;
+    };
+    residual[counter++] = touch_penalty("FR_touch", hands_contact);
+    residual[counter++] = touch_penalty("FL_touch", hands_contact);
+    residual[counter++] = touch_penalty("RR_touch", feet_contact);
+    residual[counter++] = touch_penalty("RL_touch", feet_contact);
   } else {
     residual[counter++] = 0.0;
     residual[counter++] = 0.0;
     residual[counter++] = 0.0;
     residual[counter++] = 0.0;
+  }
+
+
+  // ---------- Launch Track reference ----------
+  // base pos (3), base orientation (3), joint pos (nu), base vel (6),
+  // joint vel (nu)
+  int ref_dim = 3 + 3 + model->nu + 6 + model->nu;
+  if (current_mode_ == kModeLaunchTrack && ref_key_start_ >= 0) {
+    double launch_time = data->time - mode_start_time_;
+    std::vector<double> ref_qpos(model->nq), ref_qvel(model->nv);
+    LaunchReference(model, launch_time, ref_qpos.data(), ref_qvel.data(),
+                    nullptr, nullptr);
+
+    // after takeoff the reference base motion is not ballistic (it assumes
+    // aerodynamic forces): track only posture and trunk orientation
+    bool airborne = launch_time >= ref_takeoff_time_;
+    bool takeoff_window =
+        !airborne && launch_time >= ref_takeoff_time_ - kRefTakeoffWindow;
+
+    // base position
+    if (airborne) {
+      mju_zero(residual + counter, 3);
+    } else {
+      mju_sub3(residual + counter, data->qpos, ref_qpos.data());
+    }
+    counter += 3;
+
+    // base orientation
+    mju_subQuat(residual + counter, data->qpos + 3, ref_qpos.data() + 3);
+    counter += 3;
+
+    // joint position
+    mju_sub(residual + counter, data->qpos + 7, ref_qpos.data() + 7,
+            model->nu);
+    counter += model->nu;
+
+    // base linear and angular velocity
+    mju_sub(residual + counter, data->qvel, ref_qvel.data(), 6);
+    if (airborne) {
+      mju_zero(residual + counter, 3);
+    } else if (takeoff_window) {
+      // emphasize reaching the takeoff velocity
+      mju_scl3(residual + counter, residual + counter, kRefTakeoffVelScale);
+    }
+    counter += 6;
+
+    // joint velocity
+    mju_sub(residual + counter, data->qvel + 6, ref_qvel.data() + 6,
+            model->nu);
+    counter += model->nu;
+  } else {
+    mju_zero(residual + counter, ref_dim);
+    counter += ref_dim;
   }
 
 
@@ -588,7 +658,9 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
   if (mode != residual_.current_mode_ &&
       residual_.current_mode_ != ResidualFn::kModeQuadruped) {
     // switch into stateful mode only allowed from Quadruped
-    if (mode == ResidualFn::kModeWalk || mode == ResidualFn::kModeFlip || mode == ResidualFn::kModeLaunch) {
+    if (mode == ResidualFn::kModeWalk || mode == ResidualFn::kModeFlip ||
+        mode == ResidualFn::kModeLaunch ||
+        mode == ResidualFn::kModeLaunchTrack) {
       mode = ResidualFn::kModeQuadruped;
     }
   }
@@ -850,6 +922,76 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
     }
   }
 
+  // ---------- Launch Track ----------
+  if (mode == ResidualFn::kModeLaunchTrack && residual_.ref_key_start_ < 0) {
+    // no reference loaded
+    mode = ResidualFn::kModeQuadruped;
+  }
+  if (mode == ResidualFn::kModeLaunchTrack) {
+    // switching into Launch Track, reset task state
+    if (mode != residual_.current_mode_) {
+      // save time
+      residual_.mode_start_time_ = data->time;
+
+      // align reference frame 0 with the robot: keep its horizontal position
+      // and heading, shift height by the ground offset
+      const double* ref_qpos0 =
+          model->key_qpos + model->nq * residual_.ref_key_start_;
+      mju_copy3(residual_.ref_origin_, ref_qpos0);
+      double* torso_xmat = data->xmat + 9*residual_.torso_body_id_;
+      double yaw = mju_atan2(torso_xmat[3], torso_xmat[0]);
+      double z_axis[3] = {0, 0, 1};
+      mju_axisAngle2Quat(residual_.ref_yaw_quat_, z_axis, yaw);
+      residual_.ground_ = Ground(model, data, compos);
+      residual_.ref_offset_[0] = data->qpos[0];
+      residual_.ref_offset_[1] = data->qpos[1];
+      residual_.ref_offset_[2] = ref_qpos0[2] + residual_.ground_ -
+                                 ResidualFn::kRefGroundHeight;
+
+      // snap state to reference frame 0
+      // (no mj_forward here: the sensor callback would re-lock the task)
+      residual_.LaunchReference(model, 0, data->qpos, data->qvel, nullptr,
+                                nullptr);
+
+      // save parameters
+      residual_.save_weight_ = weight;
+      residual_.save_gait_switch_ = parameters[residual_.gait_switch_param_id_];
+
+      // set weights for reference tracking
+      weight[CostTermByName(model, "Upright")] = 0;
+      weight[CostTermByName(model, "Height")] = 0;
+      weight[CostTermByName(model, "Position")] = 0;
+      weight[CostTermByName(model, "LaunchVelocity")] = 0;
+      weight[CostTermByName(model, "Gait")] = 0;
+      weight[CostTermByName(model, "Balance")] = 0;
+      weight[CostTermByName(model, "Effort")] = 0.005;
+      weight[CostTermByName(model, "Posture")] = 0;
+      weight[CostTermByName(model, "Orientation")] = 0;
+      weight[CostTermByName(model, "Angmom")] = 0;
+      weight[CostTermByName(model, "GroundContact")] = 1;
+      weight[residual_.ref_base_pos_cost_id_] = 5;
+      weight[residual_.ref_base_ori_cost_id_] = 3;
+      weight[residual_.ref_joint_pos_cost_id_] = 2;
+      weight[residual_.ref_base_vel_cost_id_] = 0.5;
+      weight[residual_.ref_joint_vel_cost_id_] = 0.05;
+      parameters[residual_.gait_switch_param_id_] = ReinterpretAsDouble(0);
+    }
+
+    // time from start of Launch Track
+    double launch_time = data->time - residual_.mode_start_time_;
+    double duration =
+        (residual_.ref_num_frames_ - 1) * residual_.ref_dt_;
+
+    if (launch_time >= duration) {
+      // reference ended, back to Quadruped, restore values
+      mode = ResidualFn::kModeQuadruped;
+      weight = residual_.save_weight_;
+      parameters[residual_.gait_switch_param_id_] = residual_.save_gait_switch_;
+      goal_pos[0] = data->site_xpos[3*residual_.head_site_id_ + 0];
+      goal_pos[1] = data->site_xpos[3*residual_.head_site_id_ + 1];
+    }
+  }
+
   // save mode
   residual_.current_mode_ = static_cast<ResidualFn::A1Mode>(mode);
   residual_.last_transition_time_ = data->time;
@@ -880,6 +1022,23 @@ void Pterosaur::ModifyScene(const mjModel* model, const mjData* data,
     AddGeom(scene, mjGEOM_BOX, size, pos, mat, rgba);
 
     // don't draw anything else during flip
+    return;
+  }
+
+  // launch track reference base pose
+  if (residual_.current_mode_ == ResidualFn::kModeLaunchTrack &&
+      residual_.ref_key_start_ >= 0) {
+    double launch_time = data->time - residual_.mode_start_time_;
+    std::vector<double> ref_qpos(model->nq);
+    residual_.LaunchReference(model, launch_time, ref_qpos.data(), nullptr,
+                              nullptr, nullptr);
+    double mat[9];
+    mju_quat2Mat(mat, ref_qpos.data() + 3);
+    double size[3] = {0.25, 0.15, 0.05};
+    float rgba[4] = {0, 1, 0, 0.5};
+    AddGeom(scene, mjGEOM_BOX, size, ref_qpos.data(), mat, rgba);
+
+    // don't draw gait visuals during launch track
     return;
   }
 
@@ -992,6 +1151,45 @@ void Pterosaur::ResetLocked(const mjModel* model) {
   residual_.upright_cost_id_ = CostTermByName(model, "Upright");
   residual_.height_cost_id_ = CostTermByName(model, "Height");
   residual_.launch_velocity_cost_id_ = CostTermByName(model, "LaunchVelocity");
+  residual_.ref_base_pos_cost_id_ = CostTermByName(model, "RefBasePos");
+  residual_.ref_base_ori_cost_id_ = CostTermByName(model, "RefBaseOri");
+  residual_.ref_joint_pos_cost_id_ = CostTermByName(model, "RefJointPos");
+  residual_.ref_base_vel_cost_id_ = CostTermByName(model, "RefBaseVel");
+  residual_.ref_joint_vel_cost_id_ = CostTermByName(model, "RefJointVel");
+
+  // ----------  launch track reference  ----------
+  // keyframes launch_ref_000, launch_ref_001, ... from launch_reference.xml
+  residual_.ref_key_start_ = mj_name2id(model, mjOBJ_KEY, "launch_ref_000");
+  residual_.ref_num_frames_ = 0;
+  if (residual_.ref_key_start_ >= 0) {
+    char name[32];
+    while (true) {
+      std::snprintf(name, sizeof(name), "launch_ref_%03d",
+                    residual_.ref_num_frames_);
+      if (mj_name2id(model, mjOBJ_KEY, name) !=
+          residual_.ref_key_start_ + residual_.ref_num_frames_) {
+        break;
+      }
+      residual_.ref_num_frames_++;
+    }
+  }
+  int hands_id = mj_name2id(model, mjOBJ_NUMERIC, "launch_ref_hands_contact");
+  int feet_id = mj_name2id(model, mjOBJ_NUMERIC, "launch_ref_feet_contact");
+  double* takeoff = GetCustomNumericData(model, "launch_ref_takeoff");
+  if (residual_.ref_num_frames_ < 2 || hands_id < 0 || feet_id < 0 ||
+      !takeoff ||
+      model->numeric_size[hands_id] != residual_.ref_num_frames_ ||
+      model->numeric_size[feet_id] != residual_.ref_num_frames_) {
+    // reference missing or malformed: Launch Track disabled
+    residual_.ref_key_start_ = -1;
+  } else {
+    residual_.ref_dt_ =
+        model->key_time[residual_.ref_key_start_ + 1] -
+        model->key_time[residual_.ref_key_start_];
+    residual_.ref_takeoff_time_ = takeoff[0];
+    residual_.ref_hands_contact_adr_ = model->numeric_adr[hands_id];
+    residual_.ref_feet_contact_adr_ = model->numeric_adr[feet_id];
+  }
 
   // ----------  model identifiers  ----------
   residual_.torso_body_id_ = mj_name2id(model, mjOBJ_XBODY, "body");
@@ -1232,5 +1430,56 @@ void Pterosaur::ResidualFn::FlipQuat(double quat[4], double time) const {
 
 void Pterosaur::ResidualFn::LaunchQuat(double quat[4], double time) const {
   mju_copy4(quat, orientation_);
+}
+
+// launch track: reference state at time, interpolated between keyframes and
+// aligned to the robot pose at mode entry. any output may be nullptr.
+void Pterosaur::ResidualFn::LaunchReference(const mjModel* model, double time,
+                                            double* qpos, double* qvel,
+                                            bool* hands_contact,
+                                            bool* feet_contact) const {
+  int last = ref_num_frames_ - 1;
+  double index = mju_clip(time / ref_dt_, 0, last);
+  int index_0 = std::min(static_cast<int>(std::floor(index)), last);
+  int index_1 = std::min(index_0 + 1, last);
+  double weight_1 = index - index_0;
+  double weight_0 = 1 - weight_1;
+
+  if (qpos) {
+    const double* qpos_0 = model->key_qpos + model->nq*(ref_key_start_ + index_0);
+    const double* qpos_1 = model->key_qpos + model->nq*(ref_key_start_ + index_1);
+    mju_scl(qpos, qpos_0, weight_0, model->nq);
+    mju_addToScl(qpos, qpos_1, weight_1, model->nq);
+    mju_normalize4(qpos + 3);
+
+    // rotate about reference origin by heading, then translate
+    double pos[3];
+    mju_sub3(pos, qpos, ref_origin_);
+    mju_rotVecQuat(qpos, pos, ref_yaw_quat_);
+    mju_addTo3(qpos, ref_offset_);
+    double quat[4];
+    mju_mulQuat(quat, ref_yaw_quat_, qpos + 3);
+    mju_copy4(qpos + 3, quat);
+  }
+
+  if (qvel) {
+    const double* qvel_0 = model->key_qvel + model->nv*(ref_key_start_ + index_0);
+    const double* qvel_1 = model->key_qvel + model->nv*(ref_key_start_ + index_1);
+    mju_scl(qvel, qvel_0, weight_0, model->nv);
+    mju_addToScl(qvel, qvel_1, weight_1, model->nv);
+
+    // linear velocity is in world frame, angular velocity in body frame
+    double vel[3];
+    mju_rotVecQuat(vel, qvel, ref_yaw_quat_);
+    mju_copy3(qvel, vel);
+  }
+
+  int nearest = weight_1 < 0.5 ? index_0 : index_1;
+  if (hands_contact) {
+    *hands_contact = model->numeric_data[ref_hands_contact_adr_ + nearest];
+  }
+  if (feet_contact) {
+    *feet_contact = model->numeric_data[ref_feet_contact_adr_ + nearest];
+  }
 }
 }  // namespace mjpc
