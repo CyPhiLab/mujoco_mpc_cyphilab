@@ -586,25 +586,30 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
   // ---------- Launch Track reference ----------
   // base pos (3), base orientation (3), joint pos (nu), base vel (6),
-  // joint vel (nu)
-  int ref_dim = 3 + 3 + model->nu + 6 + model->nu;
+  // joint vel (nu), takeoff CoM velocity (3)
+  int ref_dim = 3 + 3 + model->nu + 6 + model->nu + 3;
   if (current_mode_ == kModeLaunchTrack && ref_key_start_ >= 0) {
     double launch_time = data->time - mode_start_time_;
     std::vector<double> ref_qpos(model->nq), ref_qvel(model->nv);
     LaunchReference(model, launch_time, ref_qpos.data(), ref_qvel.data(),
                     nullptr, nullptr);
 
-    // after takeoff the reference base motion is not ballistic (it assumes
-    // aerodynamic forces): track only posture and trunk orientation
+    // push: from the deepest crouch to takeoff the reference base motion is
+    // replaced by a takeoff velocity target, so the launch speed comes from
+    // the push rather than the reference. after takeoff the reference base
+    // motion is not ballistic (it assumes aerodynamic forces): track only
+    // posture and trunk orientation.
     bool airborne = launch_time >= ref_takeoff_time_;
-    bool takeoff_window =
-        !airborne && launch_time >= ref_takeoff_time_ - kRefTakeoffWindow;
+    bool push = !airborne && launch_time >= ref_push_start_;
 
     // base position
     if (airborne) {
       mju_zero(residual + counter, 3);
     } else {
       mju_sub3(residual + counter, data->qpos, ref_qpos.data());
+      if (push) {
+        mju_scl3(residual + counter, residual + counter, kRefPushBaseScale);
+      }
     }
     counter += 3;
 
@@ -619,11 +624,8 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
 
     // base linear and angular velocity
     mju_sub(residual + counter, data->qvel, ref_qvel.data(), 6);
-    if (airborne) {
+    if (airborne || push) {
       mju_zero(residual + counter, 3);
-    } else if (takeoff_window) {
-      // emphasize reaching the takeoff velocity
-      mju_scl3(residual + counter, residual + counter, kRefTakeoffVelScale);
     }
     counter += 6;
 
@@ -631,6 +633,23 @@ if (current_mode_ != kModeFlip && current_mode_ != kModeLaunch) {
     mju_sub(residual + counter, data->qvel + 6, ref_qvel.data() + 6,
             model->nu);
     counter += model->nu;
+
+    // takeoff: CoM velocity ramps to the launch velocity at takeoff time,
+    // along the reference heading
+    if (push) {
+      double alpha = (launch_time - ref_push_start_) /
+                     (ref_takeoff_time_ - ref_push_start_);
+      double speed = alpha * parameters_[launch_speed_param_id_];
+      double angle = parameters_[launch_angle_param_id_] * mjPI / 180;
+      double direction[3] = {-mju_cos(angle), 0, mju_sin(angle)};
+      double target[3];
+      mju_rotVecQuat(target, direction, ref_yaw_quat_);
+      mju_scl3(target, target, speed);
+      mju_sub3(residual + counter, comvel, target);
+    } else {
+      mju_zero(residual + counter, 3);
+    }
+    counter += 3;
   } else {
     mju_zero(residual + counter, ref_dim);
     counter += ref_dim;
@@ -930,8 +949,11 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
   if (mode == ResidualFn::kModeLaunchTrack) {
     // switching into Launch Track, reset task state
     if (mode != residual_.current_mode_) {
-      // save time
-      residual_.mode_start_time_ = data->time;
+      // start the reference at "Ref start", e.g. the deepest crouch
+      double ref_start = mju_clip(
+          parameters[residual_.ref_start_param_id_], 0,
+          (residual_.ref_num_frames_ - 1) * residual_.ref_dt_);
+      residual_.mode_start_time_ = data->time - ref_start;
 
       // align reference frame 0 with the robot: keep its horizontal position
       // and heading, shift height by the ground offset
@@ -948,10 +970,10 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       residual_.ref_offset_[2] = ref_qpos0[2] + residual_.ground_ -
                                  ResidualFn::kRefGroundHeight;
 
-      // snap state to reference frame 0
+      // snap state to the reference at ref_start
       // (no mj_forward here: the sensor callback would re-lock the task)
-      residual_.LaunchReference(model, 0, data->qpos, data->qvel, nullptr,
-                                nullptr);
+      residual_.LaunchReference(model, ref_start, data->qpos, data->qvel,
+                                nullptr, nullptr);
 
       // save parameters
       residual_.save_weight_ = weight;
@@ -974,6 +996,7 @@ void Pterosaur::TransitionLocked(mjModel* model, mjData* data) {
       weight[residual_.ref_joint_pos_cost_id_] = 2;
       weight[residual_.ref_base_vel_cost_id_] = 0.5;
       weight[residual_.ref_joint_vel_cost_id_] = 0.05;
+      weight[residual_.ref_takeoff_cost_id_] = 2;
       parameters[residual_.gait_switch_param_id_] = ReinterpretAsDouble(0);
     }
 
@@ -1156,6 +1179,10 @@ void Pterosaur::ResetLocked(const mjModel* model) {
   residual_.ref_joint_pos_cost_id_ = CostTermByName(model, "RefJointPos");
   residual_.ref_base_vel_cost_id_ = CostTermByName(model, "RefBaseVel");
   residual_.ref_joint_vel_cost_id_ = CostTermByName(model, "RefJointVel");
+  residual_.ref_takeoff_cost_id_ = CostTermByName(model, "RefTakeoff");
+  residual_.launch_speed_param_id_ = ParameterIndex(model, "Launch speed");
+  residual_.launch_angle_param_id_ = ParameterIndex(model, "Launch angle");
+  residual_.ref_start_param_id_ = ParameterIndex(model, "Ref start");
 
   // ----------  launch track reference  ----------
   // keyframes launch_ref_000, launch_ref_001, ... from launch_reference.xml
@@ -1187,6 +1214,18 @@ void Pterosaur::ResetLocked(const mjModel* model) {
         model->key_time[residual_.ref_key_start_ + 1] -
         model->key_time[residual_.ref_key_start_];
     residual_.ref_takeoff_time_ = takeoff[0];
+
+    // push starts at the deepest crouch (lowest base) before takeoff
+    residual_.ref_push_start_ = 0;
+    double lowest = mjMAXVAL;
+    for (int i = 0; i < residual_.ref_num_frames_; i++) {
+      double t = i * residual_.ref_dt_;
+      double z = model->key_qpos[model->nq*(residual_.ref_key_start_ + i) + 2];
+      if (t < residual_.ref_takeoff_time_ && z < lowest) {
+        lowest = z;
+        residual_.ref_push_start_ = t;
+      }
+    }
     residual_.ref_hands_contact_adr_ = model->numeric_adr[hands_id];
     residual_.ref_feet_contact_adr_ = model->numeric_adr[feet_id];
   }

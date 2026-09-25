@@ -55,11 +55,14 @@
     <text name="residual_list_Biped type" data="Foot Stand|Hand Stand"/>
     <numeric name="residual_Heading" data="0 -3.14 3.14" />
     <numeric name="residual_Arm posture" data=".03 0 1"/>
+    <numeric name="residual_Launch speed" data="5 0 12"/>
+    <numeric name="residual_Launch angle" data="30 0 60"/>
+    <numeric name="residual_Ref start" data="0 0 1.9"/>
 
 
     <!-- estimator -->
     <numeric name="estimator" data="0" />
-    <numeric name="estimator_sensor_start" data="16" />
+    <numeric name="estimator_sensor_start" data="17" />
     <numeric name="estimator_number_sensor" data="21" />
     <numeric name="estimator_timestep" data="0.005" />
     <numeric name="batch_configuration_length" data="3" />
@@ -85,6 +88,7 @@
     <user name="RefJointPos" dim="12" user="0 0 0 20" />
     <user name="RefBaseVel" dim="6" user="0 0 0 5" />
     <user name="RefJointVel" dim="12" user="0 0 0 1" />
+    <user name="RefTakeoff" dim="3" user="0 0 0 10" />
 
 
     <!-- estimator measurements -->

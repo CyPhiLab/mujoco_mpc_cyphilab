@@ -156,9 +156,8 @@ class Pterosaur : public Task {
     // launch track: floor height the reference was recorded on
     constexpr static double kRefGroundHeight = -1.0;  // meter
 
-    // launch track: window before takeoff with emphasized base velocity
-    constexpr static double kRefTakeoffWindow = 0.2;   // second
-    constexpr static double kRefTakeoffVelScale = 3.0; // unitless
+    // launch track: base position tracking scale during the push
+    constexpr static double kRefPushBaseScale = 0.3;   // unitless
 
     //  ============  methods  ============
     // return internal phase clock
@@ -245,6 +244,10 @@ class Pterosaur : public Task {
     int ref_joint_pos_cost_id_ = -1;
     int ref_base_vel_cost_id_ = -1;
     int ref_joint_vel_cost_id_ = -1;
+    int ref_takeoff_cost_id_ = -1;
+    int launch_speed_param_id_ = -1;
+    int launch_angle_param_id_ = -1;
+    int ref_start_param_id_ = -1;
     int foot_geom_id_[kNumFoot];
     int shoulder_body_id_[kNumFoot];
 
@@ -272,6 +275,7 @@ class Pterosaur : public Task {
     int ref_num_frames_       = 0;
     double ref_dt_            = 0;
     double ref_takeoff_time_  = 0;
+    double ref_push_start_    = 0;     // deepest crouch before takeoff
     int ref_hands_contact_adr_ = -1;   // numeric_data address
     int ref_feet_contact_adr_  = -1;   // numeric_data address
 
