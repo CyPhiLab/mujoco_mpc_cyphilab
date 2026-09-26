@@ -54,6 +54,18 @@ def grid(name):
         [dict(torque=2), dict(torque=4), dict(torque=4, spring_energy=1000)] +
         [dict(torque=t, spring_energy=1000) for t in [6, 8]],
     ]
+  if name == 'hands_c':
+    # experiment 2 on the fastest design (6x torque + 500 J springs), from
+    # candidate C; contact force caps tighten step by step
+    base = dict(torque=6, spring_energy=500)
+    caps = [5000, 3000, 2000, 1500]
+    pad = dict(hand=PAD, vault_time=0.08)
+    return [
+        [dict(base, tag='H1', force_cap=c) for c in caps],
+        [dict(base, tag='H2', **pad)],
+        [dict(base, tag='H3', force_cap=c, **pad) for c in caps],
+        [dict(base, tag='H4', hand=PAD, force_cap=c) for c in caps],
+    ]
   if name == 'split':
     return [dict(torque=4, arm_scale=a, leg_scale=l, spring_energy=e)
             for (a, l), e in itertools.product(
@@ -62,7 +74,7 @@ def grid(name):
 
 
 def config_name(c):
-  parts = [f"t{c['torque']:g}"]
+  parts = ([c['tag']] if c.get('tag') else []) + [f"t{c['torque']:g}"]
   if c.get('arm_scale', 1) != 1 or c.get('leg_scale', 1) != 1:
     parts.append(f"a{c.get('arm_scale', 1):g}l{c.get('leg_scale', 1):g}")
   parts.append(f"s{c.get('spring_energy', 0):g}")
@@ -145,6 +157,7 @@ def run(args, init=None):
   name = config_name(config)
   kw = dict(config)
   torque = kw.pop('torque')
+  kw.pop('tag', None)
   t0 = time.time()
   solver = L.LaunchILQR(push_time, torque, speed, angle, **kw)
   if callable(init):
@@ -211,7 +224,7 @@ def main():
   configs = grid(args.grid)
   results = []
   with Pool(args.workers) as pool:
-    if args.grid == 'chains':
+    if args.grid in ('chains', 'hands_c'):
       jobs = [(chain, args.iters, out_dir, args.speed, args.angle,
                args.push_time, args.init) for chain in configs]
       for rows in pool.imap_unordered(run_chain, jobs):
