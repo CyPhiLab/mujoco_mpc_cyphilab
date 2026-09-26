@@ -93,6 +93,10 @@ def config_name(c):
     parts.append('vault')
   if c.get('force_cap'):
     parts.append(f"cap{c['force_cap']:g}")
+  if 'push_time' in c:
+    parts.append(f"p{c['push_time']:g}")
+  if 'joint_margin' in c:
+    parts.append(f"m{c['joint_margin']:g}")
   return '_'.join(parts)
 
 

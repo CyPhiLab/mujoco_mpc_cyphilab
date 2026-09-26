@@ -1,0 +1,344 @@
+[
+ {
+  "name": "G2_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G2",
+   "push_time": 0.4
+  },
+  "hand_pad": false,
+  "cost": 426.0948443598183,
+  "iterations": 9,
+  "seconds": 28,
+  "took_off": true,
+  "speed": 8.015613574238767,
+  "angle_deg": 34.097974074095205,
+  "takeoff_time": 0.432,
+  "spin_per_mass": 0.024133226209811454,
+  "max_pitch_deg": 16.032177415559907,
+  "hand_episodes": [
+   8,
+   10
+  ],
+  "foot_episodes": [
+   11,
+   13
+  ],
+  "peak_hand_force_N": 4944.690168623691,
+  "peak_foot_force_N": 7710.195022191972,
+  "hand_sink_mm": 8.915838439039758,
+  "motor_work_J": 3736.435945437211,
+  "spring_released_J": 464.6522045602661,
+  "com_energy_J": 893.2343040251286,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "G2_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G2",
+   "push_time": 0.35
+  },
+  "hand_pad": false,
+  "cost": 427.1786428734783,
+  "iterations": 22,
+  "seconds": 58,
+  "took_off": true,
+  "speed": 6.226414317751339,
+  "angle_deg": 35.64463077355993,
+  "takeoff_time": 0.354,
+  "spin_per_mass": 0.047451079973723574,
+  "max_pitch_deg": 23.09790947346032,
+  "hand_episodes": [
+   4,
+   5
+  ],
+  "foot_episodes": [
+   19,
+   19
+  ],
+  "peak_hand_force_N": 5930.555198456896,
+  "peak_foot_force_N": 2321.342526337655,
+  "hand_sink_mm": 9.586548872685174,
+  "motor_work_J": 4955.232145906032,
+  "spring_released_J": 471.2785407452082,
+  "com_energy_J": 1050.3419268456787,
+  "chain_from": "G2_t6_s500"
+ },
+ {
+  "name": "G4_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G4",
+   "joint_margin": 0.6,
+   "push_time": 0.45
+  },
+  "hand_pad": false,
+  "cost": 356.7376891619554,
+  "iterations": 15,
+  "seconds": 66,
+  "took_off": true,
+  "speed": 7.082504466212724,
+  "angle_deg": 36.90159326305801,
+  "takeoff_time": 0.42,
+  "spin_per_mass": 0.2108723364209086,
+  "max_pitch_deg": 51.12517726968473,
+  "hand_episodes": [
+   9,
+   10
+  ],
+  "foot_episodes": [
+   19,
+   19
+  ],
+  "peak_hand_force_N": 4623.162333496996,
+  "peak_foot_force_N": 4408.940696183146,
+  "hand_sink_mm": 6.622509140345567,
+  "motor_work_J": 6211.847678079339,
+  "spring_released_J": 451.3170562579344,
+  "com_energy_J": 1367.4605901177788,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "G4_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G4",
+   "joint_margin": 0.6,
+   "push_time": 0.6
+  },
+  "hand_pad": false,
+  "cost": 1331.6755994412156,
+  "iterations": 27,
+  "seconds": 103,
+  "took_off": true,
+  "speed": 5.249740575117478,
+  "angle_deg": 42.75166475118678,
+  "takeoff_time": 0.5660000000000001,
+  "spin_per_mass": 0.4009441851173078,
+  "max_pitch_deg": 70.26392122509023,
+  "hand_episodes": [
+   5,
+   9
+  ],
+  "foot_episodes": [
+   22,
+   21
+  ],
+  "peak_hand_force_N": 11768.065125391968,
+  "peak_foot_force_N": 2408.663507492856,
+  "hand_sink_mm": 39.11062929974318,
+  "motor_work_J": 13439.800736242638,
+  "spring_released_J": 483.1361843935278,
+  "com_energy_J": 864.337523557455,
+  "chain_from": "G4_t6_s500"
+ },
+ {
+  "name": "G3_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G3",
+   "joint_margin": 0.45
+  },
+  "hand_pad": false,
+  "cost": 458.45428016954054,
+  "iterations": 28,
+  "seconds": 88,
+  "took_off": true,
+  "speed": 6.69419593558814,
+  "angle_deg": 35.477031660725885,
+  "takeoff_time": 0.41000000000000003,
+  "spin_per_mass": 0.2262637921567958,
+  "max_pitch_deg": 19.73195607160646,
+  "hand_episodes": [
+   9,
+   5
+  ],
+  "foot_episodes": [
+   16,
+   19
+  ],
+  "peak_hand_force_N": 5954.863552060042,
+  "peak_foot_force_N": 5793.847465942191,
+  "hand_sink_mm": 14.398611393172667,
+  "motor_work_J": 7856.002364822646,
+  "spring_released_J": 410.72999897684997,
+  "com_energy_J": 1281.7282310818512,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "G3_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G3",
+   "joint_margin": 0.6
+  },
+  "hand_pad": false,
+  "cost": 416.8102725966492,
+  "iterations": 16,
+  "seconds": 48,
+  "took_off": true,
+  "speed": 6.563298223430753,
+  "angle_deg": 33.51085931120109,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.06727604455286747,
+  "max_pitch_deg": 33.324350651055234,
+  "hand_episodes": [
+   4,
+   7
+  ],
+  "foot_episodes": [
+   16,
+   18
+  ],
+  "peak_hand_force_N": 9925.668884836428,
+  "peak_foot_force_N": 8996.886865590917,
+  "hand_sink_mm": 38.033678020427566,
+  "motor_work_J": 8458.356069271915,
+  "spring_released_J": 391.691238670774,
+  "com_energy_J": 1171.9519879690952,
+  "chain_from": "G3_t6_s500"
+ },
+ {
+  "name": "G3_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G3",
+   "joint_margin": 0.8
+  },
+  "hand_pad": false,
+  "cost": 572.1735174819704,
+  "iterations": 16,
+  "seconds": 49,
+  "took_off": true,
+  "speed": 6.110991140111712,
+  "angle_deg": 31.86684479794944,
+  "takeoff_time": 0.458,
+  "spin_per_mass": 0.3288865456743619,
+  "max_pitch_deg": 69.63643798315859,
+  "hand_episodes": [
+   7,
+   9
+  ],
+  "foot_episodes": [
+   16,
+   16
+  ],
+  "peak_hand_force_N": 7979.448323824372,
+  "peak_foot_force_N": 9156.038054078339,
+  "hand_sink_mm": 31.197559658941998,
+  "motor_work_J": 8784.785256648707,
+  "spring_released_J": 303.6136775916584,
+  "com_energy_J": 961.1994002180578,
+  "chain_from": "G3_t6_s500"
+ },
+ {
+  "name": "G1_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G1",
+   "push_time": 0.5
+  },
+  "hand_pad": false,
+  "cost": 485.2924334215034,
+  "iterations": 16,
+  "seconds": 58,
+  "took_off": true,
+  "speed": 8.457833698737371,
+  "angle_deg": 38.58432871277397,
+  "takeoff_time": 0.51,
+  "spin_per_mass": 0.5637642306847752,
+  "max_pitch_deg": 59.8726987425456,
+  "hand_episodes": [
+   9,
+   5
+  ],
+  "foot_episodes": [
+   12,
+   11
+  ],
+  "peak_hand_force_N": 6409.29813408623,
+  "peak_foot_force_N": 7772.385779904415,
+  "hand_sink_mm": 8.759860837991296,
+  "motor_work_J": 8843.202449110302,
+  "spring_released_J": 491.6363488851596,
+  "com_energy_J": 1337.0398687495692,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "G1_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G1",
+   "push_time": 0.6
+  },
+  "hand_pad": false,
+  "cost": 1121.2226828582911,
+  "iterations": 24,
+  "seconds": 88,
+  "took_off": true,
+  "speed": 5.303757969990767,
+  "angle_deg": 12.067635688602003,
+  "takeoff_time": 0.512,
+  "spin_per_mass": 0.11701006211832124,
+  "max_pitch_deg": 68.3563453197782,
+  "hand_episodes": [
+   7,
+   6
+  ],
+  "foot_episodes": [
+   15,
+   15
+  ],
+  "peak_hand_force_N": 6306.431901241714,
+  "peak_foot_force_N": 3699.330056824776,
+  "hand_sink_mm": 15.080438914365057,
+  "motor_work_J": 12903.445024019833,
+  "spring_released_J": 437.02548439842815,
+  "com_energy_J": 833.5375931074325,
+  "chain_from": "G1_t6_s500"
+ },
+ {
+  "name": "G1_t6_s500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "G1",
+   "push_time": 0.7
+  },
+  "hand_pad": false,
+  "cost": 2187.832371909113,
+  "iterations": 10,
+  "seconds": 42,
+  "took_off": true,
+  "speed": 5.238899651872599,
+  "angle_deg": 15.214298182245184,
+  "takeoff_time": 0.834,
+  "spin_per_mass": 0.84327523415606,
+  "max_pitch_deg": 76.97681425895769,
+  "hand_episodes": [
+   6,
+   8
+  ],
+  "foot_episodes": [
+   17,
+   18
+  ],
+  "peak_hand_force_N": 7838.827429334902,
+  "peak_foot_force_N": 1893.8133866164774,
+  "hand_sink_mm": 27.185137167001105,
+  "motor_work_J": 15589.384881839282,
+  "spring_released_J": 454.0617561932531,
+  "com_energy_J": 689.1727642604216,
+  "chain_from": "G1_t6_s500"
+ }
+]
