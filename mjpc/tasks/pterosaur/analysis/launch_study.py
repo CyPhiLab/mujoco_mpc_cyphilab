@@ -41,6 +41,14 @@ def grid(name):
                   dict(torque=t, spring_energy=e, hand=PAD, vault_time=0.08,
                        force_cap=1000)]
     return configs
+  if name == 'chains':
+    # continuation: each step warm-starts from the previous step's solution
+    return [
+        [dict(torque=t) for t in [2, 3, 4, 5, 6, 8]],
+        [dict(torque=4, spring_energy=e) for e in [0, 500, 1000, 2000, 3000, 4000]],
+        [dict(torque=6, spring_energy=e) for e in [0, 500, 1000, 2000, 3000, 4000]],
+        [dict(torque=t, spring_energy=1000) for t in [2, 3, 4, 5, 6, 8]],
+    ]
   if name == 'split':
     return [dict(torque=4, arm_scale=a, leg_scale=l, spring_energy=e)
             for (a, l), e in itertools.product(
@@ -106,18 +114,20 @@ def spring_energy(m, d):
   return e
 
 
-def run(args):
+def run(args, init=None):
   config, iters, out_dir, speed, angle, push_time = args
   name = config_name(config)
   kw = dict(config)
   torque = kw.pop('torque')
   t0 = time.time()
   solver = L.LaunchILQR(push_time, torque, speed, angle, **kw)
-  U0 = solver.opt.pd_warm_start(push_time)[:solver.N]
+  U0 = (init[:solver.N] if init is not None
+        else solver.opt.pd_warm_start(push_time)[:solver.N])
   U, cost, history = solver.solve(U0, iters=iters, verbose=False)
   half, det = solver.report(U)
   metrics = launch_metrics(solver, U)
   np.save(os.path.join(out_dir, name + '_controls.npy'), half)
+  row_controls = half
   solver.opt.record(half, os.path.join(out_dir, name + '.npz'))
   row = {'name': name, 'config': {k: v for k, v in config.items() if k != 'hand'},
          'hand_pad': bool(config.get('hand')), 'cost': float(cost),
@@ -125,7 +135,30 @@ def run(args):
          **{k: det[k] for k in ('took_off', 'speed', 'angle_deg', 'takeoff_time',
                                 'spin_per_mass', 'max_pitch_deg')},
          **metrics}
-  return row
+  return (row, row_controls) if init is not None else row
+
+
+def run_chain(args):
+  """Continuation: configs in order, each from the previous solution."""
+  chain, iters, out_dir, speed, angle, push_time, init_file = args
+  init = np.load(init_file)
+  rows = []
+  for config in chain:
+    row, init = run((config, iters, out_dir, speed, angle, push_time), init)
+    row['chain_from'] = rows[-1]['name'] if rows else os.path.basename(init_file)
+    rows.append(row)
+    print_row(row)
+  return rows
+
+
+def print_row(row):
+  print(f"{row['name']:28s} {row['speed']:5.2f} m/s @ {row['angle_deg']:5.1f} deg "
+        f"t={row['takeoff_time']:.2f} spin {row['spin_per_mass']:.2f} "
+        f"hands {row['hand_episodes']} feet {row['foot_episodes']} "
+        f"peak hand {row['peak_hand_force_N']:.0f} N sink {row['hand_sink_mm']:.1f} mm "
+        f"work {row['motor_work_J']:.0f}+{row['spring_released_J']:.0f} J -> "
+        f"{row['com_energy_J']:.0f} J  [{row['iterations']} it, {row['seconds']} s]",
+        flush=True)
 
 
 def main():
@@ -137,23 +170,28 @@ def main():
   parser.add_argument('--angle', type=float, default=30.0)
   parser.add_argument('--push_time', type=float, default=0.45)
   parser.add_argument('--out', default=None)
+  parser.add_argument('--init', default=os.path.join(
+      HERE, 'candidates', 'A_plain_hands', 'controls.npy'),
+      help='chains: controls to start every chain from')
   args = parser.parse_args()
   out_dir = args.out or os.path.join(HERE, 'study_' + args.grid)
   os.makedirs(out_dir, exist_ok=True)
   configs = grid(args.grid)
-  jobs = [(c, args.iters, out_dir, args.speed, args.angle, args.push_time)
-          for c in configs]
   results = []
   with Pool(args.workers) as pool:
+    if args.grid == 'chains':
+      jobs = [(chain, args.iters, out_dir, args.speed, args.angle,
+               args.push_time, args.init) for chain in configs]
+      for rows in pool.imap_unordered(run_chain, jobs):
+        results += rows
+        with open(os.path.join(out_dir, 'results.json'), 'w') as f:
+          json.dump(results, f, indent=1)
+      return
+    jobs = [(c, args.iters, out_dir, args.speed, args.angle, args.push_time)
+            for c in configs]
     for row in pool.imap_unordered(run, jobs):
       results.append(row)
-      print(f"{row['name']:28s} {row['speed']:5.2f} m/s @ {row['angle_deg']:5.1f} deg "
-            f"t={row['takeoff_time']:.2f} spin {row['spin_per_mass']:.2f} "
-            f"hands {row['hand_episodes']} feet {row['foot_episodes']} "
-            f"peak hand {row['peak_hand_force_N']:.0f} N sink {row['hand_sink_mm']:.1f} mm "
-            f"work {row['motor_work_J']:.0f}+{row['spring_released_J']:.0f} J -> "
-            f"{row['com_energy_J']:.0f} J  [{row['iterations']} it, {row['seconds']} s]",
-            flush=True)
+      print_row(row)
       with open(os.path.join(out_dir, 'results.json'), 'w') as f:
         json.dump(results, f, indent=1)
 

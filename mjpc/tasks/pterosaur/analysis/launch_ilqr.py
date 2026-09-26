@@ -270,14 +270,20 @@ class LaunchILQR:
       if not ok:
         mu *= 10
         continue
-      # forward pass with line search
+      # forward pass with line search: closed loop (u = U + a k + K dx)
+      # first; if that fails, open loop (u = U + a k), which often gets
+      # past contact changes where the feedback term diverges
       improved = False
-      for alpha in [1.0, 0.5, 0.25, 0.1, 0.05, 0.02]:
-        Un = self.forward(Q, V, U, k, K, alpha)
-        Qn, Vn, cn = self.rollout(Un)
-        if cn < cost:
-          U, Q, V, cost = Un, Qn, Vn, cn
-          improved = True
+      for closed in (True, False):
+        for alpha in [1.0, 0.5, 0.25, 0.1, 0.05, 0.02]:
+          Un = (self.forward(Q, V, U, k, K, alpha) if closed
+                else np.clip(U + alpha * k, -1, 1))
+          Qn, Vn, cn = self.rollout(Un)
+          if cn < cost:
+            U, Q, V, cost = Un, Qn, Vn, cn
+            improved = True
+            break
+        if improved:
           break
       mu = max(mu / 3, 1e-6) if improved else mu * 10
       history.append(cost)
