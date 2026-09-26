@@ -53,8 +53,8 @@ E[T.RIGHT, np.arange(6)] = T.MIRROR
 
 class LaunchILQR:
 
-  def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0):
-    self.opt = T.LaunchOpt(torque, angle)  # physics model and start state
+  def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None):
+    self.opt = T.LaunchOpt(torque, angle, hand=hand)  # physics, start state
     self.m = self.opt.m
     self.d = mujoco.MjData(self.m)
     m = self.m
@@ -281,9 +281,15 @@ def main():
   parser.add_argument('--init', default=None, help='controls (nstep, 6) .npy')
   parser.add_argument('--iters', type=int, default=100)
   parser.add_argument('--out', default='launch_ilqr.npz')
+  parser.add_argument('--hand_radius', type=float, default=0,
+                      help='rubber hand pad radius (m); 0 keeps the model hand')
+  parser.add_argument('--hand_timeconst', type=float, default=0.02)
+  parser.add_argument('--hand_dampratio', type=float, default=1.0)
   args = parser.parse_args()
 
-  solver = LaunchILQR(args.push_time, args.torque, args.speed, args.angle)
+  hand = (dict(radius=args.hand_radius, timeconst=args.hand_timeconst,
+               dampratio=args.hand_dampratio) if args.hand_radius > 0 else None)
+  solver = LaunchILQR(args.push_time, args.torque, args.speed, args.angle, hand)
   if args.init:
     U = np.load(args.init)[:solver.N]
     print(f'init from {args.init}')

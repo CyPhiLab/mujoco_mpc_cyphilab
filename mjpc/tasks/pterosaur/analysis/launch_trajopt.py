@@ -82,7 +82,27 @@ def reference():
   return np.load(os.path.join(TASK_DIR, 'reference', 'launch.npz'))
 
 
-def load_model(torque):
+def hand_pad(spec, hand, start_qpos):
+  """Replace the hand spheres with a rubber pad: radius, contact time
+  constant and damping ratio from `hand`. The pad is shifted so its lowest
+  point in the start pose is where the original sphere's was."""
+  m0 = spec.compile()
+  d0 = mujoco.MjData(m0)
+  d0.qpos[:] = start_qpos
+  mujoco.mj_kinematics(m0, d0)
+  for name in ['FL', 'FR']:
+    g = spec.geom(name)
+    gid = mujoco.mj_name2id(m0, mujoco.mjtObj.mjOBJ_GEOM, name)
+    body = m0.geom_bodyid[gid]
+    up_local = d0.xmat[body].reshape(3, 3).T @ np.array([0, 0, 1.0])
+    grow = hand['radius'] - g.size[0]
+    g.pos = np.array(g.pos) + grow * up_local
+    g.size = [hand['radius'], 0, 0]
+    g.solref = [hand.get('timeconst', 0.02), hand.get('dampratio', 1.0)]
+    g.solimp = [0.9, 0.95, 0.001, 0.5, 2]
+
+
+def load_model(torque, hand=None):
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -106,10 +126,13 @@ def load_model(torque):
   with open(path, 'w') as f:
     f.write(extra)
   try:
-    m = mujoco.MjModel.from_xml_path(path)
+    spec = mujoco.MjSpec.from_file(path)
   finally:
     os.remove(path)
   ref = reference()
+  if hand:
+    hand_pad(spec, hand, ref['qpos'][push_start_index(ref)])
+  m = spec.compile()
   q = ref['qpos'][:, 7:]
   lo, hi = q.min(axis=0) - JOINT_MARGIN, q.max(axis=0) + JOINT_MARGIN
   m.opt.timestep = SIM_DT
@@ -117,7 +140,7 @@ def load_model(torque):
   for j in range(12):
     m.jnt_limited[j + 1] = 1
     m.jnt_range[j + 1] = [lo[j], hi[j]]
-  for name in ['FL', 'FR', 'HL', 'HR']:
+  for name in ['HL', 'HR'] if hand else ['FL', 'FR', 'HL', 'HR']:
     g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, name)
     m.geom_solimp[g, :3] = FOOT_SOLIMP
     m.geom_solref[g, :2] = FOOT_SOLREF
@@ -175,9 +198,10 @@ def expand(half):
 
 class LaunchOpt:
 
-  def __init__(self, torque=2.0, angle=30.0, nthread=4, push_time=0.0):
+  def __init__(self, torque=2.0, angle=30.0, nthread=4, push_time=0.0,
+               hand=None):
     self.push_time = push_time
-    self.m = load_model(torque)
+    self.m = load_model(torque, hand)
     self.ref = reference()
     self.i0 = push_start_index(self.ref)
     self.nstep = int(round(HORIZON / SIM_DT))
