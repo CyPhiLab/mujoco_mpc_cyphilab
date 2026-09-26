@@ -71,10 +71,13 @@ def main():
   parser.add_argument('--hand_radius', type=float, default=0)
   parser.add_argument('--hand_timeconst', type=float, default=0.0067)
   parser.add_argument('--hand_dampratio', type=float, default=3.0)
+  parser.add_argument('--foot_timeconst', type=float, default=0.0067)
+  parser.add_argument('--foot_dampratio', type=float, default=3.0)
   args = parser.parse_args()
   hand = (dict(radius=args.hand_radius, timeconst=args.hand_timeconst,
                dampratio=args.hand_dampratio) if args.hand_radius > 0 else None)
-  solver = L.LaunchILQR(args.push_time, args.torque, hand=hand)
+  solver = L.LaunchILQR(args.push_time, args.torque, hand=hand,
+                        foot_solref=[args.foot_timeconst, args.foot_dampratio])
   U = np.load(args.controls)[:solver.N]
   rows = hand_load(solver, U)
   for row in rows:

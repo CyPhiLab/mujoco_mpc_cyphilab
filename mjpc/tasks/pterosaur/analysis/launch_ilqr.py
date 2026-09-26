@@ -57,8 +57,9 @@ E[T.RIGHT, np.arange(6)] = T.MIRROR
 class LaunchILQR:
 
   def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None,
-               vault_time=0.0):
-    self.opt = T.LaunchOpt(torque, angle, hand=hand)  # physics, start state
+               vault_time=0.0, foot_solref=None):
+    # physics and start state
+    self.opt = T.LaunchOpt(torque, angle, hand=hand, foot_solref=foot_solref)
     self.m = self.opt.m
     self.d = mujoco.MjData(self.m)
     m = self.m
@@ -299,6 +300,8 @@ def main():
                       help='rubber hand pad radius (m); 0 keeps the model hand')
   parser.add_argument('--hand_timeconst', type=float, default=0.0067)
   parser.add_argument('--hand_dampratio', type=float, default=3.0)
+  parser.add_argument('--foot_timeconst', type=float, default=T.FOOT_SOLREF[0])
+  parser.add_argument('--foot_dampratio', type=float, default=T.FOOT_SOLREF[1])
   parser.add_argument('--vault_time', type=float, default=0.0,
                       help='single-strike vault: hands plant only for this '
                            'long before takeoff (0: planted throughout)')
@@ -307,7 +310,8 @@ def main():
   hand = (dict(radius=args.hand_radius, timeconst=args.hand_timeconst,
                dampratio=args.hand_dampratio) if args.hand_radius > 0 else None)
   solver = LaunchILQR(args.push_time, args.torque, args.speed, args.angle, hand,
-                      args.vault_time)
+                      args.vault_time,
+                      [args.foot_timeconst, args.foot_dampratio])
   if args.init:
     U = np.load(args.init)[:solver.N]
     print(f'init from {args.init}')

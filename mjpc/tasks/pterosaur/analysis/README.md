@@ -69,3 +69,57 @@ python run_mpc_launch.py --driver build/bin/launch_driver --speed 10 --grid out/
   reference joint range +-0.3 rad.
 - **Landing:** Launch Track has no landing phase, so runs end in a crash
   landing.
+
+## Offline launch trajectories
+
+Closed-loop MPC tracking of `reference/launch.npz` did not produce a clean
+launch: the reference gets its speed after liftoff (from the wings), and a
+short-horizon MPC could not find a coordinated ground push. Offline
+trajectory optimization, from the reference's deepest crouch through
+takeoff, does.
+
+- `launch_trajopt.py`: sampling-based optimization of symmetric control
+  knots (shared physics setup: 2 ms timestep, hard joint limits, damped
+  rubber-pad foot contact, torque scale).
+- `launch_ilqr.py`: full-horizon iLQR with smooth kinematic contact costs
+  (planted limbs, clearance, pitch; takeoff velocity and spin; calm
+  flight). Options: `--hand_radius` (rubber hand pad), `--vault_time`
+  (single-strike vault schedule), `--foot_timeconst/--foot_dampratio`.
+- `hand_load.py`: replays controls and reports hand/foot load per push
+  window, to tell planted limbs from hammering ones.
+- `render_launch.py npz <trajectory.npz> --slow 4`: slow-motion video.
+
+Findings:
+- At 1x torque the legs need 82-93% of their limits just to hold the
+  crouch, so these use 2x torque.
+- The optimizers readily exploit impacts (hand hammering, foot tapping)
+  and soft contacts (MuJoCo's default contact sinks ~26 mm under a hard
+  push). The damped pad contact (time constant 0.0067 s, damping ratio 3)
+  sinks ~5 mm.
+- A 2 cm point hand vaults with several strikes; a 4 cm pad with the
+  single-strike schedule vaults with one contact per hand, but with
+  6-7 kN impact peaks.
+
+### Candidates (2x torque, no springs, 30 deg launch)
+
+| | takeoff | notes |
+|---|---|---|
+| `candidates/A_plain_hands` | 4.73 m/s at 29 deg, t = 0.45 s | model hands; vault in several hand strikes; hands and feet on MuJoCo default contact (0.02, 1), hand sink 11.8 mm |
+| `candidates/B_pad_vault` | 4.95 m/s at 29 deg, t = 0.43 s | 4 cm rubber hand pads, one vault contact per hand (6-7 kN peak), hand sink 6.9 mm; feet tap during the leg push |
+
+Each folder has `controls.npy` (symmetric controls, 2 ms steps) and
+`trajectory.npz` (time, qpos, qvel, ctrl, contacts, CoM velocity). Replay
+and check (push time 0.45 s):
+
+```sh
+# A
+python hand_load.py candidates/A_plain_hands/controls.npy --foot_timeconst 0.02 --foot_dampratio 1
+# B
+python hand_load.py candidates/B_pad_vault/controls.npy --hand_radius 0.04
+```
+
+Re-optimize, e.g. B from the reference warm start:
+
+```sh
+python launch_ilqr.py --push_time 0.45 --hand_radius 0.04 --vault_time 0.08 --iters 150 --out B.npz
+```

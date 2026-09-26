@@ -104,7 +104,7 @@ def hand_pad(spec, hand, start_qpos):
     g.solimp = [0.9, 0.95, 0.001, 0.5, 2]
 
 
-def load_model(torque, hand=None):
+def load_model(torque, hand=None, foot_solref=None):
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -145,7 +145,7 @@ def load_model(torque, hand=None):
   for name in ['HL', 'HR'] if hand else ['FL', 'FR', 'HL', 'HR']:
     g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, name)
     m.geom_solimp[g, :3] = FOOT_SOLIMP
-    m.geom_solref[g, :2] = FOOT_SOLREF
+    m.geom_solref[g, :2] = FOOT_SOLREF if foot_solref is None else foot_solref
   return m
 
 
@@ -201,9 +201,9 @@ def expand(half):
 class LaunchOpt:
 
   def __init__(self, torque=2.0, angle=30.0, nthread=4, push_time=0.0,
-               hand=None):
+               hand=None, foot_solref=None):
     self.push_time = push_time
-    self.m = load_model(torque, hand)
+    self.m = load_model(torque, hand, foot_solref)
     self.ref = reference()
     self.i0 = push_start_index(self.ref)
     self.nstep = int(round(HORIZON / SIM_DT))
