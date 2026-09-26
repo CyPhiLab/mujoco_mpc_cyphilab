@@ -144,3 +144,30 @@ design stalls and gave non-monotonic, inconclusive results.
 
 10 m/s needs ~2650 J. Motor work grows with torque but converts to CoM
 energy at only ~20-30%, and all these launches still hammer.
+
+## Sizing: energetics and reduced-order dynamics
+
+- `habib_launch.py`: Python port of M. Habib's quad launch calculator
+  (launch_version_4.0.xlsx, 'Ballistic Model (4)'), verified cell by cell
+  by `test_habib_launch.py`. `push_requirements()` gives the
+  constant-acceleration push-off requirements for a target speed. For the
+  robot (50 kg, 30 deg, 10 m/s): 0.28-0.34 s push at 3-3.7 g, 17.7-21 kW
+  peak power for a 0.69-0.85 m stroke.
+- `reduced_launch.py`: point-mass body, massless 2-link hind/forelimbs with
+  the robot's crouch geometry, DC-motor torque-speed limits, latched
+  parallel springs, unilateral contact with friction (mu = 1), per-design
+  optimized push. `reduced_sweep.py actuators` (results:
+  `study_results/reduced_actuators.json`), speed along 30 deg (m/s):
+
+| no-load speed | 1x | 2x | 3x | 4x | 6x torque |
+|---|---|---|---|---|---|
+| 10 rad/s | 0.7 | 1.3 | 1.8 | 3.1 | 3.4 |
+| 20 rad/s | 0.7 | 1.3 | 5.1 | 5.6 | 6.2 |
+| 40 rad/s | 0.8 | 5.8 | 6.9 | 7.7 | 8.6 |
+| ideal | 0.8 | 7.7 | 9.2 | 10.4 | 12.4 |
+
+  (no springs). 250-500 J springs add 0.2-3 m/s (most at low torque and
+  speed); 1000-2000 J springs, resting at the extended end of each joint,
+  mostly hurt unless torque is high. Motor speed (power) is the binding
+  limit at realistic no-load speeds: 6x torque at 40 rad/s (25.8 kW peak
+  capacity) reaches 8.8 m/s with 500 J springs, using 16.6 kW peak.

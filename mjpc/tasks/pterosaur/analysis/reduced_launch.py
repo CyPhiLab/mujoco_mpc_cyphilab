@@ -273,7 +273,7 @@ class ReducedLaunch:
       v = v + acc * self.dt
       p = p + v * self.dt
       if record:
-        traj.append((p.copy(), v.copy(), stance.copy()))
+        traj.append((p.copy(), v.copy(), stance.copy(), power.copy()))
     # never took off: use the final state, heavily penalized
     never = np.isnan(takeoff_t)
     takeoff_v[never] = v[never]
