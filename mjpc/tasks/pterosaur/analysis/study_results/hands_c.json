@@ -1,0 +1,414 @@
+[
+ {
+  "name": "H3_t6_s500_pad_vault_cap5000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H3",
+   "force_cap": 5000,
+   "vault_time": 0.08
+  },
+  "hand_pad": true,
+  "cost": 137.1441060445485,
+  "iterations": 10,
+  "seconds": 58,
+  "took_off": true,
+  "speed": 8.29768014807873,
+  "angle_deg": 34.658007247956924,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.09871813766984715,
+  "max_pitch_deg": 25.93056320876097,
+  "hand_episodes": [
+   11,
+   10
+  ],
+  "foot_episodes": [
+   11,
+   15
+  ],
+  "peak_hand_force_N": 5939.801153607984,
+  "peak_foot_force_N": 9161.428087501967,
+  "hand_sink_mm": 10.40922474557271,
+  "motor_work_J": 7687.662966426261,
+  "spring_released_J": 443.8174404222483,
+  "com_energy_J": 1859.9162779670855,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "H3_t6_s500_pad_vault_cap3000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H3",
+   "force_cap": 3000,
+   "vault_time": 0.08
+  },
+  "hand_pad": true,
+  "cost": 158.3607976229137,
+  "iterations": 8,
+  "seconds": 48,
+  "took_off": true,
+  "speed": 8.297680148078722,
+  "angle_deg": 34.65800724795718,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.09871813766985467,
+  "max_pitch_deg": 25.930563208755046,
+  "hand_episodes": [
+   11,
+   10
+  ],
+  "foot_episodes": [
+   11,
+   15
+  ],
+  "peak_hand_force_N": 5939.80115360798,
+  "peak_foot_force_N": 9161.428087503278,
+  "hand_sink_mm": 10.409224745572487,
+  "motor_work_J": 7687.662966426239,
+  "spring_released_J": 443.81744042224256,
+  "com_energy_J": 1859.916277967097,
+  "chain_from": "H3_t6_s500_pad_vault_cap5000"
+ },
+ {
+  "name": "H3_t6_s500_pad_vault_cap2000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H3",
+   "force_cap": 2000,
+   "vault_time": 0.08
+  },
+  "hand_pad": true,
+  "cost": 184.24795612499105,
+  "iterations": 8,
+  "seconds": 48,
+  "took_off": true,
+  "speed": 8.29768014807872,
+  "angle_deg": 34.65800724795712,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.09871813766985166,
+  "max_pitch_deg": 25.930563208760148,
+  "hand_episodes": [
+   11,
+   10
+  ],
+  "foot_episodes": [
+   11,
+   15
+  ],
+  "peak_hand_force_N": 5939.801153607894,
+  "peak_foot_force_N": 9161.428087499891,
+  "hand_sink_mm": 10.409224745566714,
+  "motor_work_J": 7687.662966426488,
+  "spring_released_J": 443.81744042226,
+  "com_energy_J": 1859.9162779671383,
+  "chain_from": "H3_t6_s500_pad_vault_cap3000"
+ },
+ {
+  "name": "H3_t6_s500_pad_vault_cap1500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H3",
+   "force_cap": 1500,
+   "vault_time": 0.08
+  },
+  "hand_pad": true,
+  "cost": 205.3740112162844,
+  "iterations": 8,
+  "seconds": 48,
+  "took_off": true,
+  "speed": 8.297680148078708,
+  "angle_deg": 34.658007247956846,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.09871813766985033,
+  "max_pitch_deg": 25.930563208764365,
+  "hand_episodes": [
+   11,
+   10
+  ],
+  "foot_episodes": [
+   11,
+   15
+  ],
+  "peak_hand_force_N": 5939.80115360803,
+  "peak_foot_force_N": 9161.42808750358,
+  "hand_sink_mm": 10.409224745574708,
+  "motor_work_J": 7687.662966426247,
+  "spring_released_J": 443.81744042224136,
+  "com_energy_J": 1859.916277967098,
+  "chain_from": "H3_t6_s500_pad_vault_cap2000"
+ },
+ {
+  "name": "H1_t6_s500_cap5000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H1",
+   "force_cap": 5000
+  },
+  "hand_pad": false,
+  "cost": 148.97062701201403,
+  "iterations": 9,
+  "seconds": 54,
+  "took_off": true,
+  "speed": 8.154611652237007,
+  "angle_deg": 34.47279385217936,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.02687437898263408,
+  "max_pitch_deg": 17.543005805353392,
+  "hand_episodes": [
+   14,
+   9
+  ],
+  "foot_episodes": [
+   12,
+   14
+  ],
+  "peak_hand_force_N": 5861.315841015722,
+  "peak_foot_force_N": 7486.4189599626025,
+  "hand_sink_mm": 15.772133395446808,
+  "motor_work_J": 7509.874883793829,
+  "spring_released_J": 419.20848632626416,
+  "com_energy_J": 1799.4782670254526,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "H1_t6_s500_cap3000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H1",
+   "force_cap": 3000
+  },
+  "hand_pad": false,
+  "cost": 165.82600549587306,
+  "iterations": 8,
+  "seconds": 49,
+  "took_off": true,
+  "speed": 8.154611652282403,
+  "angle_deg": 34.47279385225248,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.026874378977760172,
+  "max_pitch_deg": 17.543005807084686,
+  "hand_episodes": [
+   14,
+   9
+  ],
+  "foot_episodes": [
+   12,
+   14
+  ],
+  "peak_hand_force_N": 5861.315840926637,
+  "peak_foot_force_N": 7486.4189599733645,
+  "hand_sink_mm": 15.772133390524523,
+  "motor_work_J": 7509.874883914428,
+  "spring_released_J": 419.20848632597426,
+  "com_energy_J": 1799.478267007462,
+  "chain_from": "H1_t6_s500_cap5000"
+ },
+ {
+  "name": "H1_t6_s500_cap2000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H1",
+   "force_cap": 2000
+  },
+  "hand_pad": false,
+  "cost": 181.35947815031506,
+  "iterations": 9,
+  "seconds": 53,
+  "took_off": true,
+  "speed": 8.074222062903576,
+  "angle_deg": 33.736861749006906,
+  "takeoff_time": 0.43,
+  "spin_per_mass": 0.06785341300516062,
+  "max_pitch_deg": 28.819876517435283,
+  "hand_episodes": [
+   12,
+   11
+  ],
+  "foot_episodes": [
+   13,
+   15
+  ],
+  "peak_hand_force_N": 5318.236107020432,
+  "peak_foot_force_N": 5722.785896709378,
+  "hand_sink_mm": 8.411142978281827,
+  "motor_work_J": 7440.993344351083,
+  "spring_released_J": 454.65491680681635,
+  "com_energy_J": 1756.9419647336174,
+  "chain_from": "H1_t6_s500_cap3000"
+ },
+ {
+  "name": "H1_t6_s500_cap1500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H1",
+   "force_cap": 1500
+  },
+  "hand_pad": false,
+  "cost": 201.43965828829957,
+  "iterations": 8,
+  "seconds": 48,
+  "took_off": true,
+  "speed": 8.07422206290336,
+  "angle_deg": 33.7368617490069,
+  "takeoff_time": 0.43,
+  "spin_per_mass": 0.06785341300520793,
+  "max_pitch_deg": 28.81987651743526,
+  "hand_episodes": [
+   12,
+   11
+  ],
+  "foot_episodes": [
+   13,
+   15
+  ],
+  "peak_hand_force_N": 5318.236107020437,
+  "peak_foot_force_N": 5722.785896707983,
+  "hand_sink_mm": 8.411142978286712,
+  "motor_work_J": 7440.993344350784,
+  "spring_released_J": 454.65491680682584,
+  "com_energy_J": 1756.941964733554,
+  "chain_from": "H1_t6_s500_cap2000"
+ },
+ {
+  "name": "H4_t6_s500_pad_cap5000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H4",
+   "force_cap": 5000
+  },
+  "hand_pad": true,
+  "cost": 144.7905828515134,
+  "iterations": 10,
+  "seconds": 58,
+  "took_off": true,
+  "speed": 8.316702940719239,
+  "angle_deg": 33.320227972261755,
+  "takeoff_time": 0.434,
+  "spin_per_mass": 0.13371022701285035,
+  "max_pitch_deg": 49.90455011908564,
+  "hand_episodes": [
+   9,
+   9
+  ],
+  "foot_episodes": [
+   13,
+   14
+  ],
+  "peak_hand_force_N": 6001.438090447504,
+  "peak_foot_force_N": 5952.184178180184,
+  "hand_sink_mm": 17.868985921233094,
+  "motor_work_J": 7112.762314517069,
+  "spring_released_J": 450.9264880149379,
+  "com_energy_J": 1868.5436131358217,
+  "chain_from": "controls.npy"
+ },
+ {
+  "name": "H4_t6_s500_pad_cap3000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H4",
+   "force_cap": 3000
+  },
+  "hand_pad": true,
+  "cost": 136.41196702418037,
+  "iterations": 10,
+  "seconds": 59,
+  "took_off": true,
+  "speed": 8.433050019612377,
+  "angle_deg": 34.20045494619881,
+  "takeoff_time": 0.432,
+  "spin_per_mass": 0.1085768153885188,
+  "max_pitch_deg": 38.1130447968331,
+  "hand_episodes": [
+   10,
+   10
+  ],
+  "foot_episodes": [
+   13,
+   15
+  ],
+  "peak_hand_force_N": 4692.566042125725,
+  "peak_foot_force_N": 5245.743881643046,
+  "hand_sink_mm": 8.717367984290902,
+  "motor_work_J": 7351.762290004174,
+  "spring_released_J": 426.6438052567163,
+  "com_energy_J": 1931.554538771225,
+  "chain_from": "H4_t6_s500_pad_cap5000"
+ },
+ {
+  "name": "H4_t6_s500_pad_cap2000",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H4",
+   "force_cap": 2000
+  },
+  "hand_pad": true,
+  "cost": 154.20869859433327,
+  "iterations": 10,
+  "seconds": 58,
+  "took_off": true,
+  "speed": 8.401742286560129,
+  "angle_deg": 34.42090201936038,
+  "takeoff_time": 0.43,
+  "spin_per_mass": 0.062057242626802914,
+  "max_pitch_deg": 30.14916210973466,
+  "hand_episodes": [
+   9,
+   7
+  ],
+  "foot_episodes": [
+   13,
+   14
+  ],
+  "peak_hand_force_N": 5558.738540504926,
+  "peak_foot_force_N": 5236.684910022889,
+  "hand_sink_mm": 15.352873163265501,
+  "motor_work_J": 7339.608548532298,
+  "spring_released_J": 420.65325299907096,
+  "com_energy_J": 1918.838659783449,
+  "chain_from": "H4_t6_s500_pad_cap3000"
+ },
+ {
+  "name": "H4_t6_s500_pad_cap1500",
+  "config": {
+   "torque": 6,
+   "spring_energy": 500,
+   "tag": "H4",
+   "force_cap": 1500
+  },
+  "hand_pad": true,
+  "cost": 172.61186439202942,
+  "iterations": 8,
+  "seconds": 48,
+  "took_off": true,
+  "speed": 8.40174228656011,
+  "angle_deg": 34.42090201936013,
+  "takeoff_time": 0.43,
+  "spin_per_mass": 0.06205724262683989,
+  "max_pitch_deg": 30.14916210974857,
+  "hand_episodes": [
+   9,
+   7
+  ],
+  "foot_episodes": [
+   13,
+   14
+  ],
+  "peak_hand_force_N": 5558.738540504954,
+  "peak_foot_force_N": 5236.684910022542,
+  "hand_sink_mm": 15.352873163265723,
+  "motor_work_J": 7339.608548532178,
+  "spring_released_J": 420.65325299908943,
+  "com_energy_J": 1918.8386597834365,
+  "chain_from": "H4_t6_s500_pad_cap2000"
+ }
+]

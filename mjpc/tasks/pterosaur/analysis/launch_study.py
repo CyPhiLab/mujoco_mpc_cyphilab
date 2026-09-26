@@ -65,6 +65,16 @@ def grid(name):
         [dict(base, tag='H3', force_cap=c, **pad) for c in caps],
         [dict(base, tag='H4', hand=PAD, force_cap=c) for c in caps],
     ]
+  if name == 'geometry':
+    # push duration and joint range of motion, on the fastest design
+    base = dict(torque=6, spring_energy=500)
+    return [
+        [dict(base, tag='G1', push_time=p) for p in [0.5, 0.6, 0.7]],
+        [dict(base, tag='G2', push_time=p) for p in [0.4, 0.35]],
+        [dict(base, tag='G3', joint_margin=m) for m in [0.45, 0.6, 0.8]],
+        [dict(base, tag='G4', joint_margin=0.6, push_time=p)
+         for p in [0.45, 0.6]],
+    ]
   if name == 'split':
     return [dict(torque=4, arm_scale=a, leg_scale=l, spring_energy=e)
             for (a, l), e in itertools.product(
@@ -157,6 +167,7 @@ def run(args, init=None):
   kw = dict(config)
   torque = kw.pop('torque')
   kw.pop('tag', None)
+  push_time = kw.pop('push_time', push_time)
   t0 = time.time()
   solver = L.LaunchILQR(push_time, torque, speed, angle, **kw)
   if callable(init):
@@ -223,7 +234,7 @@ def main():
   configs = grid(args.grid)
   results = []
   with Pool(args.workers) as pool:
-    if args.grid in ('chains', 'hands_c'):
+    if args.grid in ('chains', 'hands_c', 'geometry'):
       jobs = [(chain, args.iters, out_dir, args.speed, args.angle,
                args.push_time, args.init) for chain in configs]
       for rows in pool.imap_unordered(run_chain, jobs):

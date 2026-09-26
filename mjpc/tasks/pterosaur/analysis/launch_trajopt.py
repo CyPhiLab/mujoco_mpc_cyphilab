@@ -126,7 +126,7 @@ def add_springs(m, energy, ref):
 
 
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
-               leg_scale=1.0, spring_energy=0.0):
+               leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN):
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -159,7 +159,7 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     hand_pad(spec, hand, ref['qpos'][push_start_index(ref)])
   m = spec.compile()
   q = ref['qpos'][:, 7:]
-  lo, hi = q.min(axis=0) - JOINT_MARGIN, q.max(axis=0) + JOINT_MARGIN
+  lo, hi = q.min(axis=0) - joint_margin, q.max(axis=0) + joint_margin
   m.opt.timestep = SIM_DT
   m.actuator_gainprm[:, 0] *= torque
   m.actuator_gainprm[:6, 0] *= arm_scale    # arms: actuators 0-5
