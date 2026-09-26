@@ -43,11 +43,16 @@ def grid(name):
     return configs
   if name == 'chains':
     # continuation: each step warm-starts from the previous step's solution
+    # springs are added after raising torque, so the motors can cancel the
+    # spring torque and the equivalent warm start stays exact
     return [
         [dict(torque=t) for t in [2, 3, 4, 5, 6, 8]],
-        [dict(torque=4, spring_energy=e) for e in [0, 500, 1000, 2000, 3000, 4000]],
-        [dict(torque=6, spring_energy=e) for e in [0, 500, 1000, 2000, 3000, 4000]],
-        [dict(torque=t, spring_energy=1000) for t in [2, 3, 4, 5, 6, 8]],
+        [dict(torque=2), dict(torque=4)] +
+        [dict(torque=4, spring_energy=e) for e in [500, 1000, 2000, 3000, 4000]],
+        [dict(torque=2), dict(torque=4), dict(torque=6)] +
+        [dict(torque=6, spring_energy=e) for e in [500, 1000, 2000, 3000, 4000]],
+        [dict(torque=2), dict(torque=4), dict(torque=4, spring_energy=1000)] +
+        [dict(torque=t, spring_energy=1000) for t in [6, 8]],
     ]
   if name == 'split':
     return [dict(torque=4, arm_scale=a, leg_scale=l, spring_energy=e)
@@ -114,6 +119,27 @@ def spring_energy(m, d):
   return e
 
 
+def equivalent_controls(prev_solver, prev_U, solver):
+  """Controls for `solver`'s design that reproduce the joint torques of
+  prev_U on prev_solver's design along its trajectory (actuator gains and
+  parallel springs differ), so continuation starts from the same launch."""
+  Q, _, _ = prev_solver.rollout(prev_U)
+  m0, m1 = prev_solver.m, solver.m
+  joints = m0.actuator_trnid[:, 0]
+  qadr = m0.jnt_qposadr[joints]
+  g0, g1 = m0.actuator_gainprm[:, 0], m1.actuator_gainprm[:, 0]
+  k0, k1 = m0.jnt_stiffness[joints], m1.jnt_stiffness[joints]
+  r0, r1 = m0.qpos_spring[qadr], m1.qpos_spring[qadr]
+  U = np.empty((solver.N, 6))
+  for t in range(solver.N):
+    q = Q[min(t, len(Q) - 1)][qadr]
+    u0 = np.clip(prev_U[min(t, len(prev_U) - 1)], -1, 1)
+    torque = g0 * (L.E @ u0) - k0 * (q - r0)
+    full = (torque + k1 * (q - r1)) / g1
+    U[t] = np.clip(0.5 * (full[L.T.LEFT] + L.T.MIRROR * full[L.T.RIGHT]), -1, 1)
+  return U
+
+
 def run(args, init=None):
   config, iters, out_dir, speed, angle, push_time = args
   name = config_name(config)
@@ -121,8 +147,12 @@ def run(args, init=None):
   torque = kw.pop('torque')
   t0 = time.time()
   solver = L.LaunchILQR(push_time, torque, speed, angle, **kw)
-  U0 = (init[:solver.N] if init is not None
-        else solver.opt.pd_warm_start(push_time)[:solver.N])
+  if callable(init):
+    U0 = init(solver)
+  elif init is not None:
+    U0 = init[:solver.N]
+  else:
+    U0 = solver.opt.pd_warm_start(push_time)[:solver.N]
   U, cost, history = solver.solve(U0, iters=iters, verbose=False)
   half, det = solver.report(U)
   metrics = launch_metrics(solver, U)
@@ -135,7 +165,7 @@ def run(args, init=None):
          **{k: det[k] for k in ('took_off', 'speed', 'angle_deg', 'takeoff_time',
                                 'spin_per_mass', 'max_pitch_deg')},
          **metrics}
-  return (row, row_controls) if init is not None else row
+  return (row, (solver, U)) if init is not None else row
 
 
 def run_chain(args):
@@ -144,7 +174,9 @@ def run_chain(args):
   init = np.load(init_file)
   rows = []
   for config in chain:
-    row, init = run((config, iters, out_dir, speed, angle, push_time), init)
+    row, (prev_solver, prev_U) = run(
+        (config, iters, out_dir, speed, angle, push_time), init)
+    init = (lambda s, ps=prev_solver, pu=prev_U: equivalent_controls(ps, pu, s))
     row['chain_from'] = rows[-1]['name'] if rows else os.path.basename(init_file)
     rows.append(row)
     print_row(row)
