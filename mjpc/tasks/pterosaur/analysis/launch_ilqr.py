@@ -46,6 +46,7 @@ S_SWING, W_SWING = 0.005, 1.0         # swinging hand below 1 cm (m)
 SWING_HEIGHT = 0.01
 SWING_START = 0.05                    # s, hands may leave the crouch
 S_LIFT, W_LIFT = 0.01, 1.0            # limb below 3 cm in flight (m)
+S_FORCE, W_FORCE = 500.0, 1.0         # limb contact force above the cap (N)
 LIFT_HEIGHT = 0.03
 
 # 6 symmetric channels -> 12 actuators
@@ -57,9 +58,12 @@ E[T.RIGHT, np.arange(6)] = T.MIRROR
 class LaunchILQR:
 
   def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None,
-               vault_time=0.0, foot_solref=None):
-    # physics and start state
-    self.opt = T.LaunchOpt(torque, angle, hand=hand, foot_solref=foot_solref)
+               vault_time=0.0, foot_solref=None, force_cap=0.0, **design):
+    # physics and start state; design: arm_scale, leg_scale, spring_energy
+    self.opt = T.LaunchOpt(torque, angle, hand=hand, foot_solref=foot_solref,
+                           **design)
+    # per-limb normal contact force above force_cap is penalized (0: off)
+    self.force_cap = force_cap
     self.m = self.opt.m
     self.d = mujoco.MjData(self.m)
     m = self.m
@@ -82,6 +86,11 @@ class LaunchILQR:
     self.clear = [(mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, b), np.array(p), c)
                   for b, p, c in T.CLEARANCE]
     self.angmom = T.sensor(m, 'torso_subtreeangmom')
+    self.limb_bodies = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, b)
+                        for b in ['radius_and_ulna', 'radius_and_ulna_2',
+                                  'tibia', 'tibia_2']]
+    self.floor = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, 'floor')
+    self._force = np.zeros(6)
     mujoco.mj_setState(m, self.d, self.opt.x0, mujoco.mjtState.mjSTATE_FULLPHYSICS)
     mujoco.mj_forward(m, self.d)
     self.q0, self.v0 = self.d.qpos.copy(), self.d.qvel.copy()
@@ -95,11 +104,27 @@ class LaunchILQR:
     mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_GEOM, g, vel, 0)
     return h, np.linalg.norm(vel[3:5])
 
+  def limb_forces(self):
+    """Normal contact force on each limb (hands, feet) from the floor."""
+    m, d = self.m, self.d
+    forces = np.zeros(4)
+    for i, c in enumerate(d.contact[:d.ncon]):
+      if self.floor not in (c.geom1, c.geom2):
+        continue
+      body = m.geom_bodyid[c.geom2 if c.geom1 == self.floor else c.geom1]
+      if body in self.limb_bodies:
+        mujoco.mj_contactForce(m, d, i, self._force)
+        forces[self.limb_bodies.index(body)] += self._force[0]
+    return forces
+
   def residual(self, t):
     """Weighted residual vector at step t (costs = 0.5 |r|^2); mj_forward
     must have been called at the state. Control terms are separate."""
     d = self.d
     r = []
+    if self.force_cap > 0:
+      over = np.maximum(self.limb_forces() - self.force_cap, 0)
+      r += list(np.sqrt(W_FORCE) * over / S_FORCE)
     if t < self.n_push:
       hands_down = t < self.n_swing or t >= self.n_vault
       stance = ((self.hands if hands_down else []) +

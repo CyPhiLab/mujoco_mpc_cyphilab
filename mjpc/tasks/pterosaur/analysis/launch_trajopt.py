@@ -104,7 +104,29 @@ def hand_pad(spec, hand, start_qpos):
     g.solimp = [0.9, 0.95, 0.001, 0.5, 2]
 
 
-def load_model(torque, hand=None, foot_solref=None):
+# latched parallel springs on shoulder2 and hip2 (hinge indices): preloaded
+# in the crouch, released at push start, resting at the limb's liftoff angle
+SPRING_JOINTS = [1, 4, 7, 10]
+
+
+def add_springs(m, energy, ref):
+  """Store energy/4 in each of four parallel springs at the crouch."""
+  q = ref['qpos'][:, 7:]
+  crouch = q[push_start_index(ref)]
+  hands_off = int(np.argmin(ref['hands_contact']))
+  feet_off = int(np.argmin(ref['feet_contact']))
+  info = {}
+  for j in SPRING_JOINTS:
+    rest = q[hands_off if j in (1, 4) else feet_off, j]
+    k = 2 * (energy / 4) / (crouch[j] - rest) ** 2
+    m.jnt_stiffness[j + 1] = k
+    m.qpos_spring[m.jnt_qposadr[j + 1]] = rest
+    info[j] = {'k': k, 'rest': rest, 'crouch_torque': k * abs(crouch[j] - rest)}
+  return info
+
+
+def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
+               leg_scale=1.0, spring_energy=0.0):
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -139,6 +161,10 @@ def load_model(torque, hand=None, foot_solref=None):
   lo, hi = q.min(axis=0) - JOINT_MARGIN, q.max(axis=0) + JOINT_MARGIN
   m.opt.timestep = SIM_DT
   m.actuator_gainprm[:, 0] *= torque
+  m.actuator_gainprm[:6, 0] *= arm_scale    # arms: actuators 0-5
+  m.actuator_gainprm[6:, 0] *= leg_scale    # legs: actuators 6-11
+  if spring_energy > 0:
+    add_springs(m, spring_energy, ref)
   for j in range(12):
     m.jnt_limited[j + 1] = 1
     m.jnt_range[j + 1] = [lo[j], hi[j]]
@@ -201,9 +227,9 @@ def expand(half):
 class LaunchOpt:
 
   def __init__(self, torque=2.0, angle=30.0, nthread=4, push_time=0.0,
-               hand=None, foot_solref=None):
+               hand=None, foot_solref=None, **design):
     self.push_time = push_time
-    self.m = load_model(torque, hand, foot_solref)
+    self.m = load_model(torque, hand, foot_solref, **design)
     self.ref = reference()
     self.i0 = push_start_index(self.ref)
     self.nstep = int(round(HORIZON / SIM_DT))
