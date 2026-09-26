@@ -107,6 +107,8 @@ Findings:
 | `candidates/A_plain_hands` | 4.73 m/s at 29 deg, t = 0.45 s | model hands; vault in several hand strikes; hands and feet on MuJoCo default contact (0.02, 1), hand sink 11.8 mm |
 | `candidates/B_pad_vault` | 4.95 m/s at 29 deg, t = 0.43 s | 4 cm rubber hand pads, one vault contact per hand (6-7 kN peak), hand sink 6.9 mm; feet tap during the leg push |
 
+| `candidates/C_t6_s500` | 8.16 m/s at 35 deg, t = 0.43 s | design study: 6x torque + 500 J latched springs (shoulder2/hip2), model hands; hands and feet still hammer, limbs swing in flight |
+
 Each folder has `controls.npy` (symmetric controls, 2 ms steps) and
 `trajectory.npz` (time, qpos, qvel, ctrl, contacts, CoM velocity). Replay
 and check (push time 0.45 s):
@@ -123,3 +125,22 @@ Re-optimize, e.g. B from the reference warm start:
 ```sh
 python launch_ilqr.py --push_time 0.45 --hand_radius 0.04 --vault_time 0.08 --iters 150 --out B.npz
 ```
+
+### Design study toward 10 m/s at 30 deg
+
+`launch_study.py chains` (results: `study_results/chains_10ms_30deg.json`)
+raises torque, then spring energy, warm-starting each step from the
+previous solution with torque-equivalent controls. Cold-start iLQR per
+design stalls and gave non-monotonic, inconclusive results.
+
+| design | best takeoff | CoM energy at takeoff |
+|---|---|---|
+| 2x torque | 5.3 m/s | 850 J |
+| 4x | 6.3 m/s | 1100 J |
+| 6x / 8x | 6.5-7.1 m/s | 1170-1380 J |
+| 6x + 500 J springs | 8.2 m/s at 35 deg | 1810 J |
+| 6x + 1000 J springs | 7.5 m/s at 30 deg | 1510 J |
+| 2000-4000 J springs | worse | |
+
+10 m/s needs ~2650 J. Motor work grows with torque but converts to CoM
+energy at only ~20-30%, and all these launches still hammer.
