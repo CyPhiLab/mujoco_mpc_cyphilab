@@ -69,15 +69,18 @@ def main():
   parser.add_argument('--push_time', type=float, default=0.45)
   parser.add_argument('--torque', type=float, default=2.0)
   parser.add_argument('--hand_radius', type=float, default=0)
-  parser.add_argument('--hand_timeconst', type=float, default=0.02)
-  parser.add_argument('--hand_dampratio', type=float, default=1.0)
+  parser.add_argument('--hand_timeconst', type=float, default=0.0067)
+  parser.add_argument('--hand_dampratio', type=float, default=3.0)
   args = parser.parse_args()
   hand = (dict(radius=args.hand_radius, timeconst=args.hand_timeconst,
                dampratio=args.hand_dampratio) if args.hand_radius > 0 else None)
   solver = L.LaunchILQR(args.push_time, args.torque, hand=hand)
   U = np.load(args.controls)[:solver.N]
-  for row in hand_load(solver, U):
+  rows = hand_load(solver, U)
+  for row in rows:
     print(row)
+  sink = -min(r['hand_height_mm'][0] for r in rows)
+  print(f'max hand sink {sink:.1f} mm' + ('  INVALID (> 5 mm)' if sink > 5 else ''))
 
 
 if __name__ == '__main__':

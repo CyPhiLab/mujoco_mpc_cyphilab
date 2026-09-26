@@ -297,8 +297,8 @@ def main():
   parser.add_argument('--out', default='launch_ilqr.npz')
   parser.add_argument('--hand_radius', type=float, default=0,
                       help='rubber hand pad radius (m); 0 keeps the model hand')
-  parser.add_argument('--hand_timeconst', type=float, default=0.02)
-  parser.add_argument('--hand_dampratio', type=float, default=1.0)
+  parser.add_argument('--hand_timeconst', type=float, default=0.0067)
+  parser.add_argument('--hand_dampratio', type=float, default=3.0)
   parser.add_argument('--vault_time', type=float, default=0.0,
                       help='single-strike vault: hands plant only for this '
                            'long before takeoff (0: planted throughout)')

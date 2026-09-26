@@ -35,10 +35,12 @@ JOINT_MARGIN = 0.3      # hard joint limits: reference range +- margin
 MIN_FLIGHT = 0.15       # airborne this long counts as takeoff
 KNOT_DT = 0.05          # control knot spacing: controls are piecewise linear
                         # between knots, so they cannot jitter
-# MuJoCo default contact impedance for the feet: the model's soft feet
-# (solimp width 3.1 cm) sink onto the shins; much stiffer (1 mm) bounces
+# Foot contact: the model's soft feet (solimp width 3.1 cm) sink onto the
+# shins; stiff undamped (0.005, 1) bounces; MuJoCo's default (0.02, 1) sinks
+# ~26 mm under a hard push. A damped rubber-pad contact with default-like
+# stiffness (time constant 0.0067 s, damping ratio 3) sinks ~5 mm.
 FOOT_SOLIMP = [0.9, 0.95, 0.001]
-FOOT_SOLREF = [0.02, 1]
+FOOT_SOLREF = [0.0067, 3]
 
 # left/right mirror sign per limb joint (shoulder1 axes are mirrored)
 MIRROR = np.array([-1, 1, 1, 1, 1, 1])
