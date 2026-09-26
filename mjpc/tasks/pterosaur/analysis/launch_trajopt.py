@@ -146,7 +146,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     {frames}
   </sensor>
 </mujoco>"""
-  path = os.path.join(TASK_DIR, '_trajopt_tmp.xml')
+  # per-process name: parallel workers (launch_study.py) load concurrently
+  path = os.path.join(TASK_DIR, f'_trajopt_tmp_{os.getpid()}.xml')
   with open(path, 'w') as f:
     f.write(extra)
   try:
