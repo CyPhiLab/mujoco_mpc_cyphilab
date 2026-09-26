@@ -41,7 +41,10 @@ S_PITCH, W_PITCH = 0.1, 1.0           # pitch beyond 45 deg (rad)
 W_EFFORT = 0.01                       # control (unitless)
 S_TAKEOFF_V, W_TAKEOFF_V = 0.5, 10.0  # takeoff CoM velocity error (m/s)
 S_SPIN, W_SPIN = 0.05, 5.0            # takeoff angular momentum / mass
-S_CALM, W_CALM = 5.0, 0.2             # joint speed in flight (rad/s)
+S_CALM, W_CALM = 5.0, 1.0             # joint speed in flight (rad/s)
+S_SWING, W_SWING = 0.005, 1.0         # swinging hand below 1 cm (m)
+SWING_HEIGHT = 0.01
+SWING_START = 0.05                    # s, hands may leave the crouch
 S_LIFT, W_LIFT = 0.01, 1.0            # limb below 3 cm in flight (m)
 LIFT_HEIGHT = 0.03
 
@@ -53,7 +56,8 @@ E[T.RIGHT, np.arange(6)] = T.MIRROR
 
 class LaunchILQR:
 
-  def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None):
+  def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None,
+               vault_time=0.0):
     self.opt = T.LaunchOpt(torque, angle, hand=hand)  # physics, start state
     self.m = self.opt.m
     self.d = mujoco.MjData(self.m)
@@ -62,6 +66,11 @@ class LaunchILQR:
     self.dt = m.opt.timestep
     self.n_push = int(round(push_time / self.dt))
     self.n_feet = int(round(FEET_LIFT_FRAC * push_time / self.dt))
+    # single-strike vault: hands swing clear of the ground, then plant once
+    # for the last vault_time before takeoff (0: hands planted throughout)
+    self.n_vault = (self.n_push - int(round(vault_time / self.dt))
+                    if vault_time > 0 else 0)
+    self.n_swing = int(round(SWING_START / self.dt)) if vault_time > 0 else 0
     self.N = self.n_push + int(round(FLIGHT / self.dt))
     a = np.deg2rad(angle)
     self.v_target = speed * np.array([-np.cos(a), 0, np.sin(a)])
@@ -91,12 +100,17 @@ class LaunchILQR:
     d = self.d
     r = []
     if t < self.n_push:
-      stance = self.hands + (self.feet if t < self.n_feet else [])
+      hands_down = t < self.n_swing or t >= self.n_vault
+      stance = ((self.hands if hands_down else []) +
+                (self.feet if t < self.n_feet else []))
       for g in self.hands + self.feet:
         if g in stance:
           h, v = self.limb(g)
           r += [np.sqrt(W_PLANT_H) * max(h - PLANT_TOL, 0) / S_PLANT_H,
                 np.sqrt(W_PLANT_V) * v / S_PLANT_V]
+        elif g in self.hands and self.n_swing <= t < self.n_vault:
+          h, _ = self.limb(g)
+          r += [np.sqrt(W_SWING) * max(SWING_HEIGHT - h, 0) / S_SWING, 0]
         else:
           r += [0, 0]
       for b, p, c in self.clear:
@@ -285,11 +299,15 @@ def main():
                       help='rubber hand pad radius (m); 0 keeps the model hand')
   parser.add_argument('--hand_timeconst', type=float, default=0.02)
   parser.add_argument('--hand_dampratio', type=float, default=1.0)
+  parser.add_argument('--vault_time', type=float, default=0.0,
+                      help='single-strike vault: hands plant only for this '
+                           'long before takeoff (0: planted throughout)')
   args = parser.parse_args()
 
   hand = (dict(radius=args.hand_radius, timeconst=args.hand_timeconst,
                dampratio=args.hand_dampratio) if args.hand_radius > 0 else None)
-  solver = LaunchILQR(args.push_time, args.torque, args.speed, args.angle, hand)
+  solver = LaunchILQR(args.push_time, args.torque, args.speed, args.angle, hand,
+                      args.vault_time)
   if args.init:
     U = np.load(args.init)[:solver.N]
     print(f'init from {args.init}')
