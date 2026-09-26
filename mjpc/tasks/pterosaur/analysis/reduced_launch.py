@@ -9,9 +9,10 @@ linearly to zero at the no-load speed, so power is bounded) and an optional
 latched parallel spring, preloaded in the crouch and released at push start.
 
 Contact is unilateral with Coulomb friction (the tangential force is clamped
-to the friction cone, so slipping cannot add thrust): a planted foot/hand lifts off
-for good when its ground force would pull, or when the limb reaches full
-extension; it cannot touch down again. Takeoff is when both limbs are off.
+to the friction cone, so slipping cannot add thrust). A limb whose force
+would pull unloads while its foot/hand stays down; it lifts off, for good,
+when the body moves out of its reach or a joint reaches its limit. Takeoff
+is when both limbs are off.
 Body pitch is ignored (translation only).
 
 For a design, the joint torque profiles (piecewise linear, symmetric
@@ -169,6 +170,30 @@ class ReducedLaunch:
       limb.spring_rest = rest
       limb.spring_k = 2 * (energy / 4) / (limb.q_crouch - rest) ** 2
 
+  @property
+  def seeds(self):
+    """Heuristic starting commands: the middle joints (knee, elbow) drive
+    limb extension at full effort, with and without the proximal joints."""
+    out = []
+    for prox in (0.0, 1.0, -1.0):
+      c = np.zeros((4, self.knots))
+      for i, limb in enumerate(self.limbs):
+        extend = -np.sign(self.reach_gradient(limb)[1])
+        c[2 * i + 1] = extend
+        c[2 * i] = prox
+      out.append(c)
+    return np.array(out)
+
+  @staticmethod
+  def reach_gradient(limb):
+    """d(reach)/dq at the crouch."""
+    q = limb.q_crouch
+    a1, a12 = q[0], q[0] + q[1]
+    fk = np.array([limb.l1 * np.cos(a1) + limb.l2 * np.cos(a12),
+                   limb.l1 * np.sin(a1) + limb.l2 * np.sin(a12)])
+    J = jacobian(limb, q[None])[0]
+    return fk @ J / np.linalg.norm(fk)
+
   def controls(self, params):
     """(B, 4, knots) in [-1, 1] -> (B, n, 4) piecewise-linear commands."""
     t_knot = np.linspace(0, 1, params.shape[2])
@@ -223,7 +248,12 @@ class ReducedLaunch:
         reach = np.linalg.norm(limb.contact[None] - (p + limb.proximal_offset[None]),
                                axis=1) / (limb.l1 + limb.l2)
         limit = np.any((q < limb.q_lo[None]) | (q > limb.q_hi[None]), axis=1)
-        lift = stance[:, i] & ((F[:, 1] < 0) | (reach > 0.99) | limit)
+        # the ground cannot pull: a limb whose force would pull just unloads
+        # (foot/hand stays down); it lifts off, for good, when the body moves
+        # out of its reach or a joint reaches its limit. Feet never leave and
+        # return, so there are no impacts.
+        F[F[:, 1] < 0] = 0
+        lift = stance[:, i] & ((reach > 0.99) | limit)
         stance[:, i] &= ~lift
         F *= stance[:, i:i + 1]
         # friction: tangential force limited to the cone (conservative: the
@@ -285,6 +315,8 @@ class ReducedLaunch:
         params[0] = best
       elif init is not None:
         params[0] = init
+      else:
+        params[:len(self.seeds)] = self.seeds
       res = self.simulate(params)
       s = self.score(res)
       order = np.argsort(s)[::-1]
