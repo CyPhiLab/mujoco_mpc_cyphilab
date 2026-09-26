@@ -46,7 +46,10 @@ S_SWING, W_SWING = 0.005, 1.0         # swinging hand below 1 cm (m)
 SWING_HEIGHT = 0.01
 SWING_START = 0.05                    # s, hands may leave the crouch
 S_LIFT, W_LIFT = 0.01, 1.0            # limb below 3 cm in flight (m)
-S_FORCE, W_FORCE = 500.0, 1.0         # limb contact force above the cap (N)
+# limb contact force above the cap (N). Impacts last a few ms and running
+# costs are time-integrated, so the weight is high: a 3.5 kN excess for
+# 10 ms costs about as much as a 1 m/s takeoff velocity error
+S_FORCE, W_FORCE = 500.0, 100.0
 LIFT_HEIGHT = 0.03
 
 # 6 symmetric channels -> 12 actuators

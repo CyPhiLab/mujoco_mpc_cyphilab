@@ -62,7 +62,6 @@ def grid(name):
     pad = dict(hand=PAD, vault_time=0.08)
     return [
         [dict(base, tag='H1', force_cap=c) for c in caps],
-        [dict(base, tag='H2', **pad)],
         [dict(base, tag='H3', force_cap=c, **pad) for c in caps],
         [dict(base, tag='H4', hand=PAD, force_cap=c) for c in caps],
     ]
