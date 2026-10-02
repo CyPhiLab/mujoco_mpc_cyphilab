@@ -18,7 +18,8 @@ next smaller energy budget's solution (a chain per motor and force cap),
 keeping the best, since single cold starts sometimes stall.
 
 Usage:
-  reduced_springs.py [--grid main|robust|subsets] [--out FILE] [--workers 4]
+  reduced_springs.py [--grid main|robust|scaling|subsets] [--out FILE]
+      [--workers 4]
 """
 import argparse
 import itertools
@@ -71,14 +72,20 @@ def jobs(grid, iters):
 
 
 ROBUST_CAPS = [2500, 5000, 10000]
+# scaling: body mass and limb length (geometry scaled about the CoM) with
+# the spring designs above
+SCALING = dict(motors=[dict(torque_scale=2, no_load_speed=20),
+                       dict(torque_scale=6, no_load_speed=40)],
+               caps=[2500, 5000], masses=[40, 50], limb_scales=[1.0, 1.25, 1.5],
+               energies=[0, 2000, 4000])
 
 
 def robust_chain(args):
   """Increasing energy budgets for one motor and force cap; each budget
   from two cold starts and a warm start from the previous budget."""
-  motor, iters = args
+  motor, iters, energies = args
   rows, prev = [], None
-  for energy in [0] + ENERGIES:
+  for energy in energies:
     t0 = time.time()
     design = R.Design(**motor)
     model = R.ReducedLaunch(design)
@@ -126,8 +133,15 @@ def main():
   out = args.out or f'study_results/reduced_springs_{args.grid}.json'
   rows = []
   if args.grid == 'robust':
-    tasks = [(dict(m, force_cap=c), args.iters)
+    tasks = [(dict(m, force_cap=c), args.iters, [0] + ENERGIES)
              for m, c in itertools.product(MOTORS, ROBUST_CAPS)]
+    fn, flat = robust_chain, True
+  elif args.grid == 'scaling':
+    g = SCALING
+    tasks = [(dict(m, force_cap=c, mass=ms, limb_scale=ls), args.iters,
+              g['energies'])
+             for m, c, ms, ls in itertools.product(
+                 g['motors'], g['caps'], g['masses'], g['limb_scales'])]
     fn, flat = robust_chain, True
   else:
     tasks, fn, flat = jobs(args.grid, args.iters), run, False
@@ -137,7 +151,8 @@ def main():
       rows.append(row)
       s = row.get('springs')
       print(f"x{row['torque_scale']:g} w0 {row['no_load_speed']:g} "
-            f"cap {row['force_cap']:g} N "
+            f"cap {row['force_cap']:g} N mass {row['mass'] or 'model'} "
+            f"limb x{row['limb_scale']:g} "
             f"{row['budget_J']:5.0f} J {row['variant']:8s}: "
             f"{row['speed_along']:5.2f} m/s @ {row['angle_deg']:.0f} deg, "
             f"t {row['takeoff_time']:.3f}, motor {row['work_J']:.0f} J, "

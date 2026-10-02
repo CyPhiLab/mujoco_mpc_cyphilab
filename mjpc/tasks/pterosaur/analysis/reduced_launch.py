@@ -172,7 +172,7 @@ MIDDLE_CLEARANCE = 0.02     # m, knee/elbow above the ground in stance
 #   share (4), travel (4), exponent (4), release time (2: hind, fore)
 SPRING_JOINTS = ('hind_prox', 'hind_mid', 'fore_prox', 'fore_mid')
 MAX_TRAVEL = 3.0     # rad
-MAX_RELEASE = 0.3    # s
+MAX_RELEASE = 0.5    # s (0.3 for reduced_springs_{main,robust}.json)
 
 
 class ReducedLaunch:
