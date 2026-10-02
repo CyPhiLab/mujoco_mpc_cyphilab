@@ -51,6 +51,9 @@ RELAX = [(0.45, 8.0, 0.3), (0.45, 8.0, 0.1), (0.45, 9.0, 0.03),
 # --chain push: same push time, higher targets (with --track_scale and
 # --min_hand_force to get the arms to bear load)
 PUSH = [(0.45, 8.0, 1.0), (0.45, 9.0, 1.0)]
+# --chain bodypath (with --reference bodypath): the forelimb-push reference
+# at increasing speeds, from a PD warm start on it
+BODYPATH = [(0.45, v, 1.0) for v in (6.0, 7.0, 8.0, 9.0, 10.0)]
 # minimum normal force per hand while planted (residual scale and weight)
 S_FMIN, W_FMIN = 50.0, 20.0
 
@@ -191,14 +194,22 @@ class TrackILQR(L.LaunchILQR):
   """LaunchILQR plus tracking of the retimed reference during the push."""
 
   def __init__(self, push_time, torque, speed, track_scale=1.0,
-               min_hand_force=0.0, **kw):
+               min_hand_force=0.0, reference='retimed', **kw):
     self.track_scale = track_scale
     self.min_hand_force = min_hand_force
     super().__init__(push_time, torque, speed,
                      feet_lift_frac=(push_time - FOOT_FREE) / push_time,
                      hands_lift_frac=1.0, **kw)
-    self.q_track, self.pitch_track = retimed_reference(push_time, self.dt,
-                                                       self.N + 1)
+    if reference == 'bodypath':
+      # forelimb push: feet planted until shortly before the legs straighten
+      # in the reference (then free), hands until the end of the push
+      self.q_track, self.pitch_track, lift, _, _ = body_path_reference(
+          self.m, self.q0, push_time, self.dt, self.N + 1,
+          kw.get('angle', 30.0), ref_speed=speed)
+      self.n_feet = int(round((min(lift['HL'], lift['HR']) - 0.02) / self.dt))
+    else:
+      self.q_track, self.pitch_track = retimed_reference(push_time, self.dt,
+                                                         self.N + 1)
 
   def residual(self, t):
     r = super().residual(t)
@@ -277,7 +288,9 @@ def main():
   p.add_argument('--iters', type=int, default=60)
   p.add_argument('--steps', type=int, default=len(CHAIN))
   p.add_argument('--out', default=os.path.join(HERE, 'tracked'))
-  p.add_argument('--chain', default='speed', choices=['speed', 'relax', 'push'])
+  p.add_argument('--chain', default='speed',
+                 choices=['speed', 'relax', 'push', 'bodypath'])
+  p.add_argument('--reference', default='retimed', choices=['retimed', 'bodypath'])
   p.add_argument('--track_scale', type=float, default=1.0,
                  help='multiplies the chain tracking weights')
   p.add_argument('--min_hand_force', type=float, default=0.0,
@@ -287,7 +300,7 @@ def main():
   p.add_argument('--first_step', type=int, default=0, help='numbering offset')
   args = p.parse_args()
   chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
-           'push': PUSH}[args.chain]
+           'push': PUSH, 'bodypath': BODYPATH}[args.chain]
   chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
   os.makedirs(args.out, exist_ok=True)
   summary_path = os.path.join(args.out, 'summary.json')
@@ -300,6 +313,7 @@ def main():
     t0 = time.time()
     solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
                        min_hand_force=args.min_hand_force,
+                       reference=args.reference,
                        angle=args.angle, spring_energy=args.spring_energy)
     if U_prev is None:
       U = solver.pd_warm_start()
