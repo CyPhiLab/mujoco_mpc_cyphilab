@@ -32,6 +32,12 @@ S_TRACK_PITCH, W_TRACK_PITCH = 0.1, 1.0   # body pitch tracking (rad)
 ARM = np.array([0, 1, 2, 3, 4, 5])
 LEG = np.array([6, 7, 8, 9, 10, 11])
 
+# planted limbs and no re-contact must outweigh the takeoff speed target:
+# with launch_ilqr.py's weights a 1 cm hand lift held for 0.3 s costs ~0.6,
+# a 1 m/s takeoff speed error 20, so the optimizer lifted the hands early
+L.W_PLANT_H, L.W_PLANT_V = 50.0, 10.0
+L.W_LIFT = 20.0
+
 # continuation: (push time s, takeoff speed m/s at 30 deg)
 CHAIN = [(0.6, 3.0), (0.55, 4.0), (0.5, 5.0), (0.47, 6.0), (0.45, 7.0),
          (0.45, 8.0)]
