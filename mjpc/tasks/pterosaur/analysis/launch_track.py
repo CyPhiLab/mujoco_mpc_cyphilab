@@ -48,6 +48,11 @@ CHAIN = [(0.6, 3.0), (0.55, 4.0), (0.5, 5.0), (0.47, 6.0), (0.45, 7.0),
 # weight scale); planted limbs, no re-contact and pitch limits stay
 RELAX = [(0.45, 8.0, 0.3), (0.45, 8.0, 0.1), (0.45, 9.0, 0.03),
          (0.45, 10.0, 0.03)]
+# --chain push: same push time, higher targets (with --track_scale and
+# --min_hand_force to get the arms to bear load)
+PUSH = [(0.45, 8.0, 1.0), (0.45, 9.0, 1.0)]
+# minimum normal force per hand while planted (residual scale and weight)
+S_FMIN, W_FMIN = 50.0, 20.0
 
 
 def pitch_of(quat):
@@ -85,8 +90,10 @@ def retimed_reference(push_time, dt, n):
 class TrackILQR(L.LaunchILQR):
   """LaunchILQR plus tracking of the retimed reference during the push."""
 
-  def __init__(self, push_time, torque, speed, track_scale=1.0, **kw):
+  def __init__(self, push_time, torque, speed, track_scale=1.0,
+               min_hand_force=0.0, **kw):
     self.track_scale = track_scale
+    self.min_hand_force = min_hand_force
     super().__init__(push_time, torque, speed,
                      feet_lift_frac=(push_time - FOOT_FREE) / push_time,
                      hands_lift_frac=1.0, **kw)
@@ -101,6 +108,9 @@ class TrackILQR(L.LaunchILQR):
       pitch = (np.sqrt(W_TRACK_PITCH) * (pitch_of(d.qpos[3:7]) - self.pitch_track[t])
                / S_TRACK_PITCH)
       r = np.concatenate([r, np.sqrt(self.dt * self.track_scale) * np.r_[track, pitch]])
+      if self.min_hand_force > 0 and t < self.n_hands:
+        short = np.maximum(self.min_hand_force - self.limb_forces()[:2], 0)
+        r = np.concatenate([r, np.sqrt(self.dt * W_FMIN) * short / S_FMIN])
     return r
 
   def pd_warm_start(self, kp=600.0, kd=20.0):
@@ -167,12 +177,18 @@ def main():
   p.add_argument('--iters', type=int, default=60)
   p.add_argument('--steps', type=int, default=len(CHAIN))
   p.add_argument('--out', default=os.path.join(HERE, 'tracked'))
-  p.add_argument('--chain', default='speed', choices=['speed', 'relax'])
+  p.add_argument('--chain', default='speed', choices=['speed', 'relax', 'push'])
+  p.add_argument('--track_scale', type=float, default=1.0,
+                 help='multiplies the chain tracking weights')
+  p.add_argument('--min_hand_force', type=float, default=0.0,
+                 help='N per hand while planted (0: off)')
   p.add_argument('--init', default=None, help='controls (.npy) to start from')
   p.add_argument('--init_push', type=float, default=0.45)
   p.add_argument('--first_step', type=int, default=0, help='numbering offset')
   args = p.parse_args()
-  chain = ([(T_, v, 1.0) for T_, v in CHAIN] if args.chain == 'speed' else RELAX)
+  chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
+           'push': PUSH}[args.chain]
+  chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
   os.makedirs(args.out, exist_ok=True)
   summary_path = os.path.join(args.out, 'summary.json')
   summary = json.load(open(summary_path)) if os.path.exists(summary_path) else []
@@ -183,6 +199,7 @@ def main():
     i += args.first_step
     t0 = time.time()
     solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
+                       min_hand_force=args.min_hand_force,
                        angle=args.angle, spring_energy=args.spring_energy)
     if U_prev is None:
       U = solver.pd_warm_start()
