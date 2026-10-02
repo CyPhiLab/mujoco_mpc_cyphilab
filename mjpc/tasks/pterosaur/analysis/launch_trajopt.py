@@ -175,11 +175,14 @@ def add_latched_springs(spec, springs):
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
-               start_qpos=None):
+               start_qpos=None, trunk_limb_collision=True):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
-  12 motors); start_qpos: start pose for the hand pad placement."""
+  12 motors); start_qpos: start pose for the hand pad placement;
+  trunk_limb_collision=False excludes trunk-humerus/femur collisions (their
+  convex hulls overlap by ~3 cm all along the reference, more with longer
+  limbs, so they push the limbs apart)."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -190,6 +193,7 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   <include file="task.xml"/>
   <sensor>
     <contact name="to_floor" subtree1="body" geom2="floor" num="1" data="found"/>
+    <contact name="to_grf" subtree1="body" geom2="floor" num="1" data="force" reduce="netforce"/>
     <contact name="to_hand_l" body1="radius_and_ulna" geom2="floor" num="1" data="found"/>
     <contact name="to_hand_r" body1="radius_and_ulna_2" geom2="floor" num="1" data="found"/>
     <contact name="to_foot_l" body1="tibia" geom2="floor" num="1" data="found"/>
@@ -212,6 +216,10 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     scale_limbs(spec, limb_scale)
   if latched_springs:
     add_latched_springs(spec, latched_springs)
+  if not trunk_limb_collision:
+    for b in ['bevel_out', 'bevel_out_2', 'leg_motor_2', 'femur']:
+      e = spec.add_exclude()
+      e.bodyname1, e.bodyname2 = 'body', b
   if hand:
     hand_pad(spec, hand, ref['qpos'][push_start_index(ref)]
              if start_qpos is None else start_qpos)

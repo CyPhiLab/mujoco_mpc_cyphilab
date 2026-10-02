@@ -75,8 +75,11 @@ def render_reference(path):
   rec.save(path)
 
 
-def render_trajectory(time, qpos, title, path, comvel=None, slow=1.0):
-  m = mujoco.MjModel.from_xml_path(os.path.join(TASK_DIR, 'task.xml'))
+def render_trajectory(time, qpos, title, path, comvel=None, slow=1.0, m=None):
+  """m: model to render with (default task.xml; designs with scaled limbs
+  pass their own)."""
+  if m is None:
+    m = mujoco.MjModel.from_xml_path(os.path.join(TASK_DIR, 'task.xml'))
   d = mujoco.MjData(m)
   rec = Recorder(m)
   for ft in np.arange(time[0], time[-1], 1 / (FPS * slow)):

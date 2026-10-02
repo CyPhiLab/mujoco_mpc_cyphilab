@@ -166,7 +166,8 @@ def build(args):
   ref = T.reference()
   q_ref = ref['qpos'][T.push_start_index(ref)]
   base = T.load_model(args.torque, limb_scale=args.limb_scale,
-                      no_load_speed=args.no_load_speed)
+                      no_load_speed=args.no_load_speed,
+                      trunk_limb_collision=False)
   q_start, _ = crouch_qpos(base, q_ref)
   springs, times = model_springs(row, red, base, q_start)
   push_time = args.push_time or round(red['takeoff'], 3)
@@ -177,6 +178,7 @@ def build(args):
                         limb_scale=args.limb_scale,
                         no_load_speed=args.no_load_speed,
                         latched_springs=springs, start_qpos=q_start,
+                        trunk_limb_collision=False,
                         latch_times=times)
   return row, red, q_start, springs, solver
 
