@@ -12,8 +12,13 @@ push, with progressively more design freedom:
   staged:  + latch release time per limb pair (hind, fore)
   and, at full freedom, springs on subsets of joints only.
 
+The 'robust' grid repeats the no-spring and fully free ('staged') designs
+with several starts per design: two cold starts and a warm start from the
+next smaller energy budget's solution (a chain per motor and force cap),
+keeping the best, since single cold starts sometimes stall.
+
 Usage:
-  reduced_springs.py [--grid main|subsets] [--out FILE] [--workers 4]
+  reduced_springs.py [--grid main|robust|subsets] [--out FILE] [--workers 4]
 """
 import argparse
 import itertools
@@ -65,6 +70,37 @@ def jobs(grid, iters):
   return out
 
 
+ROBUST_CAPS = [2500, 5000, 10000]
+
+
+def robust_chain(args):
+  """Increasing energy budgets for one motor and force cap; each budget
+  from two cold starts and a warm start from the previous budget."""
+  motor, iters = args
+  rows, prev = [], None
+  for energy in [0] + ENERGIES:
+    t0 = time.time()
+    design = R.Design(**motor)
+    model = R.ReducedLaunch(design)
+    search = None if energy == 0 else dict(shape=True, staged=True, energy=energy)
+    tries = [model.optimize(iters, seed=s, spring_search=search) for s in (0, 1)]
+    if prev is not None:
+      warm = dict(search)
+      if 'spring_unit' in prev:
+        warm['init'] = prev['spring_unit']
+      tries.append(model.optimize(iters, seed=2, init=prev['params'],
+                                  spring_search=warm))
+    best = max(tries, key=lambda r: r['speed_along'] - 10 * r['infeasible'])
+    prev = best
+    row = {k: v for k, v in best.items() if k != 'params'}
+    rows.append({**asdict(design), 'budget_J': energy,
+                 'variant': 'none' if energy == 0 else 'staged', **row,
+                 'tries': [round(r['speed_along'], 2) for r in tries],
+                 'params': best['params'].tolist(),
+                 'seconds': round(time.time() - t0)})
+  return rows
+
+
 def run(args):
   motor, energy, name, opts, iters = args
   t0 = time.time()
@@ -89,8 +125,15 @@ def main():
   args = p.parse_args()
   out = args.out or f'study_results/reduced_springs_{args.grid}.json'
   rows = []
+  if args.grid == 'robust':
+    tasks = [(dict(m, force_cap=c), args.iters)
+             for m, c in itertools.product(MOTORS, ROBUST_CAPS)]
+    fn, flat = robust_chain, True
+  else:
+    tasks, fn, flat = jobs(args.grid, args.iters), run, False
   with Pool(args.workers) as pool:
-    for row in pool.imap_unordered(run, jobs(args.grid, args.iters)):
+    for result in pool.imap_unordered(fn, tasks):
+     for row in (result if flat else [result]):
       rows.append(row)
       s = row.get('springs')
       print(f"x{row['torque_scale']:g} w0 {row['no_load_speed']:g} "
