@@ -87,6 +87,106 @@ def retimed_reference(push_time, dt, n):
   return joints, pitch
 
 
+# limbs for the body-path reference: contact geom and its three hinges
+# (abduction, proximal, middle; qpos[7:] indices). Abduction is needed: the
+# limbs do not move in the sagittal plane, so a planted hand drifts sideways
+# 1.5-2 cm without it
+PATH_LIMBS = [('FL', (0, 1, 2)), ('FR', (3, 4, 5)), ('HL', (6, 7, 8)),
+              ('HR', (9, 10, 11))]
+
+
+def limb_ik(m, d, geom, hinges, target, iters=20, tol=0.003):
+  """Move the hinges so the geom center reaches target (from the current
+  qpos, damped least squares); returns True if reached within tol."""
+  jac = np.zeros((3, m.nv))
+  qadr = [7 + h for h in hinges]
+  dadr = [6 + h for h in hinges]
+  jnt = [h + 1 for h in hinges]
+  for _ in range(iters):
+    mujoco.mj_kinematics(m, d)
+    mujoco.mj_comPos(m, d)
+    err = d.geom_xpos[geom] - target
+    if np.linalg.norm(err) < 0.001:
+      break
+    mujoco.mj_jacGeom(m, d, jac, None, geom)
+    J = jac[:, dadr]
+    dq = -np.linalg.solve(J.T @ J + 1e-4 * np.eye(len(hinges)), J.T @ err)
+    for k, (qa, j) in enumerate(zip(qadr, jnt)):
+      lo, hi = m.jnt_range[j]
+      d.qpos[qa] = np.clip(d.qpos[qa] + dq[k], lo, hi)
+  mujoco.mj_kinematics(m, d)
+  return np.linalg.norm(d.geom_xpos[geom] - target) < tol
+
+
+def body_path_reference(m, q0, push_time, dt, n, angle_deg=30.0,
+                        ref_speed=7.0, stroke_frac=0.95, follow_pitch=False):
+  """Kinematic push: the body translates along the launch direction by
+  d(t) = s (t/T)^p (at the crouch pitch, or with follow_pitch the retimed
+  reference's pitch change, which noses up ~17 deg and pulls the hands out
+  of reach), the sagittal limb
+  joints keep each hand/foot on its starting spot by IK until the limb is
+  out of reach (then that limb freezes and lifts off); abduction joints
+  follow the retimed reference. s: stroke_frac of the hands' reach along
+  the launch direction; p sets the reference's final speed to ref_speed.
+  Returns joints (n, 12), pitch (n,), per-limb liftoff times, stroke, p."""
+  joints_ret, pitch_ret = retimed_reference(push_time, dt, n)
+  if not follow_pitch:
+    pitch_ret = np.full_like(pitch_ret, pitch_of(q0[3:7]))
+  d = mujoco.MjData(m)
+  d.qpos[:] = q0
+  mujoco.mj_kinematics(m, d)
+  gid = {g: mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, g) for g, _ in PATH_LIMBS}
+  targets = {g: d.geom_xpos[gid[g]].copy() for g, _ in PATH_LIMBS}
+  a = np.deg2rad(angle_deg)
+  direction = np.array([-np.cos(a), 0.0, np.sin(a)])
+  quat0 = q0[3:7].copy()
+
+  def pose(dist, dpitch, q_prev):
+    q = q_prev.copy()
+    q[:3] = q0[:3] + dist * direction
+    half = 0.5 * dpitch
+    mujoco.mju_mulQuat(q[3:7], np.array([np.cos(half), 0, np.sin(half), 0]), quat0)
+    return q
+
+  def sweep(stroke, p):
+    """Joints along the path and per-limb liftoff times."""
+    n_push = int(round(push_time / dt))
+    joints = joints_ret.copy()
+    q = q0.copy()
+    frozen = {g: False for g, _ in PATH_LIMBS}
+    liftoff = {g: push_time for g, _ in PATH_LIMBS}
+    for k in range(n_push + 1):
+      t = k * dt
+      q = pose(stroke * (t / push_time) ** p, pitch_ret[k] - pitch_ret[0], q)
+      d.qpos[:] = q
+      for g, h in PATH_LIMBS:
+        if frozen[g]:
+          continue
+        if not limb_ik(m, d, gid[g], h, targets[g]):
+          frozen[g] = True
+          liftoff[g] = t
+          for hh in h:                          # keep the last reached pose
+            d.qpos[7 + hh] = joints[k - 1, hh] if k else q0[7 + hh]
+      q = d.qpos.copy()
+      joints[k] = q[7:]
+    joints[n_push + 1:] = joints[n_push]
+    return joints, liftoff
+
+  # stroke: the longest path along which both hands stay on their spots
+  # until the end of the push (pitch included)
+  lo_s, hi_s = 0.0, 1.5
+  for _ in range(12):
+    mid = 0.5 * (lo_s + hi_s)
+    _, lift = sweep(mid, max(1.0, ref_speed * push_time / mid))
+    ok = min(lift['FL'], lift['FR']) >= push_time - 1e-9
+    lo_s, hi_s = (mid, hi_s) if ok else (lo_s, mid)
+  stroke = stroke_frac * lo_s
+  p = max(1.0, ref_speed * push_time / stroke)
+  joints, liftoff = sweep(stroke, p)
+  pitch = pitch_ret.copy()
+  return joints, pitch, liftoff, stroke, p
+
+
 class TrackILQR(L.LaunchILQR):
   """LaunchILQR plus tracking of the retimed reference during the push."""
 
