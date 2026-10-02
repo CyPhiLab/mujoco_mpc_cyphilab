@@ -20,6 +20,7 @@ import mujoco
 import numpy as np
 
 import launch_design as D
+import launch_ilqr as L
 
 # segment: body, proximal joint, distal end (child body joint or contact geom)
 SEGMENTS = {
@@ -96,16 +97,12 @@ def size_tube(moment, compression, length, stress, modulus, density):
   return None
 
 
-def main():
-  p = argparse.ArgumentParser()
-  p.add_argument('design')
-  p.add_argument('--json', default=None)
-  args = p.parse_args()
-  info = json.load(open(os.path.join(args.design, 'design.json')))
-  a = argparse.Namespace(**info['args'])
-  row, red, q_start, springs, solver = D.build(a)
-  U = np.load(os.path.join(args.design, 'controls.npy'))[:solver.N]
-  m, d = solver.m, solver.d
+def analyze(m, qpos0, qvel0, ctrl, last_release, springs):
+  """Peak loads of a launch: model, start state, controls (nstep, nu),
+  time of the last latch release, latched springs (for the spring sizing)."""
+  d = mujoco.MjData(m)
+  dt = m.opt.timestep
+  mass = m.body_subtreemass[1]
   ids = {}
   for name, (body, child, geom) in SEGMENTS.items():
     bid = lambda n: mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, n)
@@ -114,8 +111,8 @@ def main():
   limb_geoms = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, n)
                 for n in ('FL', 'FR', 'HL', 'HR')]
   floor = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, 'floor')
-  d.qpos[:], d.qvel[:] = solver.q0, solver.v0
-  d.time = 0
+  d.qpos[:], d.qvel[:] = qpos0, qvel0
+  mujoco.mj_forward(m, d)
   peaks = {n: {'axial_compression': 0.0, 'axial_tension': 0.0, 'shear': 0.0,
                'bending': 0.0, 'torsion': 0.0} for n in SEGMENTS}
   peak_act = np.zeros(m.nu)
@@ -123,8 +120,8 @@ def main():
   peak_grf, peak_limb = 0.0, np.zeros(4)
   f6 = np.zeros(6)
   airborne = 0
-  for t in range(solver.N):
-    solver.set_ctrl(np.clip(U[t], -1, 1), t)
+  for t in range(len(ctrl)):
+    d.ctrl[:] = ctrl[t]
     mujoco.mj_forward(m, d)
     mujoco.mj_rnePostConstraint(m, d)
     # ground forces (world frame)
@@ -142,7 +139,7 @@ def main():
     if d.ncon == 0 or not any(floor in (c.geom1, c.geom2) for c in d.contact[:d.ncon]):
       airborne += 1
       # 50 ms off the ground after the last latch release: launched
-      if airborne > 25 and t * solver.dt > max(solver.opt.latch_times, default=0):
+      if airborne > 25 and t * dt > max(last_release, 0.15):
         break
     else:
       airborne = 0
@@ -161,7 +158,7 @@ def main():
     mujoco.mj_step(m, d)
 
   names = [m.actuator(i).name for i in range(m.nu)]
-  print(f'peak ground force {peak_grf:.0f} N ({peak_grf / (solver.mass * 9.81):.1f} '
+  print(f'peak ground force {peak_grf:.0f} N ({peak_grf / (mass * 9.81):.1f} '
         f'body weights); per limb FL/FR/HL/HR {np.round(peak_limb)} N')
   print('peak actuator torques (N m):')
   for n, v in zip(names, peak_act):
@@ -197,6 +194,34 @@ def main():
   report['springs_total_J'] = total
   print(f'  total {total:.0f} J -> ' + ', '.join(
       f'{k}: {total / v[1]:.1f}-{total / v[0]:.1f} kg' for k, v in SPRING_MATERIALS.items()))
+  return report
+
+
+def main():
+  p = argparse.ArgumentParser()
+  p.add_argument('design', help='launch_design.py output dir, or '
+                 'design_search.py output dir with --key')
+  p.add_argument('--key', default=None, help='design_search.py design key')
+  p.add_argument('--json', default=None)
+  args = p.parse_args()
+  if args.key:
+    import design_search as DS
+    import launch_trajopt as T
+    info = json.load(open(os.path.join(args.design, 'summary.json')))[args.key]
+    opt = DS.DesignOpt(DS.Design(**info['design']))
+    knots = np.load(os.path.join(args.design, args.key, 'knots.npy'))
+    release = np.array([info['release_s'][p] for p in opt.pairs])
+    ctrl = opt.controls(T.from_knots(knots)[None], release[None])[0]
+    report = analyze(opt.m, opt.start_qpos, np.zeros(opt.m.nv), ctrl,
+                     release.max(initial=0), opt.springs)
+  else:
+    info = json.load(open(os.path.join(args.design, 'design.json')))
+    row, red, q_start, springs, solver = D.build(argparse.Namespace(**info['args']))
+    U = np.load(os.path.join(args.design, 'controls.npy'))[:solver.N]
+    ctrl = np.array([np.r_[L.E @ np.clip(u, -1, 1), solver.opt.latch(t * solver.dt)]
+                     for t, u in enumerate(U)])
+    report = analyze(solver.m, solver.q0, solver.v0, ctrl,
+                     max(solver.opt.latch_times, default=0), springs)
   if args.json:
     json.dump(report, open(args.json, 'w'), indent=1)
 

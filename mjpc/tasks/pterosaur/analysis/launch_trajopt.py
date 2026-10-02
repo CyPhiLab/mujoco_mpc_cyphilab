@@ -175,14 +175,15 @@ def add_latched_springs(spec, springs):
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
-               start_qpos=None, trunk_limb_collision=True):
+               start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
   12 motors); start_qpos: start pose for the hand pad placement;
   trunk_limb_collision=False excludes trunk-humerus/femur collisions (their
   convex hulls overlap by ~3 cm all along the reference, more with longer
-  limbs, so they push the limbs apart)."""
+  limbs, so they push the limbs apart); forearm_mass: kg per forearm
+  (0 = model), inertia scaled with it."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -216,6 +217,12 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     scale_limbs(spec, limb_scale)
   if latched_springs:
     add_latched_springs(spec, latched_springs)
+  if forearm_mass > 0:
+    for name in ['radius_and_ulna', 'radius_and_ulna_2']:
+      b = spec.body(name)
+      ratio = forearm_mass / b.mass
+      b.mass = forearm_mass
+      b.fullinertia = np.array(b.fullinertia) * ratio
   if not trunk_limb_collision:
     for b in ['bevel_out', 'bevel_out_2', 'leg_motor_2', 'femur']:
       e = spec.add_exclude()
@@ -306,6 +313,9 @@ class LaunchOpt:
     rest instead of at the reference's deepest crouch. latch_times: release
     time (s) of each latched spring actuator (load_model latched_springs)."""
     self.push_time = push_time
+    # an airborne run counts as the takeoff only from this step on (a hop
+    # at the start is not a launch)
+    self.min_takeoff_step = 0
     self.m = load_model(torque, hand, foot_solref, **design)
     self.start_qpos = design.get('start_qpos')
     self.clearance = clearance_points(design.get('limb_scale', 1.0))
@@ -370,7 +380,7 @@ class LaunchOpt:
     airborne = np.flatnonzero(~self.ref['hands_contact'] & ~self.ref['feet_contact'])
     t_takeoff = self.ref['time'][airborne[0]]
     rate = (t_takeoff - t_push) / push_time
-    gain = m.actuator_gainprm[:, 0]
+    gain = m.actuator_gainprm[:12, 0]
     half = np.empty((self.nstep, 6))
     for k in range(self.nstep):
       t = k * SIM_DT
@@ -432,7 +442,7 @@ class LaunchOpt:
       air = found[i] == 0
       k = None
       run = 0
-      for j in range(self.nstep):
+      for j in range(self.min_takeoff_step, self.nstep):
         run = run + 1 if air[j] else 0
         if run >= need:
           k = j - need + 1
