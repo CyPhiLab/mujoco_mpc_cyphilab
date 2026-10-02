@@ -43,6 +43,11 @@ L.W_LIFT = 20.0
 # continuation: (push time s, takeoff speed m/s at 30 deg)
 CHAIN = [(0.6, 3.0), (0.55, 4.0), (0.5, 5.0), (0.47, 6.0), (0.45, 7.0),
          (0.45, 8.0)]
+# second chain (--chain relax, from the first chain's last step): the
+# reference tracking is loosened step by step (push time, speed, tracking
+# weight scale); planted limbs, no re-contact and pitch limits stay
+RELAX = [(0.45, 8.0, 0.3), (0.45, 8.0, 0.1), (0.45, 9.0, 0.03),
+         (0.45, 10.0, 0.03)]
 
 
 def pitch_of(quat):
@@ -80,7 +85,8 @@ def retimed_reference(push_time, dt, n):
 class TrackILQR(L.LaunchILQR):
   """LaunchILQR plus tracking of the retimed reference during the push."""
 
-  def __init__(self, push_time, torque, speed, **kw):
+  def __init__(self, push_time, torque, speed, track_scale=1.0, **kw):
+    self.track_scale = track_scale
     super().__init__(push_time, torque, speed,
                      feet_lift_frac=(push_time - FOOT_FREE) / push_time,
                      hands_lift_frac=1.0, **kw)
@@ -94,7 +100,7 @@ class TrackILQR(L.LaunchILQR):
       track = np.sqrt(W_TRACK) * (d.qpos[7:] - self.q_track[t]) / S_TRACK
       pitch = (np.sqrt(W_TRACK_PITCH) * (pitch_of(d.qpos[3:7]) - self.pitch_track[t])
                / S_TRACK_PITCH)
-      r = np.concatenate([r, np.sqrt(self.dt) * np.r_[track, pitch]])
+      r = np.concatenate([r, np.sqrt(self.dt * self.track_scale) * np.r_[track, pitch]])
     return r
 
   def pd_warm_start(self, kp=600.0, kd=20.0):
@@ -161,15 +167,23 @@ def main():
   p.add_argument('--iters', type=int, default=60)
   p.add_argument('--steps', type=int, default=len(CHAIN))
   p.add_argument('--out', default=os.path.join(HERE, 'tracked'))
+  p.add_argument('--chain', default='speed', choices=['speed', 'relax'])
+  p.add_argument('--init', default=None, help='controls (.npy) to start from')
+  p.add_argument('--init_push', type=float, default=0.45)
+  p.add_argument('--first_step', type=int, default=0, help='numbering offset')
   args = p.parse_args()
+  chain = ([(T_, v, 1.0) for T_, v in CHAIN] if args.chain == 'speed' else RELAX)
   os.makedirs(args.out, exist_ok=True)
   summary_path = os.path.join(args.out, 'summary.json')
-  summary = []
-  U_prev = None
-  for i, (push_time, speed) in enumerate(CHAIN[:args.steps]):
+  summary = json.load(open(summary_path)) if os.path.exists(summary_path) else []
+  U_prev, prev_push = None, None
+  if args.init:
+    U_prev, prev_push = np.load(args.init), args.init_push
+  for i, (push_time, speed, track_scale) in enumerate(chain[:args.steps]):
+    i += args.first_step
     t0 = time.time()
-    solver = TrackILQR(push_time, args.torque, speed, angle=args.angle,
-                       spring_energy=args.spring_energy)
+    solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
+                       angle=args.angle, spring_energy=args.spring_energy)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:
@@ -184,13 +198,15 @@ def main():
     _, det = opt.evaluate(half[None], detail=True)
     det = det[0]
     strip = contact_strip(opt, half)
-    name = f'step{i}_T{push_time:g}_v{speed:g}'
+    name = f'step{i}_T{push_time:g}_v{speed:g}' + (
+        f'_track{track_scale:g}' if track_scale != 1 else '')
     np.save(os.path.join(args.out, name + '_controls.npy'), half)
     traj = opt.record(half, os.path.join(args.out, name + '.npz'))
     if os.environ.get('MUJOCO_GL'):
       render(opt, traj, det, f"{name}: {det['speed']:.1f} m/s @ {det['angle_deg']:.0f} deg",
              os.path.join(args.out, name))
     row = {'name': name, 'push_time': push_time, 'target_speed': speed,
+           'track_scale': track_scale,
            'cost': float(cost), 'seconds': round(time.time() - t0),
            **{k: det[k] for k in ('took_off', 'speed', 'angle_deg', 'takeoff_time',
                                   'spin_per_mass', 'max_pitch_deg', 'taps',
