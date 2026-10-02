@@ -125,8 +125,61 @@ def add_springs(m, energy, ref):
   return info
 
 
+# limb segments (bodies) and their meshes scaled by load_model(limb_scale)
+LIMB_BODIES = ['bevel_out', 'bevel_out_2', 'radius_and_ulna', 'radius_and_ulna_2',
+               'leg_motor_2', 'femur', 'tibia', 'tibia_2']
+LIMB_MESHES = ['humerus', 'bevel_out', 'radius_and_ulna', 'femur', 'leg_motor_2',
+               'leg_motor_3', 'tibia']
+
+
+def scale_limbs(spec, s):
+  """Lengthen the humerus, forearm, femur and tibia by s (geometry, child
+  positions, contact spheres, collision meshes); segment masses are kept,
+  inertias scale with s^2."""
+  for name in LIMB_MESHES:
+    spec.mesh(name).scale = [s, s, s]
+  for name in LIMB_BODIES:
+    b = spec.body(name)
+    b.ipos = np.array(b.ipos) * s
+    b.fullinertia = np.array(b.fullinertia) * s * s
+    for g in b.geoms:
+      g.pos = np.array(g.pos) * s
+    for c in b.bodies:
+      c.pos = np.array(c.pos) * s
+
+
+def clearance_points(limb_scale=1.0):
+  return [(b, np.array(p) * (limb_scale if b in LIMB_BODIES else 1.0), c)
+          for b, p, c in CLEARANCE]
+
+
+def add_latched_springs(spec, springs):
+  """Latched springs as joint actuators whose control is the latch (0
+  locked, 1 released): torque k (rest - q), clipped to [0, tau0] (or
+  [-tau0, 0]), i.e. constant tau0 then a linear ramp to zero at rest, and
+  nothing past it (a stop). springs: list of dicts joint, k, rest, tau0."""
+  for sp in springs:
+    a = spec.add_actuator()
+    a.name = 'spring_' + sp['joint']
+    a.target = sp['joint']
+    a.trntype = mujoco.mjtTrn.mjTRN_JOINT
+    a.gaintype = mujoco.mjtGain.mjGAIN_AFFINE
+    a.gainprm[:3] = [sp['k'] * sp['rest'], -sp['k'], 0]
+    a.biastype = mujoco.mjtBias.mjBIAS_NONE
+    a.ctrllimited = True
+    a.ctrlrange = [0, 1]
+    a.forcelimited = True
+    a.forcerange = [0, sp['tau0']] if sp['tau0'] > 0 else [sp['tau0'], 0]
+
+
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
-               leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN):
+               leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
+               limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
+               start_qpos=None):
+  """limb_scale: limb segment length factor; no_load_speed: DC-motor
+  torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
+  0 = ideal); latched_springs: see add_latched_springs (actuators after the
+  12 motors); start_qpos: start pose for the hand pad placement."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -155,15 +208,27 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   finally:
     os.remove(path)
   ref = reference()
+  if limb_scale != 1.0:
+    scale_limbs(spec, limb_scale)
+  if latched_springs:
+    add_latched_springs(spec, latched_springs)
   if hand:
-    hand_pad(spec, hand, ref['qpos'][push_start_index(ref)])
+    hand_pad(spec, hand, ref['qpos'][push_start_index(ref)]
+             if start_qpos is None else start_qpos)
   m = spec.compile()
   q = ref['qpos'][:, 7:]
   lo, hi = q.min(axis=0) - joint_margin, q.max(axis=0) + joint_margin
   m.opt.timestep = SIM_DT
-  m.actuator_gainprm[:, 0] *= torque
+  m.actuator_gainprm[:12, 0] *= torque
   m.actuator_gainprm[:6, 0] *= arm_scale    # arms: actuators 0-5
-  m.actuator_gainprm[6:, 0] *= leg_scale    # legs: actuators 6-11
+  m.actuator_gainprm[6:12, 0] *= leg_scale  # legs: actuators 6-11
+  if no_load_speed > 0:
+    g = m.actuator_gainprm[:12, 0].copy()
+    m.actuator_biastype[:12] = mujoco.mjtBias.mjBIAS_AFFINE
+    m.actuator_biasprm[:12, :3] = 0
+    m.actuator_biasprm[:12, 2] = -g / no_load_speed
+    m.actuator_forcelimited[:12] = 1
+    m.actuator_forcerange[:12] = np.stack([-g, g], axis=1)
   if spring_energy > 0:
     add_springs(m, spring_energy, ref)
   for j in range(12):
@@ -228,9 +293,17 @@ def expand(half):
 class LaunchOpt:
 
   def __init__(self, torque=2.0, angle=30.0, nthread=4, push_time=0.0,
-               hand=None, foot_solref=None, **design):
+               hand=None, foot_solref=None, latch_times=None, **design):
+    """design: load_model options; with start_qpos the run starts there at
+    rest instead of at the reference's deepest crouch. latch_times: release
+    time (s) of each latched spring actuator (load_model latched_springs)."""
     self.push_time = push_time
     self.m = load_model(torque, hand, foot_solref, **design)
+    self.start_qpos = design.get('start_qpos')
+    self.clearance = clearance_points(design.get('limb_scale', 1.0))
+    self.latch_times = np.asarray(latch_times if latch_times is not None else [],
+                                  float)
+    assert self.m.nu == 12 + len(self.latch_times)
     self.ref = reference()
     self.i0 = push_start_index(self.ref)
     self.nstep = int(round(HORIZON / SIM_DT))
@@ -243,7 +316,7 @@ class LaunchOpt:
               ['to_floor', 'to_angmom', 'to_body_x', 'torso_subtreelinvel',
                'torso_subtreecom', 'to_hand_l', 'to_hand_r', 'to_foot_l',
                'to_foot_r']}
-    for b in {b for b, _, _ in CLEARANCE}:
+    for b in {b for b, _, _ in self.clearance}:
       for k in ('pos', 'x', 'z'):
         self.s[f'{k}_{b}'] = sensor(m, f'to_{k}_{b}')
     self.x0 = self.initial_state()
@@ -251,13 +324,30 @@ class LaunchOpt:
   def initial_state(self):
     m, d = self.m, self.datas[0]
     mujoco.mj_resetData(m, d)
-    d.qpos[:] = self.ref['qpos'][self.i0]
-    d.qvel[:] = self.ref['qvel'][self.i0]
+    if self.start_qpos is None:
+      d.qpos[:] = self.ref['qpos'][self.i0]
+      d.qvel[:] = self.ref['qvel'][self.i0]
+    else:
+      d.qpos[:] = self.start_qpos
+      d.qvel[:] = 0
     mujoco.mj_forward(m, d)
     spec = mujoco.mjtState.mjSTATE_FULLPHYSICS
     x0 = np.empty(mujoco.mj_stateSize(m, spec))
     mujoco.mj_getState(m, d, x0, spec)
     return x0
+
+  def latch(self, t):
+    """Latched spring controls at time t (1 once released)."""
+    return (t >= self.latch_times - 1e-9).astype(float)
+
+  def with_latch(self, ctrl):
+    """(.., nstep, 12) motor controls -> (.., nstep, nu) with the latches."""
+    if not len(self.latch_times):
+      return ctrl
+    t = np.arange(ctrl.shape[-2]) * SIM_DT
+    latch = (t[:, None] >= self.latch_times[None] - 1e-9).astype(float)
+    latch = np.broadcast_to(latch, ctrl.shape[:-1] + latch.shape[-1:])
+    return np.concatenate([ctrl, latch], axis=-1)
 
   # ----- warm starts ----- #
   def pd_warm_start(self, push_time, kp=600.0, kd=20.0):
@@ -283,13 +373,14 @@ class LaunchOpt:
       v_ref = (ref_q[i + 1] - ref_q[i]) / ref_dt * (rate if t < push_time else 1)
       u = (kp * (q_ref - d.qpos[7:]) + kd * (v_ref - d.qvel[6:])) / gain
       half[k] = symmetrize(np.clip(u, -1, 1))
-      d.ctrl[:] = expand(half[k])
+      d.ctrl[:12] = expand(half[k])
+      d.ctrl[12:] = self.latch(k * SIM_DT)
       mujoco.mj_step(m, d)
     return half
 
   # ----- evaluation ----- #
   def simulate(self, halves):
-    ctrl = expand(halves)
+    ctrl = self.with_latch(expand(halves))
     n = ctrl.shape[0]
     state, sens = rollout.rollout(self.m, self.datas, np.tile(self.x0, (n, 1)), ctrl)
     return ctrl, state, sens
@@ -308,13 +399,13 @@ class LaunchOpt:
 
     # clearance heights (n, nstep, points)
     heights = []
-    for b, p, _ in CLEARANCE:
+    for b, p, _ in self.clearance:
       pos = sens[:, :, self.s[f'pos_{b}']]
       xa = sens[:, :, self.s[f'x_{b}']]
       za = sens[:, :, self.s[f'z_{b}']]
       heights.append(pos[..., 2] + p[0] * xa[..., 2] + p[2] * za[..., 2] - FLOOR_Z)
     heights = np.stack(heights, axis=-1)
-    thresholds = np.array([c for _, _, c in CLEARANCE])
+    thresholds = np.array([c for _, _, c in self.clearance])
     violation = np.maximum(thresholds - heights, 0).sum(axis=-1)  # (n, nstep)
     pitch = np.abs(np.arcsin(np.clip(body_x[..., 2], -1, 1)))    # (n, nstep)
     limbs = np.stack([sens[:, :, self.s[k]][:, :, 0] > 0 for k in
@@ -349,8 +440,8 @@ class LaunchOpt:
       pitch_excess = np.maximum(pitch[i, window] - PITCH_MAX, 0).max()
       clear = violation[i, :k + 1].sum() * SIM_DT
       calm = np.abs(qvel[i, k:k + calm_steps, 6:]).mean() if took_off else 0
-      effort = np.mean(ctrl[i] ** 2)
-      jitter = np.abs(np.diff(ctrl[i], axis=0)).mean()
+      effort = np.mean(ctrl[i, :, :12] ** 2)
+      jitter = np.abs(np.diff(ctrl[i, :, :12], axis=0)).mean()
       # each limb should lift off once: extra liftoffs are taps/bounces
       taps = max(int(liftoffs[i, :k].sum()) - 4, 0)
       gap = 0.0
@@ -426,7 +517,7 @@ class LaunchOpt:
     d = mujoco.MjData(m)
     mujoco.mj_setState(m, d, self.x0, mujoco.mjtState.mjSTATE_FULLPHYSICS)
     mujoco.mj_forward(m, d)
-    ctrl = expand(halves)
+    ctrl = self.with_latch(expand(halves))
     floor = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, 'floor')
     hand_geoms = {mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, n) for n in ['FL', 'FR']}
     foot_geoms = {mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, n) for n in ['HL', 'HR']}
@@ -446,7 +537,8 @@ class LaunchOpt:
       out['any_contact'].append(bool(geoms))
       out['comvel'].append(d.subtree_linvel[1].copy())
     out = {k: np.array(v) for k, v in out.items()}
-    np.savez(path, **out, start_qpos=self.ref['qpos'][self.i0],
+    np.savez(path, **out, start_qpos=(self.ref['qpos'][self.i0]
+                                      if self.start_qpos is None else self.start_qpos),
              start_time=self.ref['time'][self.i0])
     return out
 

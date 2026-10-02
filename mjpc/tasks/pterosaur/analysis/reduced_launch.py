@@ -53,6 +53,8 @@ class Limb:
   q_hi: np.ndarray = None
   spring_k: np.ndarray = field(default_factory=lambda: np.zeros(2))
   spring_rest: np.ndarray = field(default_factory=lambda: np.zeros(2))
+  sign: np.ndarray = None        # model joint angle = sign * planar angle + c
+  hinge_index: np.ndarray = None  # left-side model hinges (qpos[7:] index)
 
 
 def robot_limbs(torque_scale=1.0, limb_scale=1.0, joint_margin=0.3):
@@ -100,6 +102,7 @@ def robot_limbs(torque_scale=1.0, limb_scale=1.0, joint_margin=0.3):
     q1 = joint_angles(limb, p1[None])[0]
     sign = np.sign((q1 - limb.q_crouch) * (q[i1, idx] - q[i0, idx]))
     sign[sign == 0] = 1
+    limb.sign, limb.hinge_index = sign, np.array(idx)
     d.qpos[:] = ref['qpos'][i0]
     mujoco.mj_forward(m, d)
     # joint range: the model joint excursion over the reference, +- margin,
@@ -110,6 +113,27 @@ def robot_limbs(torque_scale=1.0, limb_scale=1.0, joint_margin=0.3):
     limbs.append(limb)
   mass = m.body_subtreemass[1]
   return limbs, mass
+
+
+def robot_pitch_inertia():
+  """Whole-robot pitch inertia about the CoM at the launch crouch."""
+  import mujoco
+  m = mujoco.MjModel.from_xml_path(os.path.join(TASK_DIR, 'task.xml'))
+  d = mujoco.MjData(m)
+  ref = np.load(os.path.join(TASK_DIR, 'reference', 'launch.npz'))
+  airborne = np.flatnonzero(~ref['hands_contact'] & ~ref['feet_contact'])
+  d.qpos[:] = ref['qpos'][int(np.argmin(ref['qpos'][:airborne[0], 2]))]
+  mujoco.mj_forward(m, d)
+  c = d.subtree_com[1]
+  inertia = 0.0
+  for b in range(1, m.nbody):
+    if m.body_rootid[b] != 1:
+      continue
+    r = d.xipos[b] - c
+    rot = d.ximat[b].reshape(3, 3)
+    inertia += ((rot @ np.diag(m.body_inertia[b]) @ rot.T)[1, 1] +
+                m.body_mass[b] * (r[0] ** 2 + r[2] ** 2))
+  return inertia
 
 
 def joint_angles(limb, p, geom=None):
@@ -151,6 +175,10 @@ class Design:
   joint_margin: float = 0.3
   friction: float = 1.0
   force_cap: float = 0.0        # N, peak total ground force; 0 = no cap
+  # body pitch: the ground forces' moment about the CoM rotates the body
+  # (inertia: the robot's at the crouch, scaled with mass and limb_scale^2).
+  # False: the body cannot rotate (results before this option existed).
+  pitch_dynamics: bool = True
 
 
 # The launch crouch: CoM height above the ground, hand and foot x relative
@@ -172,6 +200,11 @@ MIDDLE_CLEARANCE = 0.02     # m, knee/elbow above the ground in stance
 #   share (4), travel (4), exponent (4), release time (2: hind, fore)
 SPRING_JOINTS = ('hind_prox', 'hind_mid', 'fore_prox', 'fore_mid')
 MAX_TRAVEL = 3.0     # rad
+# takeoff spin (angular momentum per mass, m^2/s) and body pitch beyond
+# MAX_PITCH (rad) during the push, as weighted in launch_trajopt.py
+W_SPIN = 5.0
+W_PITCH = 5.0
+MAX_PITCH = np.deg2rad(45)
 MAX_RELEASE = 0.5    # s (0.3 for reduced_springs_{main,robust}.json)
 
 
@@ -182,6 +215,8 @@ class ReducedLaunch:
     self.limbs, model_mass = robot_limbs(design.torque_scale, design.limb_scale,
                                          design.joint_margin)
     self.mass = design.mass or model_mass
+    self.pitch_inertia = (robot_pitch_inertia() * design.limb_scale ** 2 *
+                          self.mass / model_mass)
     self.dt, self.n = dt, int(round(horizon / dt))
     self.knots = knots
     a = np.deg2rad(angle)
@@ -300,20 +335,39 @@ class ReducedLaunch:
     peak_force = np.zeros(B)
     peak_torque = np.zeros((B, 4))
     takeoff_z = np.full(B, np.nan)
+    # pitch moment of the ground forces about the CoM: the body is not
+    # allowed to rotate here, so this is what it would have to resist
+    angular_impulse = np.zeros(B)
+    peak_moment = np.zeros(B)
+    # body pitch (rad, from the crouch; positive turns +x toward +z) and rate
+    theta = np.zeros(B)
+    omega = np.zeros(B)
+    takeoff_omega = np.full(B, np.nan)
+    max_pitch = np.zeros(B)
+    zero = np.zeros(B)
     traj = []
     w0 = self.design.no_load_speed
     for k in range(self.n):
       force = np.zeros((B, 2))
       power = np.zeros(B)
+      moment = np.zeros(B)
+      c, s = np.cos(theta), np.sin(theta)
       for i, (limb, g) in enumerate(zip(self.limbs, geom)):
-        q = joint_angles(limb, p, g)
-        J = jacobian(limb, q)
-        # joint velocities: contact fixed, body moves: dq = -J^-1 v
+        x, z = g['prox'][:, 0], g['prox'][:, 1]
+        prox = np.stack([c * x - s * z, s * x + c * z], 1)
+        gt = {'prox': prox, 'contact': g['contact']}
+        qw = joint_angles(limb, p, gt)          # proximal angle in the world
+        q = qw - np.stack([theta, zero], 1)     # joint angles (body-relative)
+        J = jacobian(limb, qw)
+        # joint velocities: contact fixed, body moves and turns:
+        # J dqw = -(v + omega x prox)
         det = J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
         det = np.where(np.abs(det) < 1e-6, 1e-6, det)
         Jinv = np.stack([np.stack([J[:, 1, 1], -J[:, 0, 1]], 1),
                          np.stack([-J[:, 1, 0], J[:, 0, 0]], 1)], 1) / det[:, None, None]
-        dq = -np.einsum('bij,bj->bi', Jinv, v)
+        v_joint = v + omega[:, None] * np.stack([-prox[:, 1], prox[:, 0]], 1)
+        dq = (-np.einsum('bij,bj->bi', Jinv, v_joint) -
+              np.stack([omega, zero], 1))
         cmd = u[:, k, 2 * i:2 * i + 2]
         stall = limb.stall_torque[None]
         if w0 > 0:
@@ -328,7 +382,7 @@ class ReducedLaunch:
         # force on the body from the limb: virtual work tau . dq = F . v
         F = -np.einsum('bji,bj->bi', Jinv, tau + tau_spring)
         # unilateral contact and liftoff conditions
-        reach = np.linalg.norm(g['contact'] - (p + g['prox']), axis=1) / (limb.l1 + limb.l2)
+        reach = np.linalg.norm(g['contact'] - (p + prox), axis=1) / (limb.l1 + limb.l2)
         limit = np.any((q < g['lo']) | (q > g['hi']), axis=1)
         # the ground cannot pull: a limb whose force would pull just unloads
         # (foot/hand stays down); it lifts off, for good, when the body moves
@@ -340,7 +394,7 @@ class ReducedLaunch:
         stance[:, i] &= ~lift
         F *= stance[:, i:i + 1]
         # a planted limb may not fold flat or put its knee/elbow in the ground
-        middle_z = g['prox'][:, 1] + p[:, 1] + limb.l1 * np.sin(q[:, 0])
+        middle_z = prox[:, 1] + p[:, 1] + limb.l1 * np.sin(qw[:, 0])
         clash |= stance[:, i] & ((reach < 0.15) |
                                  (middle_z < -height + MIDDLE_CLEARANCE))
         # friction: tangential force limited to the cone (conservative: the
@@ -348,22 +402,32 @@ class ReducedLaunch:
         limit_x = self.design.friction * np.maximum(F[:, 1], 0)
         F[:, 0] = np.clip(F[:, 0], -limit_x, limit_x)
         force += F
+        r = g['contact'] - p
+        moment += r[:, 0] * F[:, 1] - r[:, 1] * F[:, 0]
         power += np.einsum('bi,bi->b', tau, dq) * stance[:, i]
         spring_work += np.einsum('bi,bi->b', tau_spring, dq) * stance[:, i] * self.dt
         peak_torque[:, 2 * i:2 * i + 2] = np.maximum(
             peak_torque[:, 2 * i:2 * i + 2],
             np.abs(tau + tau_spring) * stance[:, i:i + 1])
       airborne = ~stance.any(axis=1) & np.isnan(takeoff_t)
+      takeoff_omega[airborne] = omega[airborne]
       takeoff_v[airborne] = v[airborne]
       takeoff_t[airborne] = k * self.dt
       takeoff_z[airborne] = p[airborne, 1]
       work += np.maximum(power, 0) * self.dt
       net_work += power * self.dt
       peak_force = np.maximum(peak_force, np.linalg.norm(force, axis=1))
+      in_stance = stance.any(axis=1)
+      angular_impulse += moment * self.dt * in_stance
+      peak_moment = np.maximum(peak_moment, np.abs(moment))
       acc = force / self.mass + np.array([0, -G])
       acc[~stance.any(axis=1)] = [0, -G]
       v = v + acc * self.dt
       p = p + v * self.dt
+      if self.design.pitch_dynamics:
+        omega = omega + moment / self.pitch_inertia * in_stance * self.dt
+        theta = theta + omega * self.dt
+        max_pitch = np.maximum(max_pitch, np.abs(theta) * in_stance)
       if record:
         traj.append((p.copy(), v.copy(), stance.copy(), power.copy()))
     # never took off: use the final state, heavily penalized
@@ -371,10 +435,12 @@ class ReducedLaunch:
     takeoff_v[never] = v[never]
     takeoff_t[never] = self.n * self.dt
     takeoff_z[never] = p[never, 1]
+    takeoff_omega[never] = omega[never]
     penalty += never * 0.5 + clash * 1.0
     # energy audit: the body cannot gain more than the motors and springs
     # put in (stiff springs integrated with too large a step create energy)
-    gained = 0.5 * self.mass * np.sum(takeoff_v ** 2, axis=1) + self.mass * G * takeoff_z
+    gained = (0.5 * self.mass * np.sum(takeoff_v ** 2, axis=1) + self.mass * G * takeoff_z
+              + 0.5 * self.pitch_inertia * takeoff_omega ** 2)
     excess = gained - (net_work + spring_work)
     energy_error = excess / np.maximum(gained, 1.0)
     penalty += np.maximum(energy_error - 0.02, 0) * 5
@@ -384,6 +450,8 @@ class ReducedLaunch:
               'penalty': penalty, 'clash': clash, 'work': work,
               'spring_J': spring0, 'spring_work': spring_work,
               'energy_error': energy_error, 'peak_force': peak_force,
+              'angular_impulse': angular_impulse, 'peak_moment': peak_moment,
+              'omega': takeoff_omega, 'max_pitch': max_pitch,
               'peak_torque': peak_torque}
     if record:
       result['traj'] = traj
@@ -437,7 +505,11 @@ class ReducedLaunch:
     v = res['v']
     along = v @ self.direction
     perp = np.abs(v[:, 0] * self.direction[1] - v[:, 1] * self.direction[0])
-    return along - perp - 10 * res['penalty']
+    # takeoff spin and pitch in the push, weighted as in launch_trajopt.py
+    spin = self.pitch_inertia * np.abs(res['omega']) / self.mass
+    pitch_excess = np.maximum(res['max_pitch'] - MAX_PITCH, 0)
+    return (along - perp - W_SPIN * spin - W_PITCH * pitch_excess
+            - 10 * res['penalty'])
 
   def optimize(self, iters=80, pop=256, elite=24, seed=0, verbose=False,
                init=None, crouch=None, search_crouch=False, spring_search=None):
@@ -525,6 +597,9 @@ class ReducedLaunch:
         'energy_error': float(res['energy_error'][0]),
         'peak_force_N': float(res['peak_force'][0]),
         'peak_torque_Nm': res['peak_torque'][0].round(0).tolist(),
+        'pitch_rate_deg_s': float(np.degrees(res['omega'][0])),
+        'max_pitch_deg': float(np.degrees(res['max_pitch'][0])),
+        'angular_impulse_Nms': float(res['angular_impulse'][0]),
         'infeasible': bool(res['clash'][0]),
     }
     if sp is not None:

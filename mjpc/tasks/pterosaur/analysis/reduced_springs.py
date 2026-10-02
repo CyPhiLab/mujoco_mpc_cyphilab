@@ -71,12 +71,12 @@ def jobs(grid, iters):
   return out
 
 
-ROBUST_CAPS = [2500, 5000, 10000]
+ROBUST_CAPS = [2500, 5000]
 # scaling: body mass and limb length (geometry scaled about the CoM) with
 # the spring designs above
 SCALING = dict(motors=[dict(torque_scale=2, no_load_speed=20),
                        dict(torque_scale=6, no_load_speed=40)],
-               caps=[2500, 5000], masses=[40, 50], limb_scales=[1.0, 1.25, 1.5],
+               caps=[2500, 5000], masses=[50], limb_scales=[1.0, 1.25, 1.5],
                energies=[0, 2000, 4000])
 
 

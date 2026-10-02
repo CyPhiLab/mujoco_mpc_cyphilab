@@ -61,8 +61,9 @@ E[T.RIGHT, np.arange(6)] = T.MIRROR
 class LaunchILQR:
 
   def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None,
-               vault_time=0.0, foot_solref=None, force_cap=0.0, **design):
-    # physics and start state; design: arm_scale, leg_scale, spring_energy
+               vault_time=0.0, foot_solref=None, force_cap=0.0,
+               feet_lift_frac=FEET_LIFT_FRAC, **design):
+    # physics and start state; design: LaunchOpt/load_model options
     self.opt = T.LaunchOpt(torque, angle, hand=hand, foot_solref=foot_solref,
                            **design)
     # per-limb normal contact force above force_cap is penalized (0: off)
@@ -73,7 +74,7 @@ class LaunchILQR:
     self.nx = 2 * m.nv
     self.dt = m.opt.timestep
     self.n_push = int(round(push_time / self.dt))
-    self.n_feet = int(round(FEET_LIFT_FRAC * push_time / self.dt))
+    self.n_feet = int(round(feet_lift_frac * push_time / self.dt))
     # single-strike vault: hands swing clear of the ground, then plant once
     # for the last vault_time before takeoff (0: hands planted throughout)
     self.n_vault = (self.n_push - int(round(vault_time / self.dt))
@@ -87,7 +88,7 @@ class LaunchILQR:
     self.hands = [gid('FL'), gid('FR')]
     self.feet = [gid('HL'), gid('HR')]
     self.clear = [(mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, b), np.array(p), c)
-                  for b, p, c in T.CLEARANCE]
+                  for b, p, c in self.opt.clearance]
     self.angmom = T.sensor(m, 'torso_subtreeangmom')
     self.limb_bodies = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, b)
                         for b in ['radius_and_ulna', 'radius_and_ulna_2',
@@ -169,6 +170,11 @@ class LaunchILQR:
       r = np.concatenate([r, self.takeoff_residual()])
     return r
 
+  def set_ctrl(self, u, t):
+    """Motor channels u (6) and spring latches at step t."""
+    self.d.ctrl[:12] = E @ u
+    self.d.ctrl[12:] = self.opt.latch(t * self.dt)
+
   # ----- rollout and cost ----- #
   def rollout(self, U):
     """U: (N, 6). Returns states (N+1, nq), (N+1, nv), cost."""
@@ -189,7 +195,7 @@ class LaunchILQR:
         break
       u = np.clip(U[t], -1, 1)
       cost += 0.5 * W_EFFORT * self.dt * u @ u
-      d.ctrl[:] = E @ u
+      self.set_ctrl(u, t)
       mujoco.mj_step(m, d)
       if not np.all(np.isfinite(d.qvel)) or np.abs(d.qvel).max() > 1e3:
         return Q, V, np.inf
@@ -225,10 +231,10 @@ class LaunchILQR:
       if t == self.N:
         break
       d.qpos[:], d.qvel[:] = Q[t], V[t]
-      d.ctrl[:] = E @ np.clip(U[t], -1, 1)
+      self.set_ctrl(np.clip(U[t], -1, 1), t)
       mujoco.mj_forward(m, d)
       mujoco.mjd_transitionFD(m, d, 1e-6, False, A[t], Bfull, None, None)
-      B[t] = Bfull @ E
+      B[t] = Bfull[:, :12] @ E
     return A, B, R, Jx
 
   # ----- iLQR ----- #
@@ -308,7 +314,7 @@ class LaunchILQR:
       mujoco.mj_differentiatePos(m, dx[:m.nv], 1.0, Q[t], d.qpos)
       dx[m.nv:] = d.qvel - V[t]
       Un[t] = np.clip(U[t] + alpha * k[t] + K[t] @ dx, -1, 1)
-      d.ctrl[:] = E @ Un[t]
+      self.set_ctrl(Un[t], t)
       mujoco.mj_step(m, d)
     return Un
 
