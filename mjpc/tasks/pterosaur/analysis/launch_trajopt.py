@@ -303,6 +303,25 @@ def push_start_index(ref):
   return int(np.argmin(ref['qpos'][:airborne[0], 2]))
 
 
+def debounce(contact, steps):
+  """Fill contact gaps (False runs between True) of at most `steps` steps,
+  along axis 1 of (n, nstep, k) booleans."""
+  out = contact.copy()
+  n, nstep, k = contact.shape
+  for i in range(n):
+    for c in range(k):
+      x = out[i, :, c]
+      on = np.flatnonzero(x)
+      if len(on) < 2:
+        continue
+      gaps = np.flatnonzero(np.diff(on) > 1)
+      for g in gaps:
+        a, b = on[g], on[g + 1]
+        if b - a - 1 <= steps:
+          x[a + 1:b] = True
+  return out
+
+
 def symmetrize(ctrl):
   """Full (.., 12) controls -> (.., 6) symmetric left-side channels."""
   return 0.5 * (ctrl[..., LEFT] + MIRROR * ctrl[..., RIGHT])
@@ -353,6 +372,10 @@ class LaunchOpt:
     # an airborne run counts as the takeoff only from this step on (a hop
     # at the start is not a launch)
     self.min_takeoff_step = 0
+    # contact schedule (with push_time): feet leave at this fraction of it
+    self.feet_lift_frac = FEET_LIFT_FRAC
+    # contact gaps up to this many steps are flicker, not liftoffs (0: off)
+    self.debounce_steps = 0
     self.m = load_model(torque, hand, foot_solref, **design)
     self.start_qpos = design.get('start_qpos')
     self.clearance = clearance_points(design.get('limb_scale', 1.0),
@@ -467,6 +490,8 @@ class LaunchOpt:
     limbs = np.stack([sens[:, :, self.s[k]][:, :, 0] > 0 for k in
                       ('to_hand_l', 'to_hand_r', 'to_foot_l', 'to_foot_r')],
                      axis=-1)                                     # (n, nstep, 4)
+    if self.debounce_steps:
+      limbs = debounce(limbs, self.debounce_steps)
     liftoffs = limbs[:, :-1] & ~limbs[:, 1:]                       # (n, nstep-1, 4)
 
     scores = np.empty(n)
@@ -510,7 +535,7 @@ class LaunchOpt:
         # hands (0, 1) down until the push time, feet (2, 3) until
         # FEET_LIFT_FRAC of it, all off for 50 ms after
         n_push = int(round(self.push_time / SIM_DT))
-        n_feet = int(round(FEET_LIFT_FRAC * self.push_time / SIM_DT))
+        n_feet = int(round(self.feet_lift_frac * self.push_time / SIM_DT))
         n_end = min(n_push + int(0.05 / SIM_DT), self.nstep)
         want = np.zeros((n_end, 4), bool)
         want[:n_push, :2] = True

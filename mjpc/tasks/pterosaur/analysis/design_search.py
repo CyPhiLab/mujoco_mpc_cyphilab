@@ -54,6 +54,9 @@ class Design:
   target_speed: float = 0.0       # m/s, for reference (Habib's model)
   legacy_spring_energy: float = 0.0  # J, launch_trajopt.add_springs springs
   trunk_limb_collision: bool = False
+  feet_lift_frac: float = T.FEET_LIFT_FRAC  # with push_time: feet leave at
+                                            # this fraction of it
+  init: str = ''                  # controls (.npy, (nstep, 6)) to start from
 
 
 DESIGNS = {
@@ -66,6 +69,12 @@ DESIGNS = {
     # benchmark: candidates/C_t6_s500 (8.16 m/s @ 35 deg) is a known solution
     'K': Design('K', torque=6.0, no_load_speed=0.0, legacy_spring_energy=500,
                 trunk_limb_collision=True, force_cap=1e9),
+    # candidate C refined toward a fluid push: all four limbs planted, feet
+    # leaving ~25 ms before the hands, no re-contact, <= 10 body weights
+    'K2': Design('K2', torque=6.0, no_load_speed=0.0, legacy_spring_energy=500,
+                 trunk_limb_collision=True, force_cap=10 * 50.13 * 9.81,
+                 push_time=0.47, feet_lift_frac=0.95,
+                 init='candidates/C_t6_s500/controls.npy'),
 }
 
 # Realistic scaled designs: the whole robot scaled by s (mass 50 s^3 kg);
@@ -151,6 +160,8 @@ class DesignOpt(T.LaunchOpt):
     self.design = design
     self.grf = T.sensor(self.m, 'to_grf')
     self.min_takeoff_step = int(round(0.15 * design.body_scale ** 0.5 / T.SIM_DT))
+    self.feet_lift_frac = design.feet_lift_frac
+    self.debounce_steps = 5      # 10 ms
 
   def controls(self, halves, release):
     """halves (n, nstep, 6), release times (n, npair) -> ctrl (n, nstep, nu)."""
@@ -161,6 +172,17 @@ class DesignOpt(T.LaunchOpt):
     times = release[:, self.spring_pair]                    # (n, nspring)
     latch = (t[None, :, None] >= times[:, None, :]).astype(float)
     return np.concatenate([ctrl, latch], axis=-1)
+
+  def half(self, knots):
+    """Knots (.., nknot, 6) -> controls (.., nstep, 6). With an init, the
+    knots are a smooth correction added to its controls (which a knot fit
+    would blur)."""
+    u = T.from_knots(knots)
+    if self.design.init:
+      if not hasattr(self, '_base'):
+        self._base = np.load(os.path.join(HERE, self.design.init))[:u.shape[-2]]
+      u = np.clip(self._base + u, -1, 1)
+    return u
 
   def evaluate_full(self, halves, release, detail=False):
     ctrl = self.controls(halves, release)
@@ -190,20 +212,21 @@ class DesignOpt(T.LaunchOpt):
               if self.design.push_time else [0.35, 0.45, 0.55])
     # PD gains: the same command per radian of error as at 2x torque
     kp, kd = 300.0 * self.design.torque, 10.0 * self.design.torque * sc ** 0.5
-    for push in pushes:
-      knots = T.to_knots(self.pd_warm_start(push, kp, kd))
-      s = self.evaluate_full(T.from_knots(knots)[None], default_release[None])[0]
+    starts = ([np.zeros((T.knot_count(), 6))] if self.design.init else
+              [T.to_knots(self.pd_warm_start(push, kp, kd)) for push in pushes])
+    for push, knots in zip(pushes, starts):
+      s = self.evaluate_full(self.half(knots)[None], default_release[None])[0]
       if verbose:
         print(f'  warm start push {push}: {s:.3f}', flush=True)
       if s > best_score:
         best_score, best = s, (knots, default_release.copy())
     base_k, base_r = best[0].copy(), best[1].copy()
-    sigma, sigma_r = 0.25, 0.08
+    sigma, sigma_r = (0.1 if self.design.init else 0.25), 0.08
     for it in range(iters):
       K = np.clip(base_k + sigma * rng.standard_normal((pop,) + base_k.shape), -1, 1)
       Rl = np.clip(base_r + sigma_r * rng.standard_normal((pop, npair)), 0, MAX_RELEASE)
       K[0], Rl[0] = base_k, base_r
-      scores = self.evaluate_full(T.from_knots(K), Rl)
+      scores = self.evaluate_full(self.half(K), Rl)
       order = np.argsort(scores)[::-1]
       if scores[order[0]] > best_score:
         best_score = scores[order[0]]
@@ -221,7 +244,7 @@ class DesignOpt(T.LaunchOpt):
   def record_full(self, knots, release, path):
     """Record the trajectory (as LaunchOpt.record) with these latch times."""
     self.latch_times = release[self.spring_pair] if len(self.springs) else self.latch_times
-    return self.record(T.from_knots(knots), path)
+    return self.record(self.half(knots), path)
 
 
 def main():
@@ -243,7 +266,7 @@ def main():
     t0 = time.time()
     opt = DesignOpt(design, args.angle)
     (knots, release), score = opt.search(args.iters)
-    _, det = opt.evaluate_full(T.from_knots(knots)[None], release[None], detail=True)
+    _, det = opt.evaluate_full(opt.half(knots)[None], release[None], detail=True)
     det = det[0]
     d = os.path.join(args.out, key)
     os.makedirs(d, exist_ok=True)

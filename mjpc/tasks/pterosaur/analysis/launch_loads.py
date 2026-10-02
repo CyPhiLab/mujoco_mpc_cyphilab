@@ -211,7 +211,7 @@ def main():
     opt = DS.DesignOpt(DS.Design(**info['design']))
     knots = np.load(os.path.join(args.design, args.key, 'knots.npy'))
     release = np.array([info['release_s'][p] for p in opt.pairs])
-    ctrl = opt.controls(T.from_knots(knots)[None], release[None])[0]
+    ctrl = opt.controls(opt.half(knots)[None], release[None])[0]
     report = analyze(opt.m, opt.start_qpos, np.zeros(opt.m.nv), ctrl,
                      release.max(initial=0), opt.springs)
   else:
