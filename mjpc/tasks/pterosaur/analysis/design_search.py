@@ -52,6 +52,8 @@ class Design:
   push_time: float = 0.0          # s; > 0 enforces the reference contact
                                   # order (feet off at 2/3, hands at the end)
   target_speed: float = 0.0       # m/s, for reference (Habib's model)
+  legacy_spring_energy: float = 0.0  # J, launch_trajopt.add_springs springs
+  trunk_limb_collision: bool = False
 
 
 DESIGNS = {
@@ -61,6 +63,9 @@ DESIGNS = {
     'D': Design('D', limb_scale=1.25, spring_energy=4000),
     'E': Design('E', limb_scale=1.25, spring_energy=2000, forearm_mass=0.6),
     'F': Design('F', torque=4.0, limb_scale=1.25, spring_energy=2000),
+    # benchmark: candidates/C_t6_s500 (8.16 m/s @ 35 deg) is a known solution
+    'K': Design('K', torque=6.0, no_load_speed=0.0, legacy_spring_energy=500,
+                trunk_limb_collision=True, force_cap=1e9),
 }
 
 # Realistic scaled designs: the whole robot scaled by s (mass 50 s^3 kg);
@@ -129,8 +134,9 @@ class DesignOpt(T.LaunchOpt):
     ref = T.reference()
     q_ref = ref['qpos'][T.push_start_index(ref)]
     common = dict(limb_scale=design.limb_scale, no_load_speed=design.no_load_speed,
-                  trunk_limb_collision=False, forearm_mass=design.forearm_mass,
-                  body_scale=design.body_scale)
+                  trunk_limb_collision=design.trunk_limb_collision,
+                  forearm_mass=design.forearm_mass, body_scale=design.body_scale,
+                  spring_energy=design.legacy_spring_energy)
     base = T.load_model(design.torque, **common)
     q_start, _ = D.crouch_qpos(base, q_ref)
     self.springs = springs_for(design, q_start)
