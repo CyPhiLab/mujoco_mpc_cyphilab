@@ -31,11 +31,16 @@ MOTORS = [dict(torque_scale=1, no_load_speed=20),
           dict(torque_scale=4, no_load_speed=20),
           dict(torque_scale=6, no_load_speed=40)]
 ENERGIES = [500, 1000, 2000, 4000]
+# peak total ground force caps (N): about 5 and 10 body weights. Without a
+# cap the optimizer turns the springs into impulsive kicks through the
+# massless limbs.
+FORCE_CAPS = [2500, 5000]
 VARIANTS = {
     'linear': dict(),
     'shaped': dict(shape=True),
     'staged': dict(shape=True, staged=True),
 }
+MAIN_VARIANTS = ['legacy', 'linear', 'staged']
 SUBSETS = {
     'middle': [0, 1, 0, 1],      # knees and elbows
     'proximal': [1, 0, 1, 0],    # hips and shoulders
@@ -46,20 +51,24 @@ SUBSETS = {
 
 def jobs(grid, iters):
   out = []
-  for motor, e in itertools.product(MOTORS, ENERGIES):
+  for motor, cap in itertools.product(MOTORS, FORCE_CAPS):
+    motor = dict(motor, force_cap=cap)
     if grid == 'main':
-      out.append((motor, e, 'legacy', None, iters))
-      out += [(motor, e, name, opts, iters) for name, opts in VARIANTS.items()]
-    elif grid == 'subsets':
-      out += [(motor, e, name, dict(shape=True, staged=True, mask=mask), iters)
-              for name, mask in SUBSETS.items()]
+      out.append((motor, 0, 'none', None, iters))
+    for e in ENERGIES:
+      if grid == 'main':
+        out += [(motor, e, name, VARIANTS.get(name), iters)
+                for name in MAIN_VARIANTS]
+      elif grid == 'subsets':
+        out += [(motor, e, name, dict(shape=True, staged=True, mask=mask), iters)
+                for name, mask in SUBSETS.items()]
   return out
 
 
 def run(args):
   motor, energy, name, opts, iters = args
   t0 = time.time()
-  if opts is None:
+  if opts is None:   # no springs, or the legacy springs
     design = R.Design(**motor, spring_energy=energy)
     out = R.ReducedLaunch(design).optimize(iters)
   else:
@@ -85,11 +94,13 @@ def main():
       rows.append(row)
       s = row.get('springs')
       print(f"x{row['torque_scale']:g} w0 {row['no_load_speed']:g} "
+            f"cap {row['force_cap']:g} N "
             f"{row['budget_J']:5.0f} J {row['variant']:8s}: "
             f"{row['speed_along']:5.2f} m/s @ {row['angle_deg']:.0f} deg, "
             f"t {row['takeoff_time']:.3f}, motor {row['work_J']:.0f} J, "
             f"spring {row['spring_work_J']:.0f}/{row['spring_J']:.0f} J, "
-            f"KE {row['kinetic_energy_J']:.0f} J"
+            f"KE {row['kinetic_energy_J']:.0f} J, "
+            f"peak {row['peak_force_N']:.0f} N, err {row['energy_error']:+.3f}"
             + (f" | E {s['energy']} travel {s['travel']} n {s['exponent']} "
                f"release {s['release']}" if s else '')
             + (' INFEASIBLE' if row['infeasible'] else ''), flush=True)

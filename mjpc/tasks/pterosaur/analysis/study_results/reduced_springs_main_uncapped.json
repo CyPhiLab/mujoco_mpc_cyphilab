@@ -1,0 +1,3906 @@
+[
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 4.2730024217322855,
+  "angle_deg": 30.035764526937317,
+  "speed_along": 4.2730015892733215,
+  "takeoff_time": 0.539,
+  "liftoff_hind_fore": [
+   0.429,
+   0.539
+  ],
+  "work_J": 211.2668612210619,
+  "spring_J": 500.0,
+  "spring_work_J": 457.9479086629696,
+  "kinetic_energy_J": 457.68881805366107,
+  "infeasible": false,
+  "seconds": 71
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 4.999113031963611,
+  "angle_deg": 30.004626937109485,
+  "speed_along": 4.999113015662962,
+  "takeoff_time": 0.34600000000000003,
+  "liftoff_hind_fore": [
+   0.241,
+   0.346
+  ],
+  "work_J": 313.00714321675264,
+  "spring_J": 500.0,
+  "spring_work_J": 509.6564573760156,
+  "kinetic_energy_J": 626.4550825914217,
+  "infeasible": false,
+  "spring_unit": [
+   0.11261395251740149,
+   -0.9463885070279733,
+   0.609056447062825,
+   -1.0,
+   0.21837392642691994,
+   -0.5202893291450035,
+   0.05206982684491129,
+   -0.6460887459646074,
+   0.3460723714772026,
+   0.06497821450818624,
+   0.16464833436638973,
+   0.14642384409096598,
+   -0.6282674390875104,
+   1.0
+  ],
+  "springs": {
+   "energy": [
+    200.451,
+    9.659,
+    289.891,
+    0.0
+   ],
+   "travel": [
+    0.655,
+    -1.561,
+    0.156,
+    -1.938
+   ],
+   "exponent": [
+    1.346,
+    1.065,
+    1.165,
+    1.146
+   ],
+   "release": [
+    0.056,
+    0.3
+   ]
+  },
+  "seconds": 86
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 4.432478066284994,
+  "angle_deg": 30.000110411238932,
+  "speed_along": 4.432478066276763,
+  "takeoff_time": 0.253,
+  "liftoff_hind_fore": [
+   0.162,
+   0.253
+  ],
+  "work_J": 227.22932818222617,
+  "spring_J": 500.00000000000006,
+  "spring_work_J": 495.50711273043885,
+  "kinetic_energy_J": 492.48977104231506,
+  "infeasible": false,
+  "spring_unit": [
+   0.8242036925089967,
+   -1.0,
+   -0.963741923603681,
+   -1.0,
+   0.502492603114056,
+   -0.7737322806903449,
+   0.7628778634960479,
+   -0.8634478317996042,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    490.256,
+    0.0,
+    9.744,
+    0.0
+   ],
+   "travel": [
+    1.507,
+    -2.321,
+    2.289,
+    -2.59
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 88
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 4.60439141159245,
+  "angle_deg": 30.025866472115332,
+  "speed_along": 4.604390942378011,
+  "takeoff_time": 0.295,
+  "liftoff_hind_fore": [
+   0.205,
+   0.295
+  ],
+  "work_J": 252.32445997509035,
+  "spring_J": 500.0,
+  "spring_work_J": 500.1129266580129,
+  "kinetic_energy_J": 531.4329701771705,
+  "infeasible": false,
+  "spring_unit": [
+   0.9852257468585052,
+   -0.9774363208322048,
+   -0.6410880111643303,
+   -1.0,
+   0.4219169975289316,
+   -0.7572232431713154,
+   0.6307084187387269,
+   -0.8698542647388204,
+   -0.994638185064018,
+   -0.19267262587579587,
+   -0.6227388455298352,
+   0.026554708375824077,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    419.408,
+    4.767,
+    75.825,
+    0.0
+   ],
+   "travel": [
+    1.266,
+    -2.272,
+    1.892,
+    -2.61
+   ],
+   "exponent": [
+    0.005,
+    0.807,
+    0.377,
+    1.027
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 89
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 1000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 2.5080819644129,
+  "angle_deg": 85.83532969320385,
+  "speed_along": 1.4084718078438863,
+  "takeoff_time": 0.216,
+  "liftoff_hind_fore": [
+   0.159,
+   0.216
+  ],
+  "work_J": 0.0,
+  "spring_J": 1000.0,
+  "spring_work_J": 804.9573120076972,
+  "kinetic_energy_J": 157.68394422533956,
+  "infeasible": false,
+  "seconds": 71
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.051849994308582,
+  "angle_deg": 30.356103107827543,
+  "speed_along": 5.051752422284158,
+  "takeoff_time": 0.211,
+  "liftoff_hind_fore": [
+   0.134,
+   0.211
+  ],
+  "work_J": 48.308470829340536,
+  "spring_J": 999.9999999999999,
+  "spring_work_J": 864.3896826596306,
+  "kinetic_energy_J": 639.7420787794283,
+  "infeasible": false,
+  "spring_unit": [
+   0.892375472556746,
+   -1.0,
+   -1.0,
+   -0.9983160870541228,
+   0.7230592000131432,
+   -0.9500621258391319,
+   -0.3299081442659915,
+   0.40607689625949206,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    999.111,
+    0.0,
+    0.0,
+    0.889
+   ],
+   "travel": [
+    2.169,
+    -2.85,
+    -0.99,
+    1.218
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.414667260605688,
+  "angle_deg": 29.998276521143858,
+  "speed_along": 5.414667258156013,
+  "takeoff_time": 0.224,
+  "liftoff_hind_fore": [
+   0.151,
+   0.224
+  ],
+  "work_J": 1.2509360892655548,
+  "spring_J": 999.9999999999999,
+  "spring_work_J": 1006.4972092312942,
+  "kinetic_energy_J": 734.9327008079318,
+  "infeasible": false,
+  "spring_unit": [
+   0.9734169571997789,
+   -1.0,
+   -1.0,
+   -0.999706597945501,
+   0.45568301456848853,
+   -0.8349839087513922,
+   -0.28100535216629424,
+   0.2824873671138293,
+   -1.0,
+   -0.6715249435692557,
+   0.12475146381868293,
+   0.1641404594996582,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    999.851,
+    0.0,
+    0.0,
+    0.149
+   ],
+   "travel": [
+    1.367,
+    -2.505,
+    -0.843,
+    0.847
+   ],
+   "exponent": [
+    0.0,
+    0.328,
+    1.125,
+    1.164
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 88
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.72803407276842,
+  "angle_deg": 30.013576485557692,
+  "speed_along": 6.728033883887693,
+  "takeoff_time": 0.33,
+  "liftoff_hind_fore": [
+   0.237,
+   0.33
+  ],
+  "work_J": 215.98681619099176,
+  "spring_J": 1000.0,
+  "spring_work_J": 1033.2774785595461,
+  "kinetic_energy_J": 1134.6982593332489,
+  "infeasible": false,
+  "spring_unit": [
+   -0.17221674919035537,
+   -1.0,
+   0.6251974951318484,
+   -1.0,
+   0.09538106416301419,
+   -0.7230046492362414,
+   0.02730095699617461,
+   -0.6900511854965773,
+   0.8774822905577143,
+   -0.13448355333629897,
+   0.9921974194462024,
+   0.04401118136324514,
+   -0.31264802787494284,
+   0.9753963012747636
+  ],
+  "springs": {
+   "energy": [
+    337.46,
+    0.0,
+    662.54,
+    0.0
+   ],
+   "travel": [
+    0.286,
+    -2.169,
+    0.1,
+    -2.07
+   ],
+   "exponent": [
+    1.877,
+    0.866,
+    1.992,
+    1.044
+   ],
+   "release": [
+    0.103,
+    0.296
+   ]
+  },
+  "seconds": 90
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 2000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.014137691230003,
+  "angle_deg": 94.89477418044133,
+  "speed_along": 2.551690463416102,
+  "takeoff_time": 0.113,
+  "liftoff_hind_fore": [
+   0.089,
+   0.113
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 1572.266923595918,
+  "kinetic_energy_J": 906.6731566279699,
+  "infeasible": false,
+  "seconds": 70
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.141031723146469,
+  "angle_deg": 44.632805841799104,
+  "speed_along": 7.87697479090663,
+  "takeoff_time": 0.106,
+  "liftoff_hind_fore": [
+   0.066,
+   0.106
+  ],
+  "work_J": 0.08229733005370035,
+  "spring_J": 2000.0,
+  "spring_work_J": 1965.2286763288514,
+  "kinetic_energy_J": 1661.3568190997485,
+  "infeasible": false,
+  "spring_unit": [
+   0.9358527623546748,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.3994235925160488,
+   -0.9214154374392333,
+   -0.22657600628412974,
+   0.15984988666454553,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.198,
+    -2.764,
+    -0.68,
+    0.48
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 84
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.28579617940761,
+  "angle_deg": 43.59735817843316,
+  "speed_along": 8.053560571553533,
+  "takeoff_time": 0.123,
+  "liftoff_hind_fore": [
+   0.083,
+   0.123
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 2011.1928533940563,
+  "kinetic_energy_J": 1720.9668950191913,
+  "infeasible": false,
+  "spring_unit": [
+   0.8641081462034103,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.3560687089996653,
+   -0.8097096778062659,
+   -0.28229469145836733,
+   0.48407349050434034,
+   -1.0,
+   -0.1928903090531922,
+   0.11958748520905993,
+   -0.4867473204062954,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.068,
+    -2.429,
+    -0.847,
+    1.452
+   ],
+   "exponent": [
+    0.0,
+    0.807,
+    1.12,
+    0.513
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.384838673536741,
+  "angle_deg": 33.01531206190805,
+  "speed_along": 8.373229969404944,
+  "takeoff_time": 0.251,
+  "liftoff_hind_fore": [
+   0.202,
+   0.251
+  ],
+  "work_J": 20.824290679809117,
+  "spring_J": 2000.0,
+  "spring_work_J": 1226.8983186788064,
+  "kinetic_energy_J": 1762.355208672757,
+  "infeasible": false,
+  "spring_unit": [
+   0.9119292582957802,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.026381539178811586,
+   -0.6515441750564486,
+   -0.3420995474671132,
+   0.2567757843224278,
+   0.9921477402456778,
+   -0.14934715174218127,
+   0.14970627621914545,
+   0.1680313384978201,
+   -0.030647498192436246,
+   -0.3467913908840401
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.1,
+    -1.955,
+    -1.026,
+    0.77
+   ],
+   "exponent": [
+    1.992,
+    0.851,
+    1.15,
+    1.168
+   ],
+   "release": [
+    0.145,
+    0.098
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 4000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 9.702546723952054,
+  "angle_deg": 96.44657525702031,
+  "speed_along": 3.8771764501603543,
+  "takeoff_time": 0.07200000000000001,
+  "liftoff_hind_fore": [
+   0.058,
+   0.072
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 3109.0983892317945,
+  "kinetic_energy_J": 2359.8017013118015,
+  "infeasible": false,
+  "seconds": 69
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.082827124819993,
+  "angle_deg": 48.12694001500167,
+  "speed_along": 11.483150965294422,
+  "takeoff_time": 0.067,
+  "liftoff_hind_fore": [
+   0.041,
+   0.067
+  ],
+  "work_J": 0.04456328929309285,
+  "spring_J": 4000.0,
+  "spring_work_J": 3863.69594550516,
+  "kinetic_energy_J": 3659.663444358427,
+  "infeasible": false,
+  "spring_unit": [
+   0.8140673814965875,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.2955673784115314,
+   -0.9703920353545665,
+   -0.2956010326788441,
+   0.33335978662130783,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.887,
+    -2.911,
+    -0.887,
+    1.0
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.342632592385879,
+  "angle_deg": 47.86081761833508,
+  "speed_along": 11.747771647715588,
+  "takeoff_time": 0.07,
+  "liftoff_hind_fore": [
+   0.045,
+   0.07
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 4002.3187877042283,
+  "kinetic_energy_J": 3818.73592627508,
+  "infeasible": false,
+  "spring_unit": [
+   0.9377932547649963,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.21615480388974323,
+   -0.7815285527640168,
+   -0.068610064529626,
+   0.255842636490481,
+   -1.0,
+   -0.40644022096920773,
+   -0.21778002280622594,
+   0.10530489187374166,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.648,
+    -2.345,
+    -0.206,
+    0.768
+   ],
+   "exponent": [
+    0.0,
+    0.594,
+    0.782,
+    1.105
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.462049243578596,
+  "angle_deg": 29.985180809031707,
+  "speed_along": 5.46204906088247,
+  "takeoff_time": 0.482,
+  "liftoff_hind_fore": [
+   0.396,
+   0.482
+  ],
+  "work_J": 493.97891416934317,
+  "spring_J": 500.0,
+  "spring_work_J": 464.1838628533755,
+  "kinetic_energy_J": 747.8512893341356,
+  "infeasible": false,
+  "seconds": 68
+ },
+ {
+  "torque_scale": 1,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.501042169795012,
+  "angle_deg": 38.15223627031784,
+  "speed_along": 12.374716480338607,
+  "takeoff_time": 0.216,
+  "liftoff_hind_fore": [
+   0.185,
+   0.216
+  ],
+  "work_J": 22.461040544199697,
+  "spring_J": 4000.0,
+  "spring_work_J": 1835.7973099292194,
+  "kinetic_energy_J": 3917.3868814833186,
+  "infeasible": false,
+  "spring_unit": [
+   0.9265308742092794,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.02350484131985321,
+   -0.615842058015021,
+   -0.17347453407064103,
+   0.25087570620827515,
+   1.0,
+   -0.45440987440848685,
+   -0.021726936024867336,
+   0.03316608788301478,
+   -0.026312506311108444,
+   -0.3298851628011871
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.1,
+    -1.848,
+    -0.52,
+    0.753
+   ],
+   "exponent": [
+    2.0,
+    0.546,
+    0.978,
+    1.033
+   ],
+   "release": [
+    0.146,
+    0.101
+   ]
+  },
+  "seconds": 88
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 1000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 2.0939097021994044,
+  "angle_deg": 30.050913246673883,
+  "speed_along": 2.093908875506434,
+  "takeoff_time": 0.316,
+  "liftoff_hind_fore": [
+   0.184,
+   0.316
+  ],
+  "work_J": 0.0,
+  "spring_J": 1000.0,
+  "spring_work_J": 858.8697388098909,
+  "kinetic_energy_J": 109.90562560741736,
+  "infeasible": false,
+  "seconds": 67
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.274156275110865,
+  "angle_deg": 30.00567492324233,
+  "speed_along": 5.2741562492407885,
+  "takeoff_time": 0.321,
+  "liftoff_hind_fore": [
+   0.238,
+   0.321
+  ],
+  "work_J": 428.68696990094605,
+  "spring_J": 500.00000000000006,
+  "spring_work_J": 492.67226226280025,
+  "kinetic_energy_J": 697.2845012985844,
+  "infeasible": false,
+  "spring_unit": [
+   0.49416123134493695,
+   -0.8128787999311607,
+   0.22287119867147456,
+   -0.9716546056236642,
+   0.4871259261351658,
+   -0.6547081069066464,
+   0.7942110441186625,
+   -0.9301364991893374,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    254.759,
+    31.905,
+    208.503,
+    4.833
+   ],
+   "travel": [
+    1.461,
+    -1.964,
+    2.383,
+    -2.79
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 82
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.431101112995391,
+  "angle_deg": 30.07472732285548,
+  "speed_along": 5.431096493745963,
+  "takeoff_time": 0.33,
+  "liftoff_hind_fore": [
+   0.247,
+   0.33
+  ],
+  "work_J": 462.0614513764085,
+  "spring_J": 500.0,
+  "spring_work_J": 498.1829933057028,
+  "kinetic_energy_J": 739.4006037610591,
+  "infeasible": false,
+  "spring_unit": [
+   0.37980368586358204,
+   -0.9250458869071296,
+   0.26680609709151604,
+   -1.0,
+   0.3996675835639239,
+   -0.5697756444476572,
+   0.6162902259799299,
+   -0.9724585184883874,
+   -0.5490157414469823,
+   -0.13681421042725064,
+   -1.0,
+   -0.38329313825386024,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    253.495,
+    13.77,
+    232.735,
+    0.0
+   ],
+   "travel": [
+    1.199,
+    -1.709,
+    1.849,
+    -2.917
+   ],
+   "exponent": [
+    0.451,
+    0.863,
+    0.0,
+    0.617
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 81
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.938207129869629,
+  "angle_deg": 30.039023835074918,
+  "speed_along": 5.9382057525334355,
+  "takeoff_time": 0.356,
+  "liftoff_hind_fore": [
+   0.265,
+   0.356
+  ],
+  "work_J": 558.0970415504439,
+  "spring_J": 500.0,
+  "spring_work_J": 503.06888124022925,
+  "kinetic_energy_J": 883.9235574744934,
+  "infeasible": false,
+  "spring_unit": [
+   -0.14458911044032013,
+   -0.9664210683431492,
+   0.981322411783685,
+   -0.222464694177398,
+   0.17788854333807574,
+   -0.6439587449978809,
+   0.20762089515546836,
+   -0.22940923467840085,
+   0.00954248858135806,
+   -0.053320944212393036,
+   -0.9592858589656971,
+   -0.18605958316080282,
+   -0.6267572562117275,
+   0.9955603629960372
+  ],
+  "springs": {
+   "energy": [
+    117.249,
+    4.603,
+    271.574,
+    106.575
+   ],
+   "travel": [
+    0.534,
+    -1.932,
+    0.623,
+    -0.688
+   ],
+   "exponent": [
+    1.01,
+    0.947,
+    0.041,
+    0.814
+   ],
+   "release": [
+    0.056,
+    0.299
+   ]
+  },
+  "seconds": 81
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 2000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 4.611098365993538,
+  "angle_deg": 87.60548195738139,
+  "speed_along": 2.470377545514261,
+  "takeoff_time": 0.135,
+  "liftoff_hind_fore": [
+   0.102,
+   0.135
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 1595.7108323730188,
+  "kinetic_energy_J": 532.9823139810467,
+  "infeasible": false,
+  "seconds": 67
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.412315655160854,
+  "angle_deg": 30.15506920428917,
+  "speed_along": 5.412295832647978,
+  "takeoff_time": 0.203,
+  "liftoff_hind_fore": [
+   0.13,
+   0.203
+  ],
+  "work_J": 157.8322062436511,
+  "spring_J": 1000.0,
+  "spring_work_J": 893.9271458622103,
+  "kinetic_energy_J": 734.2944726912375,
+  "infeasible": false,
+  "spring_unit": [
+   0.9171776634107731,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.6920372124634672,
+   -0.9521554457940271,
+   -0.45464885413216366,
+   0.6700546214257169,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    1000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    2.076,
+    -2.856,
+    -1.364,
+    2.01
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 81
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.603747417063215,
+  "angle_deg": 30.04850597339362,
+  "speed_along": 5.603745408924479,
+  "takeoff_time": 0.21,
+  "liftoff_hind_fore": [
+   0.139,
+   0.21
+  ],
+  "work_J": 23.789718709462576,
+  "spring_J": 1000.0,
+  "spring_work_J": 1004.9309903815551,
+  "kinetic_energy_J": 787.1565754492918,
+  "infeasible": false,
+  "spring_unit": [
+   1.0,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.4232243101307027,
+   -0.932714190010568,
+   -0.19459644657943723,
+   0.28330270690913545,
+   -1.0,
+   -0.5797079529561193,
+   0.4042569040178194,
+   0.015674172426587463,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    1000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.27,
+    -2.798,
+    -0.584,
+    0.85
+   ],
+   "exponent": [
+    0.0,
+    0.42,
+    1.404,
+    1.016
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.5357467701526035,
+  "angle_deg": 30.82831241911498,
+  "speed_along": 6.535063801550655,
+  "takeoff_time": 0.272,
+  "liftoff_hind_fore": [
+   0.198,
+   0.272
+  ],
+  "work_J": 293.8034194293419,
+  "spring_J": 999.9999999999998,
+  "spring_work_J": 1043.7999630476954,
+  "kinetic_energy_J": 1070.7657178751642,
+  "infeasible": false,
+  "spring_unit": [
+   0.8518964795620313,
+   -0.9957933166328156,
+   -0.42302045263588284,
+   -1.0,
+   0.33920735115190737,
+   -0.7065743767342888,
+   0.023986810103507034,
+   -0.36219411214031283,
+   -0.9948131710479284,
+   -0.45138720602653293,
+   0.5454617544879957,
+   0.0062323725158663495,
+   -0.5232780836098233,
+   0.6741486730914874
+  ],
+  "springs": {
+   "energy": [
+    761.132,
+    1.729,
+    237.139,
+    0.0
+   ],
+   "travel": [
+    1.018,
+    -2.12,
+    0.1,
+    -1.087
+   ],
+   "exponent": [
+    0.005,
+    0.549,
+    1.545,
+    1.006
+   ],
+   "release": [
+    0.072,
+    0.251
+   ]
+  },
+  "seconds": 82
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 4000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.698280255271992,
+  "angle_deg": 94.95232369528131,
+  "speed_along": 3.682610584998662,
+  "takeoff_time": 0.078,
+  "liftoff_hind_fore": [
+   0.062,
+   0.078
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 3141.157849961794,
+  "kinetic_energy_J": 1896.5784736687372,
+  "infeasible": false,
+  "seconds": 68
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 7.882030775389796,
+  "angle_deg": 42.63782841589126,
+  "speed_along": 7.691069067453863,
+  "takeoff_time": 0.112,
+  "liftoff_hind_fore": [
+   0.07,
+   0.112
+  ],
+  "work_J": 0.008339806797223773,
+  "spring_J": 2000.0,
+  "spring_work_J": 1968.1324304657942,
+  "kinetic_energy_J": 1557.328662152736,
+  "infeasible": false,
+  "spring_unit": [
+   0.7790222404992057,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.43690227099446804,
+   -0.8762364097982172,
+   -0.06332605242581188,
+   0.32117807844760793,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.311,
+    -2.629,
+    -0.19,
+    0.964
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 86
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.12346657518422,
+  "angle_deg": 41.10237617546844,
+  "speed_along": 7.971433289466955,
+  "takeoff_time": 0.129,
+  "liftoff_hind_fore": [
+   0.087,
+   0.129
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 2011.733022376697,
+  "kinetic_energy_J": 1654.1954425777399,
+  "infeasible": false,
+  "spring_unit": [
+   0.9747984265635433,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.36780475173416205,
+   -0.9470063694750874,
+   -0.34264816826032596,
+   0.08763139592446154,
+   -1.0,
+   -0.4158577587162055,
+   0.2823305900237853,
+   -0.00482668007177494,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.103,
+    -2.841,
+    -1.028,
+    0.263
+   ],
+   "exponent": [
+    0.0,
+    0.584,
+    1.282,
+    0.995
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 84
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.440412164982222,
+  "angle_deg": 33.16425018867257,
+  "speed_along": 8.427543910571202,
+  "takeoff_time": 0.25,
+  "liftoff_hind_fore": [
+   0.202,
+   0.25
+  ],
+  "work_J": 46.12746603018461,
+  "spring_J": 2000.0,
+  "spring_work_J": 1278.0476338368305,
+  "kinetic_energy_J": 1785.7938943165088,
+  "infeasible": false,
+  "spring_unit": [
+   0.8177527812114821,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.0213094197041259,
+   -0.3595870628182741,
+   -0.16288973965410306,
+   0.5645642635792085,
+   1.0,
+   -0.1269266656221722,
+   -0.049472131416592395,
+   0.33478729704062243,
+   -0.026772717187718596,
+   -0.44363046988483
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.1,
+    -1.079,
+    -0.489,
+    1.694
+   ],
+   "exponent": [
+    2.0,
+    0.873,
+    0.951,
+    1.335
+   ],
+   "release": [
+    0.146,
+    0.083
+   ]
+  },
+  "seconds": 88
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 11.92816901648156,
+  "angle_deg": 47.58500873649059,
+  "speed_along": 11.370762688086844,
+  "takeoff_time": 0.068,
+  "liftoff_hind_fore": [
+   0.042,
+   0.068
+  ],
+  "work_J": 0.070016605615968,
+  "spring_J": 4000.0,
+  "spring_work_J": 3867.4094027215074,
+  "kinetic_energy_J": 3566.576902618256,
+  "infeasible": false,
+  "spring_unit": [
+   0.9062057428213768,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.299805594301973,
+   -0.9835101238633253,
+   -0.15589473609238003,
+   0.40302845704304874,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.899,
+    -2.951,
+    -0.468,
+    1.209
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.169732530150189,
+  "angle_deg": 29.96573206103043,
+  "speed_along": 6.169731426663668,
+  "takeoff_time": 0.432,
+  "liftoff_hind_fore": [
+   0.356,
+   0.432
+  ],
+  "work_J": 755.854258654883,
+  "spring_J": 500.0,
+  "spring_work_J": 461.0604749612565,
+  "kinetic_energy_J": 954.1940368034586,
+  "infeasible": false,
+  "seconds": 70
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.225783093872508,
+  "angle_deg": 47.22143938163964,
+  "speed_along": 11.677672444870378,
+  "takeoff_time": 0.073,
+  "liftoff_hind_fore": [
+   0.047,
+   0.073
+  ],
+  "work_J": 0.008699323545414814,
+  "spring_J": 4000.0,
+  "spring_work_J": 4007.056608706925,
+  "kinetic_energy_J": 3746.7731302999223,
+  "infeasible": false,
+  "spring_unit": [
+   0.9634675683302413,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.24245455485406114,
+   -0.8343995489058803,
+   -0.4025938234183555,
+   0.518726129344439,
+   -1.0,
+   -0.5582431406549333,
+   0.5162962434933247,
+   0.17307010399415262,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.727,
+    -2.503,
+    -1.208,
+    1.556
+   ],
+   "exponent": [
+    0.0,
+    0.442,
+    1.516,
+    1.173
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 84
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.624456565864092,
+  "angle_deg": 38.27890506698932,
+  "speed_along": 12.492895469058617,
+  "takeoff_time": 0.213,
+  "liftoff_hind_fore": [
+   0.182,
+   0.213
+  ],
+  "work_J": 43.00697095545088,
+  "spring_J": 4000.0,
+  "spring_work_J": 1978.6705759171937,
+  "kinetic_energy_J": 3995.116142307556,
+  "infeasible": false,
+  "spring_unit": [
+   0.9373446032925395,
+   -1.0,
+   -1.0,
+   -0.9999897019130835,
+   0.022082471582249377,
+   -0.5894932944881879,
+   -0.25785955697646235,
+   0.3415292245250844,
+   0.9887410573815659,
+   -0.40346268446323025,
+   -0.0340662869277962,
+   0.31209004220647385,
+   -0.034433440159752346,
+   -0.5846819856159786
+  ],
+  "springs": {
+   "energy": [
+    3999.979,
+    0.0,
+    0.0,
+    0.021
+   ],
+   "travel": [
+    0.1,
+    -1.768,
+    -0.774,
+    1.025
+   ],
+   "exponent": [
+    1.989,
+    0.597,
+    0.966,
+    1.312
+   ],
+   "release": [
+    0.145,
+    0.062
+   ]
+  },
+  "seconds": 89
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 1000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 4.82204505319241,
+  "angle_deg": 30.05773681143038,
+  "speed_along": 4.822042604909741,
+  "takeoff_time": 0.33,
+  "liftoff_hind_fore": [
+   0.23,
+   0.33
+  ],
+  "work_J": 133.2486503231828,
+  "spring_J": 1000.0,
+  "spring_work_J": 893.5329757248651,
+  "kinetic_energy_J": 582.8630865179765,
+  "infeasible": false,
+  "seconds": 67
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.193220533101141,
+  "angle_deg": 30.01114491386172,
+  "speed_along": 6.193220415937,
+  "takeoff_time": 0.342,
+  "liftoff_hind_fore": [
+   0.269,
+   0.342
+  ],
+  "work_J": 710.714002834979,
+  "spring_J": 500.0,
+  "spring_work_J": 489.9048956716671,
+  "kinetic_energy_J": 961.4730471630734,
+  "infeasible": false,
+  "spring_unit": [
+   0.20795163113968246,
+   -0.748558403701467,
+   0.8000857246095296,
+   -0.7165751331332855,
+   0.4737156400955018,
+   -0.7457700696006232,
+   0.7349168361062542,
+   -0.788499770361959,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    170.475,
+    35.485,
+    254.041,
+    39.999
+   ],
+   "travel": [
+    1.421,
+    -2.237,
+    2.205,
+    -2.365
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 82
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.353374476185761,
+  "angle_deg": 29.982730246465156,
+  "speed_along": 6.353374187582343,
+  "takeoff_time": 0.35100000000000003,
+  "liftoff_hind_fore": [
+   0.278,
+   0.351
+  ],
+  "work_J": 737.1385240073909,
+  "spring_J": 500.0,
+  "spring_work_J": 498.88618992311143,
+  "kinetic_energy_J": 1011.8425355461932,
+  "infeasible": false,
+  "spring_unit": [
+   -0.08187125223242435,
+   -0.9537306902645827,
+   0.9618013733515541,
+   -0.6703168206289666,
+   0.45344729084409047,
+   -0.559757469307822,
+   0.5647378272235714,
+   -0.5428292133296796,
+   0.07342619103446398,
+   -0.1370850368315552,
+   -1.0,
+   -0.45670697822868805,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    140.995,
+    7.105,
+    301.27,
+    50.629
+   ],
+   "travel": [
+    1.36,
+    -1.679,
+    1.694,
+    -1.628
+   ],
+   "exponent": [
+    1.073,
+    0.863,
+    0.0,
+    0.543
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 84
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.766341930742687,
+  "angle_deg": 30.0072646744323,
+  "speed_along": 6.766341876353698,
+  "takeoff_time": 0.34600000000000003,
+  "liftoff_hind_fore": [
+   0.27,
+   0.346
+  ],
+  "work_J": 830.5056308020794,
+  "spring_J": 499.99999999999994,
+  "spring_work_J": 503.1361703645032,
+  "kinetic_energy_J": 1147.6564599672365,
+  "infeasible": false,
+  "spring_unit": [
+   -0.2761410070676971,
+   -0.992157694023003,
+   0.9670446278494361,
+   -0.24354725181939443,
+   0.21038584280123182,
+   -0.5210039674557215,
+   0.14245150653700792,
+   -0.1540549682248948,
+   0.5101911366871059,
+   0.27874546913880793,
+   -0.5540419706221121,
+   -0.4547909599343235,
+   -0.4835462146320663,
+   1.0
+  ],
+  "springs": {
+   "energy": [
+    104.749,
+    1.135,
+    284.65,
+    109.466
+   ],
+   "travel": [
+    0.631,
+    -1.563,
+    0.427,
+    -0.462
+   ],
+   "exponent": [
+    1.51,
+    1.279,
+    0.446,
+    0.545
+   ],
+   "release": [
+    0.077,
+    0.3
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 2000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 3.924203696281314,
+  "angle_deg": 58.87009095805663,
+  "speed_along": 3.436490658267474,
+  "takeoff_time": 0.17500000000000002,
+  "liftoff_hind_fore": [
+   0.117,
+   0.175
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 1667.4233508459847,
+  "kinetic_energy_J": 386.01760268920845,
+  "infeasible": false,
+  "seconds": 70
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.732351968313913,
+  "angle_deg": 31.227124698375604,
+  "speed_along": 5.7310372933839195,
+  "takeoff_time": 0.198,
+  "liftoff_hind_fore": [
+   0.129,
+   0.198
+  ],
+  "work_J": 250.03738735585867,
+  "spring_J": 1000.0,
+  "spring_work_J": 923.1637107519158,
+  "kinetic_energy_J": 823.7012423212209,
+  "infeasible": false,
+  "spring_unit": [
+   0.92959469240262,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.6444869461853312,
+   -1.0,
+   -0.8118980262977267,
+   -0.5691699052159802,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    1000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.933,
+    -3.0,
+    -2.436,
+    -1.708
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 81
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.279982116317146,
+  "angle_deg": 32.673232240161646,
+  "speed_along": 6.2731480727550615,
+  "takeoff_time": 0.194,
+  "liftoff_hind_fore": [
+   0.132,
+   0.194
+  ],
+  "work_J": 279.8091219305017,
+  "spring_J": 1000.0,
+  "spring_work_J": 998.6208428807628,
+  "kinetic_energy_J": 988.6005283469606,
+  "infeasible": false,
+  "spring_unit": [
+   0.9038603632095625,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.37208185003217187,
+   -0.8622360188533523,
+   0.640869826549339,
+   -0.7768028472626681,
+   -1.0,
+   -0.5424933792558473,
+   0.3505124996998716,
+   -0.3336805103438014,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    1000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.116,
+    -2.587,
+    1.923,
+    -2.33
+   ],
+   "exponent": [
+    0.0,
+    0.458,
+    1.351,
+    0.666
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.504275986827028,
+  "angle_deg": 30.22970857930665,
+  "speed_along": 6.5042237138120065,
+  "takeoff_time": 0.245,
+  "liftoff_hind_fore": [
+   0.181,
+   0.245
+  ],
+  "work_J": 344.7513248356924,
+  "spring_J": 1000.0,
+  "spring_work_J": 995.9646567599833,
+  "kinetic_energy_J": 1060.4786897681133,
+  "infeasible": false,
+  "spring_unit": [
+   0.9501808372215788,
+   -1.0,
+   -0.9389222016809856,
+   -0.9994062458489889,
+   0.32020909622956734,
+   -0.8745665741677141,
+   0.3429767851189178,
+   -0.6602498739188915,
+   -1.0,
+   -0.4303409322325791,
+   0.20956588066411164,
+   -0.0651977316671534,
+   -0.5515872456569191,
+   0.0024363202429408017
+  ],
+  "springs": {
+   "energy": [
+    969.346,
+    0.0,
+    30.359,
+    0.295
+   ],
+   "travel": [
+    0.961,
+    -2.624,
+    1.029,
+    -1.981
+   ],
+   "exponent": [
+    0.0,
+    0.57,
+    1.21,
+    0.935
+   ],
+   "release": [
+    0.067,
+    0.15
+   ]
+  },
+  "seconds": 82
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 4000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.800454966745588,
+  "angle_deg": 89.03685969546738,
+  "speed_along": 3.4987424979172714,
+  "takeoff_time": 0.092,
+  "liftoff_hind_fore": [
+   0.07,
+   0.092
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 3181.6174988180355,
+  "kinetic_energy_J": 1159.25762808196,
+  "infeasible": false,
+  "seconds": 72
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 7.638963089482886,
+  "angle_deg": 41.266722939034274,
+  "speed_along": 7.491747265783526,
+  "takeoff_time": 0.112,
+  "liftoff_hind_fore": [
+   0.068,
+   0.112
+  ],
+  "work_J": 0.3034762192122882,
+  "spring_J": 2000.0,
+  "spring_work_J": 1965.591071362679,
+  "kinetic_energy_J": 1462.7592307472542,
+  "infeasible": false,
+  "spring_unit": [
+   0.6609747837619045,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.39475071933421574,
+   -0.9618999533712314,
+   0.10687617424451568,
+   0.5338126134247824,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.184,
+    -2.886,
+    0.321,
+    1.601
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 89
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 7.851989768589866,
+  "angle_deg": 38.129627663371515,
+  "speed_along": 7.773082495276856,
+  "takeoff_time": 0.137,
+  "liftoff_hind_fore": [
+   0.091,
+   0.137
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 2003.5146073061526,
+  "kinetic_energy_J": 1545.4803027132027,
+  "infeasible": false,
+  "spring_unit": [
+   0.8632845712398026,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.36859323506882713,
+   -0.935480541474071,
+   -0.45008478673956254,
+   0.2516603176722292,
+   -1.0,
+   -0.6798808149221142,
+   0.36106305347233014,
+   -0.3478368081888165,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.106,
+    -2.806,
+    -1.35,
+    0.755
+   ],
+   "exponent": [
+    0.0,
+    0.32,
+    1.361,
+    0.652
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 88
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.504021024471308,
+  "angle_deg": 33.23356160167985,
+  "speed_along": 8.490481728919299,
+  "takeoff_time": 0.25,
+  "liftoff_hind_fore": [
+   0.202,
+   0.25
+  ],
+  "work_J": 100.80936517795055,
+  "spring_J": 2000.0,
+  "spring_work_J": 1356.3420091729581,
+  "kinetic_energy_J": 1812.8116132102869,
+  "infeasible": false,
+  "spring_unit": [
+   0.8328404762667846,
+   -1.0,
+   -1.0,
+   -0.9999337478042323,
+   0.02940855116383394,
+   -0.7959098580096935,
+   -0.16348703593043537,
+   0.05537101556516804,
+   0.9961246576931834,
+   -0.2809462137247029,
+   -0.07609546336506567,
+   -0.011336328795443565,
+   -0.021892814765336797,
+   -0.6159249145830428
+  ],
+  "springs": {
+   "energy": [
+    1999.928,
+    0.0,
+    0.0,
+    0.072
+   ],
+   "travel": [
+    0.1,
+    -2.388,
+    -0.49,
+    0.166
+   ],
+   "exponent": [
+    1.996,
+    0.719,
+    0.924,
+    0.989
+   ],
+   "release": [
+    0.147,
+    0.058
+   ]
+  },
+  "seconds": 89
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.812150696041806,
+  "angle_deg": 30.05805864253488,
+  "speed_along": 8.812146171856629,
+  "takeoff_time": 0.353,
+  "liftoff_hind_fore": [
+   0.294,
+   0.353
+  ],
+  "work_J": 1910.3212182837426,
+  "spring_J": 500.0,
+  "spring_work_J": 462.5955269923837,
+  "kinetic_energy_J": 1946.560270020355,
+  "infeasible": false,
+  "seconds": 68
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 11.533037279807306,
+  "angle_deg": 46.227113836975946,
+  "speed_along": 11.073578978319953,
+  "takeoff_time": 0.07200000000000001,
+  "liftoff_hind_fore": [
+   0.044,
+   0.072
+  ],
+  "work_J": 0.09345806269757526,
+  "spring_J": 4000.0,
+  "spring_work_J": 3883.601399295095,
+  "kinetic_energy_J": 3334.19822506285,
+  "infeasible": false,
+  "spring_unit": [
+   0.7480772046440811,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.3397565356426795,
+   -0.877828273443061,
+   -0.023457874080596526,
+   0.4954028660252134,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.019,
+    -2.633,
+    -0.1,
+    1.486
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 11.799647651628794,
+  "angle_deg": 45.251539896240956,
+  "speed_along": 11.384067060633955,
+  "takeoff_time": 0.082,
+  "liftoff_hind_fore": [
+   0.054,
+   0.082
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 4019.5004065968124,
+  "kinetic_energy_J": 3490.134006681528,
+  "infeasible": false,
+  "spring_unit": [
+   0.9261826168220204,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.3127848323963254,
+   -0.9124935630817509,
+   -0.41674878361832585,
+   0.23792840638601734,
+   -1.0,
+   -0.45935090998877864,
+   0.03967937095941614,
+   0.2747245253776456,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.938,
+    -2.737,
+    -1.25,
+    0.714
+   ],
+   "exponent": [
+    0.0,
+    0.541,
+    1.04,
+    1.275
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.715583741864526,
+  "angle_deg": 38.35876071175886,
+  "speed_along": 12.580508913852418,
+  "takeoff_time": 0.212,
+  "liftoff_hind_fore": [
+   0.182,
+   0.212
+  ],
+  "work_J": 99.64690034269748,
+  "spring_J": 4000.0,
+  "spring_work_J": 2083.8471135577593,
+  "kinetic_energy_J": 4053.0002359550035,
+  "infeasible": false,
+  "spring_unit": [
+   0.7853747300683102,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.011166027327291172,
+   -0.5160430849760792,
+   -0.2240981716230222,
+   0.0038876084080351906,
+   1.0,
+   -0.18665039484537693,
+   -0.019671903644963972,
+   -0.17661724737792114,
+   -0.03387577029222302,
+   -0.34866044483282094
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.1,
+    -1.548,
+    -0.672,
+    0.1
+   ],
+   "exponent": [
+    2.0,
+    0.813,
+    0.98,
+    0.823
+   ],
+   "release": [
+    0.145,
+    0.098
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 1000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.795917173443511,
+  "angle_deg": 31.305791587890226,
+  "speed_along": 8.793632969874063,
+  "takeoff_time": 0.332,
+  "liftoff_hind_fore": [
+   0.275,
+   0.332
+  ],
+  "work_J": 1384.3948306975662,
+  "spring_J": 1000.0,
+  "spring_work_J": 920.6404529247559,
+  "kinetic_energy_J": 1939.395067042998,
+  "infeasible": false,
+  "seconds": 69
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.796764144823893,
+  "angle_deg": 30.356371372473642,
+  "speed_along": 8.796593987006338,
+  "takeoff_time": 0.331,
+  "liftoff_hind_fore": [
+   0.275,
+   0.331
+  ],
+  "work_J": 1845.5535313873208,
+  "spring_J": 499.99999999999994,
+  "spring_work_J": 483.2526140447482,
+  "kinetic_energy_J": 1939.7685792463024,
+  "infeasible": false,
+  "spring_unit": [
+   0.263539039769849,
+   -0.4259328912691709,
+   0.8445142388083245,
+   -0.9978072741928279,
+   0.5665856671651679,
+   -0.787303341269829,
+   0.8653692989294257,
+   -0.9111618033575807,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    171.476,
+    77.907,
+    250.32,
+    0.298
+   ],
+   "travel": [
+    1.7,
+    -2.362,
+    2.596,
+    -2.733
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 86
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.894374569988257,
+  "angle_deg": 30.32062972168702,
+  "speed_along": 8.894235303515169,
+  "takeoff_time": 0.332,
+  "liftoff_hind_fore": [
+   0.277,
+   0.332
+  ],
+  "work_J": 1930.2175436629404,
+  "spring_J": 500.0,
+  "spring_work_J": 495.9155559351794,
+  "kinetic_energy_J": 1983.0554325640626,
+  "infeasible": false,
+  "spring_unit": [
+   0.006011241439380335,
+   -0.6374248688128306,
+   0.6310237773728244,
+   -1.0,
+   0.6751766251993371,
+   -0.44588839419024057,
+   0.6479434246078707,
+   -0.9082007308777852,
+   0.09446447582242458,
+   -0.6902579395774927,
+   -1.0,
+   -0.7452729319074983,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    167.69,
+    60.437,
+    271.873,
+    0.0
+   ],
+   "travel": [
+    2.026,
+    -1.338,
+    1.944,
+    -2.725
+   ],
+   "exponent": [
+    1.094,
+    0.31,
+    0.0,
+    0.255
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 86
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 500,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 9.002891796857673,
+  "angle_deg": 30.611364024542357,
+  "speed_along": 9.002379286781784,
+  "takeoff_time": 0.333,
+  "liftoff_hind_fore": [
+   0.278,
+   0.333
+  ],
+  "work_J": 1945.315261349396,
+  "spring_J": 500.0,
+  "spring_work_J": 498.0836132121626,
+  "kinetic_energy_J": 2031.7397867133043,
+  "infeasible": false,
+  "spring_unit": [
+   -0.2960741039161004,
+   -0.6826189116800871,
+   0.6621931499223859,
+   -1.0,
+   0.623729498862728,
+   -0.5562781682088371,
+   0.64124458949823,
+   -0.8582242435956864,
+   -0.11200381773278313,
+   -0.5664827623600678,
+   -1.0,
+   -0.7266564537072115,
+   -0.4022402623411622,
+   -0.8195438852088759
+  ],
+  "springs": {
+   "energy": [
+    131.158,
+    59.136,
+    309.706,
+    0.0
+   ],
+   "travel": [
+    1.871,
+    -1.669,
+    1.924,
+    -2.575
+   ],
+   "exponent": [
+    0.888,
+    0.434,
+    0.0,
+    0.273
+   ],
+   "release": [
+    0.09,
+    0.027
+   ]
+  },
+  "seconds": 86
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.492858840163342,
+  "angle_deg": 35.14013473215447,
+  "speed_along": 8.458705250691796,
+  "takeoff_time": 0.214,
+  "liftoff_hind_fore": [
+   0.167,
+   0.214
+  ],
+  "work_J": 1395.7220276812334,
+  "spring_J": 1000.0000000000001,
+  "spring_work_J": 623.3884633138615,
+  "kinetic_energy_J": 1808.0558259597276,
+  "infeasible": false,
+  "spring_unit": [
+   0.9670405747519847,
+   -0.9702478779001638,
+   -0.730329493097112,
+   -0.8925020680216099,
+   0.602195483353943,
+   -0.803380434497598,
+   0.7323572146824322,
+   0.27824020293338597,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    828.59,
+    12.533,
+    113.595,
+    45.282
+   ],
+   "travel": [
+    1.807,
+    -2.41,
+    2.197,
+    0.835
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 82
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 2000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.36966991864243,
+  "angle_deg": 50.169703978785414,
+  "speed_along": 5.0403774521637015,
+  "takeoff_time": 0.167,
+  "liftoff_hind_fore": [
+   0.112,
+   0.167
+  ],
+  "work_J": 0.0,
+  "spring_J": 2000.0,
+  "spring_work_J": 1702.8162926491166,
+  "kinetic_energy_J": 722.7684786687752,
+  "infeasible": false,
+  "seconds": 68
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.731997794096177,
+  "angle_deg": 34.84073768668907,
+  "speed_along": 8.700851734754142,
+  "takeoff_time": 0.232,
+  "liftoff_hind_fore": [
+   0.185,
+   0.232
+  ],
+  "work_J": 1576.5402324670638,
+  "spring_J": 1000.0,
+  "spring_work_J": 497.8444967057846,
+  "kinetic_energy_J": 1911.3105583168167,
+  "infeasible": false,
+  "spring_unit": [
+   0.8899156159928167,
+   -0.9919677336605277,
+   -0.3935284637707994,
+   -0.8813382761554128,
+   0.4243576657724623,
+   -0.6574554338382181,
+   0.5718522391158724,
+   0.11070102590864613,
+   -1.0,
+   -0.6249055423434191,
+   -0.9037229999245802,
+   -0.5078778237608265,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    720.495,
+    3.062,
+    231.206,
+    45.238
+   ],
+   "travel": [
+    1.273,
+    -1.972,
+    1.716,
+    0.332
+   ],
+   "exponent": [
+    0.0,
+    0.375,
+    0.096,
+    0.492
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 80
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 1000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 9.85476785984829,
+  "angle_deg": 32.76826928465022,
+  "speed_along": 9.843267714737785,
+  "takeoff_time": 0.312,
+  "liftoff_hind_fore": [
+   0.259,
+   0.312
+  ],
+  "work_J": 1710.1927856919438,
+  "spring_J": 1000.0000000000001,
+  "spring_work_J": 1148.7775567528024,
+  "kinetic_energy_J": 2434.4273645879202,
+  "infeasible": false,
+  "spring_unit": [
+   -0.2644958363589936,
+   -1.0,
+   0.9806121496280893,
+   -1.0,
+   0.4410412717158241,
+   -0.751402280916146,
+   0.019223538905694688,
+   -0.8032819019813013,
+   -0.5512606584474931,
+   -0.8418893964324845,
+   -1.0,
+   -0.38363054098065236,
+   -0.579188081290943,
+   0.9336400655724212
+  ],
+  "springs": {
+   "energy": [
+    270.793,
+    0.0,
+    729.207,
+    0.0
+   ],
+   "travel": [
+    1.323,
+    -2.254,
+    0.1,
+    -2.41
+   ],
+   "exponent": [
+    0.449,
+    0.158,
+    0.0,
+    0.616
+   ],
+   "release": [
+    0.063,
+    0.29
+   ]
+  },
+  "seconds": 82
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 4000,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "legacy",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 6.786601560290908,
+  "angle_deg": 68.96218840885898,
+  "speed_along": 5.276997400659259,
+  "takeoff_time": 0.107,
+  "liftoff_hind_fore": [
+   0.077,
+   0.107
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 3283.0151056387394,
+  "kinetic_energy_J": 1154.5393233872614,
+  "infeasible": false,
+  "seconds": 68
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 9.694026597387554,
+  "angle_deg": 40.56935914226964,
+  "speed_along": 9.529553697790574,
+  "takeoff_time": 0.128,
+  "liftoff_hind_fore": [
+   0.091,
+   0.128
+  ],
+  "work_J": 642.1973892501234,
+  "spring_J": 2000.0,
+  "spring_work_J": 2011.456520769482,
+  "kinetic_energy_J": 2355.6590814519404,
+  "infeasible": false,
+  "spring_unit": [
+   0.9812432795215699,
+   -0.9994031270614874,
+   -1.0,
+   -1.0,
+   0.4066212599764702,
+   -0.8715924969215227,
+   -0.5751654668473938,
+   0.42915531557657133,
+   -1.0,
+   -0.6971093323670374,
+   -0.2655732516535769,
+   -0.5440809506797358,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    1999.398,
+    0.602,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.22,
+    -2.615,
+    -1.725,
+    1.287
+   ],
+   "exponent": [
+    0.0,
+    0.303,
+    0.734,
+    0.456
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 84
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 10.93387649309964,
+  "angle_deg": 36.417086849080995,
+  "speed_along": 10.8653717387501,
+  "takeoff_time": 0.254,
+  "liftoff_hind_fore": [
+   0.218,
+   0.254
+  ],
+  "work_J": 391.89079288802907,
+  "spring_J": 2000.0,
+  "spring_work_J": 2347.061157033422,
+  "kinetic_energy_J": 2996.7626828219645,
+  "infeasible": false,
+  "spring_unit": [
+   0.4633300896530738,
+   -0.6895375635290655,
+   -1.0,
+   -1.0,
+   0.018555732940597935,
+   -0.055074385073284896,
+   -0.1991045595010845,
+   0.06258148309078902,
+   -1.0,
+   -0.4405767609957504,
+   -0.050890597061313526,
+   0.2434066272087216,
+   0.3952511908437539,
+   -0.5744824012212979
+  ],
+  "springs": {
+   "energy": [
+    1649.945,
+    350.055,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.1,
+    -0.165,
+    -0.597,
+    0.188
+   ],
+   "exponent": [
+    0.0,
+    0.559,
+    0.949,
+    1.243
+   ],
+   "release": [
+    0.209,
+    0.064
+   ]
+  },
+  "seconds": 83
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 2000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 9.043221552842228,
+  "angle_deg": 40.011597607803246,
+  "speed_along": 8.905516652580713,
+  "takeoff_time": 0.12,
+  "liftoff_hind_fore": [
+   0.08,
+   0.12
+  ],
+  "work_J": 528.5585536118497,
+  "spring_J": 2000.0,
+  "spring_work_J": 1885.26303511172,
+  "kinetic_energy_J": 2049.9835025665407,
+  "infeasible": false,
+  "spring_unit": [
+   0.7066270975277085,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.5564780631165914,
+   -0.9008027639987688,
+   -0.5057844291335832,
+   0.48354829299691243,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    2000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.669,
+    -2.702,
+    -1.517,
+    1.451
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 85
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "linear",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 11.726764835460095,
+  "angle_deg": 44.75680453122432,
+  "speed_along": 11.33996564971127,
+  "takeoff_time": 0.075,
+  "liftoff_hind_fore": [
+   0.047,
+   0.075
+  ],
+  "work_J": 1.1750496291967083,
+  "spring_J": 4000.0,
+  "spring_work_J": 3902.4769968365504,
+  "kinetic_energy_J": 3447.1521791927976,
+  "infeasible": false,
+  "spring_unit": [
+   0.7345686681914033,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.41396864072319534,
+   -0.9003747043119814,
+   -0.6030626950950919,
+   0.6900701390858344,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    1.242,
+    -2.701,
+    -1.809,
+    2.07
+   ],
+   "exponent": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 86
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "staged",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 13.060346030887978,
+  "angle_deg": 39.636464917794356,
+  "speed_along": 12.87606063390789,
+  "takeoff_time": 0.176,
+  "liftoff_hind_fore": [
+   0.147,
+   0.176
+  ],
+  "work_J": 109.19009509885599,
+  "spring_J": 4000.0,
+  "spring_work_J": 2559.12172569596,
+  "kinetic_energy_J": 4275.760702912493,
+  "infeasible": false,
+  "spring_unit": [
+   0.8598550015562899,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.016503495908555724,
+   -0.4645263171234366,
+   -0.05584827787318909,
+   0.2693380852222975,
+   1.0,
+   0.0007594370752660347,
+   0.12240227593244976,
+   0.43145209448821237,
+   -0.23117093210407755,
+   -0.3128998040103167
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.1,
+    -1.394,
+    -0.168,
+    0.808
+   ],
+   "exponent": [
+    2.0,
+    1.001,
+    1.122,
+    1.431
+   ],
+   "release": [
+    0.115,
+    0.103
+   ]
+  },
+  "seconds": 87
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "budget_J": 4000,
+  "variant": "shaped",
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 12.162197146114181,
+  "angle_deg": 44.22579795011615,
+  "speed_along": 11.789240934899599,
+  "takeoff_time": 0.081,
+  "liftoff_hind_fore": [
+   0.054,
+   0.081
+  ],
+  "work_J": 0.0,
+  "spring_J": 4000.0,
+  "spring_work_J": 4019.992160581169,
+  "kinetic_energy_J": 3707.9007613926865,
+  "infeasible": false,
+  "spring_unit": [
+   0.8813748235400456,
+   -1.0,
+   -1.0,
+   -1.0,
+   0.3229130439960509,
+   -0.9147071541804837,
+   -0.5713339255476824,
+   0.5232155863554349,
+   -1.0,
+   -0.5070057025025364,
+   -0.020241533054071243,
+   0.54440542851473,
+   -1.0,
+   -1.0
+  ],
+  "springs": {
+   "energy": [
+    4000.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "travel": [
+    0.969,
+    -2.744,
+    -1.714,
+    1.57
+   ],
+   "exponent": [
+    0.0,
+    0.493,
+    0.98,
+    1.544
+   ],
+   "release": [
+    0.0,
+    0.0
+   ]
+  },
+  "seconds": 87
+ }
+]

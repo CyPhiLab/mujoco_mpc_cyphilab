@@ -150,6 +150,7 @@ class Design:
   limb_scale: float = 1.0
   joint_margin: float = 0.3
   friction: float = 1.0
+  force_cap: float = 0.0        # N, peak total ground force; 0 = no cap
 
 
 # The launch crouch: CoM height above the ground, hand and foot x relative
@@ -295,6 +296,10 @@ class ReducedLaunch:
       latch = {'q_rel': [np.zeros((B, 2)), np.zeros((B, 2))],
                'released': np.zeros((B, 2), bool)}
     spring_work = np.zeros(B)
+    net_work = np.zeros(B)
+    peak_force = np.zeros(B)
+    peak_torque = np.zeros((B, 4))
+    takeoff_z = np.full(B, np.nan)
     traj = []
     w0 = self.design.no_load_speed
     for k in range(self.n):
@@ -345,10 +350,16 @@ class ReducedLaunch:
         force += F
         power += np.einsum('bi,bi->b', tau, dq) * stance[:, i]
         spring_work += np.einsum('bi,bi->b', tau_spring, dq) * stance[:, i] * self.dt
+        peak_torque[:, 2 * i:2 * i + 2] = np.maximum(
+            peak_torque[:, 2 * i:2 * i + 2],
+            np.abs(tau + tau_spring) * stance[:, i:i + 1])
       airborne = ~stance.any(axis=1) & np.isnan(takeoff_t)
       takeoff_v[airborne] = v[airborne]
       takeoff_t[airborne] = k * self.dt
+      takeoff_z[airborne] = p[airborne, 1]
       work += np.maximum(power, 0) * self.dt
+      net_work += power * self.dt
+      peak_force = np.maximum(peak_force, np.linalg.norm(force, axis=1))
       acc = force / self.mass + np.array([0, -G])
       acc[~stance.any(axis=1)] = [0, -G]
       v = v + acc * self.dt
@@ -359,10 +370,21 @@ class ReducedLaunch:
     never = np.isnan(takeoff_t)
     takeoff_v[never] = v[never]
     takeoff_t[never] = self.n * self.dt
+    takeoff_z[never] = p[never, 1]
     penalty += never * 0.5 + clash * 1.0
+    # energy audit: the body cannot gain more than the motors and springs
+    # put in (stiff springs integrated with too large a step create energy)
+    gained = 0.5 * self.mass * np.sum(takeoff_v ** 2, axis=1) + self.mass * G * takeoff_z
+    excess = gained - (net_work + spring_work)
+    energy_error = excess / np.maximum(gained, 1.0)
+    penalty += np.maximum(energy_error - 0.02, 0) * 5
+    if self.design.force_cap > 0:
+      penalty += np.maximum(peak_force / self.design.force_cap - 1, 0)
     result = {'v': takeoff_v, 't': takeoff_t, 'liftoff_t': liftoff_t,
               'penalty': penalty, 'clash': clash, 'work': work,
-              'spring_J': spring0, 'spring_work': spring_work}
+              'spring_J': spring0, 'spring_work': spring_work,
+              'energy_error': energy_error, 'peak_force': peak_force,
+              'peak_torque': peak_torque}
     if record:
       result['traj'] = traj
     return result
@@ -500,6 +522,9 @@ class ReducedLaunch:
         'spring_J': float(res['spring_J'][0]),
         'spring_work_J': float(res['spring_work'][0]),
         'kinetic_energy_J': float(0.5 * self.mass * v @ v),
+        'energy_error': float(res['energy_error'][0]),
+        'peak_force_N': float(res['peak_force'][0]),
+        'peak_torque_Nm': res['peak_torque'][0].round(0).tolist(),
         'infeasible': bool(res['clash'][0]),
     }
     if sp is not None:
