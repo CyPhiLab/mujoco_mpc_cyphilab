@@ -36,7 +36,7 @@ SPRING_JOINTS = [('shoulder2', (1, 4), 'hands'), ('elbow', (2, 5), 'hands'),
 SPRING_SPLIT = {'shoulder2': 0.4, 'elbow': 0.1, 'hip2': 0.4, 'knee': 0.1}
 RAMP = 0.3            # last fraction of the travel over which torque ramps to 0
 MAX_RELEASE = 0.6     # s; later = never (the horizon covers takeoff)
-W_FORCE = 2.0         # per kN of peak ground force above the cap
+W_FORCE = 10.0        # per fraction of peak ground force above the cap
 
 
 @dataclass
@@ -48,6 +48,10 @@ class Design:
   spring_energy: float = 0.0      # J, total over all springs (both sides)
   forearm_mass: float = 0.0       # kg per forearm; 0 = model (1.61 kg)
   force_cap: float = 5000.0       # N, peak total ground force
+  body_scale: float = 1.0         # whole-robot geometric scale
+  push_time: float = 0.0          # s; > 0 enforces the reference contact
+                                  # order (feet off at 2/3, hands at the end)
+  target_speed: float = 0.0       # m/s, for reference (Habib's model)
 
 
 DESIGNS = {
@@ -58,6 +62,32 @@ DESIGNS = {
     'E': Design('E', limb_scale=1.25, spring_energy=2000, forearm_mass=0.6),
     'F': Design('F', torque=4.0, limb_scale=1.25, spring_energy=2000),
 }
+
+# Realistic scaled designs: the whole robot scaled by s (mass 50 s^3 kg);
+# actuators 30% of body mass at 40 N m/kg peak (quasi-direct-drive class),
+# 30 rad/s no-load; springs storing 0/25/50 J per kg of robot (5%/10% of
+# body mass at ~500 J/kg); ground force capped at 10 body weights; a
+# quadrupedal push of 0.4 sqrt(s) s. Target: Habib's push speed at 30 deg
+# with the span scaled from 4.5 m.
+MODEL_GAIN_SUM = 730.0        # N m, sum of the 12 model actuator gains
+ACTUATOR_FRACTION = 0.30
+TORQUE_DENSITY = 40.0         # N m / kg
+HABIB_TARGET = {0.5: 8.67, 0.65: 9.88, 0.8: 10.96, 1.0: 12.26}
+
+
+def scaled_design(s, j_per_kg):
+  mass = 50.13 * s ** 3
+  torque = ACTUATOR_FRACTION * mass * TORQUE_DENSITY / MODEL_GAIN_SUM
+  return Design(f'S{s:g}_E{j_per_kg:g}', torque=torque, no_load_speed=30.0,
+                spring_energy=j_per_kg * mass, force_cap=10 * mass * 9.81,
+                body_scale=s, push_time=0.4 * s ** 0.5,
+                target_speed=HABIB_TARGET.get(s, 0.0))
+
+
+for _s in HABIB_TARGET:
+  for _e in (0, 25, 50):
+    _d = scaled_design(_s, _e)
+    DESIGNS[_d.name] = _d
 
 
 def springs_for(design, q_start):
@@ -99,7 +129,8 @@ class DesignOpt(T.LaunchOpt):
     ref = T.reference()
     q_ref = ref['qpos'][T.push_start_index(ref)]
     common = dict(limb_scale=design.limb_scale, no_load_speed=design.no_load_speed,
-                  trunk_limb_collision=False, forearm_mass=design.forearm_mass)
+                  trunk_limb_collision=False, forearm_mass=design.forearm_mass,
+                  body_scale=design.body_scale)
     base = T.load_model(design.torque, **common)
     q_start, _ = D.crouch_qpos(base, q_ref)
     self.springs = springs_for(design, q_start)
@@ -107,12 +138,13 @@ class DesignOpt(T.LaunchOpt):
                         key=[n for n, _, _ in SPRING_JOINTS].index)
     self.spring_pair = np.array([self.pairs.index(s['pair']) for s in self.springs],
                                 int)
-    super().__init__(design.torque, angle, latched_springs=self.springs,
+    super().__init__(design.torque, angle, push_time=design.push_time,
+                     latched_springs=self.springs,
                      start_qpos=q_start, latch_times=np.zeros(len(self.springs)),
                      **common)
     self.design = design
     self.grf = T.sensor(self.m, 'to_grf')
-    self.min_takeoff_step = int(round(0.15 / T.SIM_DT))
+    self.min_takeoff_step = int(round(0.15 * design.body_scale ** 0.5 / T.SIM_DT))
 
   def controls(self, halves, release):
     """halves (n, nstep, 6), release times (n, npair) -> ctrl (n, nstep, nu)."""
@@ -132,7 +164,7 @@ class DesignOpt(T.LaunchOpt):
     out = self.score(ctrl, state, sens, detail)
     scores, details = out if detail else (out, None)
     peak = np.linalg.norm(sens[:, :, self.grf], axis=-1).max(axis=1)
-    scores = scores - W_FORCE * np.maximum(peak - self.design.force_cap, 0) / 1000
+    scores = scores - W_FORCE * np.maximum(peak / self.design.force_cap - 1, 0)
     if detail:
       for dt, pk in zip(details, peak):
         dt['peak_grf_N'] = float(pk)
@@ -145,10 +177,15 @@ class DesignOpt(T.LaunchOpt):
     # warm starts: the reference push compressed to a few durations, with
     # hind springs released at 0.1 s and fore springs at 0.2 s
     default_release = np.array([0.2 if p in ('shoulder2', 'elbow') else 0.1
-                                for p in self.pairs])
+                                for p in self.pairs]) * self.design.body_scale ** 0.5
     best, best_score = None, -np.inf
-    for push in (0.35, 0.45, 0.55):
-      knots = T.to_knots(self.pd_warm_start(push))
+    sc = self.design.body_scale
+    pushes = ([f * self.design.push_time for f in (0.8, 1.0, 1.25)]
+              if self.design.push_time else [0.35, 0.45, 0.55])
+    # PD gains: the same command per radian of error as at 2x torque
+    kp, kd = 300.0 * self.design.torque, 10.0 * self.design.torque * sc ** 0.5
+    for push in pushes:
+      knots = T.to_knots(self.pd_warm_start(push, kp, kd))
       s = self.evaluate_full(T.from_knots(knots)[None], default_release[None])[0]
       if verbose:
         print(f'  warm start push {push}: {s:.3f}', flush=True)
@@ -183,7 +220,8 @@ class DesignOpt(T.LaunchOpt):
 
 def main():
   p = argparse.ArgumentParser()
-  p.add_argument('--designs', default=','.join(DESIGNS))
+  p.add_argument('--designs', default='A,B,C,D,E,F',
+                 help="comma-separated keys, or 'scaled' for the S* designs")
   p.add_argument('--iters', type=int, default=150)
   p.add_argument('--angle', type=float, default=30.0)
   p.add_argument('--out', default=os.path.join(HERE, 'designs_search'))
@@ -191,7 +229,9 @@ def main():
   os.makedirs(args.out, exist_ok=True)
   summary_path = os.path.join(args.out, 'summary.json')
   summary = json.load(open(summary_path)) if os.path.exists(summary_path) else {}
-  for key in args.designs.split(','):
+  keys = ([k for k in DESIGNS if k.startswith('S')] if args.designs == 'scaled'
+          else args.designs.split(','))
+  for key in keys:
     design = DESIGNS[key]
     print(f'design {key}: {design}', flush=True)
     t0 = time.time()

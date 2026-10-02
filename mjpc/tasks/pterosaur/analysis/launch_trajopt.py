@@ -148,8 +148,41 @@ def scale_limbs(spec, s):
       c.pos = np.array(c.pos) * s
 
 
-def clearance_points(limb_scale=1.0):
-  return [(b, np.array(p) * (limb_scale if b in LIMB_BODIES else 1.0), c)
+def scale_robot(spec, s):
+  """Geometric scaling of the whole robot by s: lengths s, masses s^3,
+  inertias s^5, joint friction s^4 and armature s^5 (dynamic similarity:
+  same joint angles, times scale with sqrt(s))."""
+  for mesh in spec.meshes:
+    mesh.scale = np.array(mesh.scale) * s
+
+  def visit(b):
+    b.pos = np.array(b.pos) * s
+    b.ipos = np.array(b.ipos) * s
+    b.mass = b.mass * s ** 3
+    b.fullinertia = np.array(b.fullinertia) * s ** 5
+    b.inertia = np.array(b.inertia) * s ** 5
+    for g in b.geoms:
+      g.pos = np.array(g.pos) * s
+      if g.type != mujoco.mjtGeom.mjGEOM_MESH:
+        g.size = np.array(g.size) * s
+    for site in b.sites:
+      site.pos = np.array(site.pos) * s
+      site.size = np.array(site.size) * s
+    for j in b.joints:
+      j.pos = np.array(j.pos) * s
+      j.frictionloss = j.frictionloss * s ** 4
+      j.armature = j.armature * s ** 5
+    for c in b.bodies:
+      visit(c)
+
+  root = spec.body('body')
+  visit(root)
+  root.pos = np.array(root.pos) / s      # the free body's origin stays put
+
+
+def clearance_points(limb_scale=1.0, body_scale=1.0):
+  return [(b, np.array(p) * body_scale *
+           (limb_scale if b in LIMB_BODIES else 1.0), c * body_scale)
           for b, p, c in CLEARANCE]
 
 
@@ -175,7 +208,8 @@ def add_latched_springs(spec, springs):
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
-               start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0):
+               start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
+               body_scale=1.0):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -183,7 +217,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   trunk_limb_collision=False excludes trunk-humerus/femur collisions (their
   convex hulls overlap by ~3 cm all along the reference, more with longer
   limbs, so they push the limbs apart); forearm_mass: kg per forearm
-  (0 = model), inertia scaled with it."""
+  (0 = model), inertia scaled with it; body_scale: whole-robot geometric
+  scale (scale_robot; actuator gains are then absolute: torque x model)."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -217,6 +252,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     scale_limbs(spec, limb_scale)
   if latched_springs:
     add_latched_springs(spec, latched_springs)
+  if body_scale != 1.0:
+    scale_robot(spec, body_scale)
   if forearm_mass > 0:
     for name in ['radius_and_ulna', 'radius_and_ulna_2']:
       b = spec.body(name)
@@ -318,7 +355,8 @@ class LaunchOpt:
     self.min_takeoff_step = 0
     self.m = load_model(torque, hand, foot_solref, **design)
     self.start_qpos = design.get('start_qpos')
-    self.clearance = clearance_points(design.get('limb_scale', 1.0))
+    self.clearance = clearance_points(design.get('limb_scale', 1.0),
+                                      design.get('body_scale', 1.0))
     self.latch_times = np.asarray(latch_times if latch_times is not None else [],
                                   float)
     assert self.m.nu == 12 + len(self.latch_times)
