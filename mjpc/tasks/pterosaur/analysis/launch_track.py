@@ -26,7 +26,9 @@ import launch_ilqr as L
 import launch_trajopt as T
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FOOT_LEAD = 0.025          # s, feet leave this long before the hands
+FOOT_LEAD = 0.025          # s, reference feet liftoff before the hands
+FOOT_FREE = 0.1            # s, feet must stay planted until this long before
+                           # the end of the push, and may leave any time after
 S_TRACK, W_TRACK = 0.15, 1.0       # joint tracking (rad)
 S_TRACK_PITCH, W_TRACK_PITCH = 0.1, 1.0   # body pitch tracking (rad)
 ARM = np.array([0, 1, 2, 3, 4, 5])
@@ -80,7 +82,7 @@ class TrackILQR(L.LaunchILQR):
 
   def __init__(self, push_time, torque, speed, **kw):
     super().__init__(push_time, torque, speed,
-                     feet_lift_frac=(push_time - FOOT_LEAD) / push_time,
+                     feet_lift_frac=(push_time - FOOT_FREE) / push_time,
                      hands_lift_frac=1.0, **kw)
     self.q_track, self.pitch_track = retimed_reference(push_time, self.dt,
                                                        self.N + 1)
