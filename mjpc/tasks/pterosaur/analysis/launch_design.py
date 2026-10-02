@@ -30,6 +30,7 @@ import reduced_launch as R
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCALING = os.path.join(HERE, 'study_results', 'reduced_springs_scaling.json')
+CANDIDATES = os.path.join(HERE, 'study_results', 'reduced_candidates.json')
 SCALING_NO_PITCH = os.path.join(HERE, 'study_results', 'no_pitch',
                                 'reduced_springs_scaling.json')
 
@@ -40,7 +41,11 @@ MIN_SPRING_J = 20.0   # smaller reduced-model springs are dropped
 
 def reduced_design(torque, no_load_speed, limb_scale, spring_energy, force_cap,
                    mass=50, path=SCALING):
-  for r in json.load(open(path)):
+  rows = []
+  for f in [path, CANDIDATES]:
+    if os.path.exists(f):
+      rows += json.load(open(f))
+  for r in rows:
     if (r['torque_scale'] == torque and r['no_load_speed'] == no_load_speed and
         r['limb_scale'] == limb_scale and r['budget_J'] == spring_energy and
         r['force_cap'] == force_cap and r['mass'] == mass):
@@ -120,6 +125,9 @@ def model_springs(row, red, m, q_start):
     limb = red['limbs'][j // 2]
     sign = limb.sign[j % 2]
     release = sp['release'][j // 2]
+    if release >= red['liftoff'][j // 2]:
+      continue   # released after the limb left the ground: no work done
+                 # in the reduced model, a flailing limb in the full model
     k_rel = min(int(round(release / red['dt'])), len(red['angles']) - 1)
     a = abs(sp['travel'][j])
     direction = sign * np.sign(sp['travel'][j])
@@ -162,9 +170,10 @@ def build(args):
   q_start, _ = crouch_qpos(base, q_ref)
   springs, times = model_springs(row, red, base, q_start)
   push_time = args.push_time or round(red['takeoff'], 3)
-  feet_frac = float(red['liftoff'][0] / red['liftoff'][1])
+  feet_frac, hands_frac = (min(float(t) / red['takeoff'], 1.0) for t in red['liftoff'])
   solver = L.LaunchILQR(push_time, args.torque, args.speed, args.angle,
                         force_cap=args.limb_force_cap, feet_lift_frac=feet_frac,
+                        hands_lift_frac=hands_frac,
                         limb_scale=args.limb_scale,
                         no_load_speed=args.no_load_speed,
                         latched_springs=springs, start_qpos=q_start,

@@ -62,7 +62,7 @@ class LaunchILQR:
 
   def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None,
                vault_time=0.0, foot_solref=None, force_cap=0.0,
-               feet_lift_frac=FEET_LIFT_FRAC, **design):
+               feet_lift_frac=FEET_LIFT_FRAC, hands_lift_frac=1.0, **design):
     # physics and start state; design: LaunchOpt/load_model options
     self.opt = T.LaunchOpt(torque, angle, hand=hand, foot_solref=foot_solref,
                            **design)
@@ -74,7 +74,10 @@ class LaunchILQR:
     self.nx = 2 * m.nv
     self.dt = m.opt.timestep
     self.n_push = int(round(push_time / self.dt))
+    # contact schedule: feet down until feet_lift_frac of the push, hands
+    # until hands_lift_frac (one of them 1: the last limbs leave at takeoff)
     self.n_feet = int(round(feet_lift_frac * push_time / self.dt))
+    self.n_hands = int(round(hands_lift_frac * push_time / self.dt))
     # single-strike vault: hands swing clear of the ground, then plant once
     # for the last vault_time before takeoff (0: hands planted throughout)
     self.n_vault = (self.n_push - int(round(vault_time / self.dt))
@@ -130,7 +133,7 @@ class LaunchILQR:
       over = np.maximum(self.limb_forces() - self.force_cap, 0)
       r += list(np.sqrt(W_FORCE) * over / S_FORCE)
     if t < self.n_push:
-      hands_down = t < self.n_swing or t >= self.n_vault
+      hands_down = (t < self.n_swing or t >= self.n_vault) and t < self.n_hands
       stance = ((self.hands if hands_down else []) +
                 (self.feet if t < self.n_feet else []))
       for g in self.hands + self.feet:
