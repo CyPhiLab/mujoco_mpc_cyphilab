@@ -171,3 +171,35 @@ energy at only ~20-30%, and all these launches still hammer.
   mostly hurt unless torque is high. Motor speed (power) is the binding
   limit at realistic no-load speeds: 6x torque at 40 rad/s (25.8 kW peak
   capacity) reaches 8.8 m/s with 500 J springs, using 16.6 kW peak.
+
+### Crouch, springs and scaling (reduced model)
+
+- `reduced_crouch.py` (`study_results/reduced_crouch.json`): optimizing the
+  crouch (CoM height, hand/foot placement, pitch) with the push gains at
+  most 0.9 m/s with ideal motors and nothing with speed-limited motors; the
+  reference crouch and contact order (hindlimbs off first) are not the
+  bottleneck in this model (which has no body pitch dynamics).
+- Designable springs (`reduced_launch.SPRING_JOINTS`): per-joint energy
+  share, travel, torque profile (constant/linear/progressive, with a stop)
+  and latch release time per limb pair. Stiff springs at a 1 ms step create
+  energy, so the model penalizes energy gained beyond the work put in and
+  caps the peak total ground force (`Design.force_cap`); without a cap the
+  optimizer turns springs into impulsive kicks through massless limbs.
+- `reduced_springs.py robust` (`study_results/reduced_springs_robust.json`,
+  plus `_main.json`; `_main_uncapped.json` is the flawed first run), best
+  speed along 30 deg (m/s), springs 0 / 500 / 1000 / 2000 / 4000 J:
+
+| peak ground force | 1x, 20 rad/s | 2x, 20 rad/s | 4x, 20 rad/s | 6x, 40 rad/s |
+|---|---|---|---|---|
+| 2.5 kN | 0.8 / 4.9 / 6.4 / 7.9 / 8.2 | 1.4 / 4.1 / 6.0 / 7.9 / 8.1 | 4.9 / 5.9 / 6.6 / 7.7 / 8.4 | 7.9 / 8.4 / 8.7 / 8.9 / 8.9 |
+| 5 kN | 0.8 / 4.9 / 6.5 / 8.8 / 10.2 | 1.4 / 4.1 / 6.0 / 8.5 / 10.3 | 4.9 / 5.9 / 7.0 / 8.5 / 10.3 | 8.2 / 9.0 / 9.6 / 10.7 / 11.7 |
+
+  The peak force times the push stroke (about 0.87 m) bounds the takeoff
+  energy: 2.5 kN caps it near 8.9 m/s. Optimized springs put most energy
+  in the shoulders (constant torque over 1-2 rad), some in the hips, little
+  in knees/elbows; the hind latch releases at about 0.1 s and the fore latch
+  late, just before takeoff. Peak shoulder torques are 750-1650 N m per side.
+- `reduced_springs.py scaling` (`study_results/reduced_springs_scaling.json`):
+  mass 40/50 kg x limb length 1/1.25/1.5 x force cap x motors x springs.
+  Longer limbs lengthen the stroke (less force for the same energy) and
+  raise the foot speed of speed-limited motors.
