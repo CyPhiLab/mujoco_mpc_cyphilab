@@ -112,15 +112,21 @@ def robot_limbs(torque_scale=1.0, limb_scale=1.0, joint_margin=0.3):
   return limbs, mass
 
 
-def joint_angles(limb, p):
-  """(B, 2) body positions -> (B, 2) joint angles [proximal abs, middle rel]."""
-  v = limb.contact[None] - (p + limb.proximal_offset[None])
+def joint_angles(limb, p, geom=None):
+  """(B, 2) body positions -> (B, 2) joint angles [proximal abs, middle rel].
+  geom: per-rollout contact and proximal offset (B, 2), default the limb's."""
+  contact = limb.contact[None] if geom is None else geom['contact']
+  prox = limb.proximal_offset[None] if geom is None else geom['prox']
+  v = contact - (p + prox)
   r = np.linalg.norm(v, axis=1)
   cos_mid = np.clip((r ** 2 - limb.l1 ** 2 - limb.l2 ** 2) /
                     (2 * limb.l1 * limb.l2), -1, 1)
   mid = limb.branch * np.arccos(cos_mid)
   a1 = (np.arctan2(v[:, 1], v[:, 0]) -
         np.arctan2(limb.l2 * np.sin(mid), limb.l1 + limb.l2 * np.cos(mid)))
+  if limb.q_crouch is not None:
+    # unwrap next to the reference crouch (the forelimb sits near -pi)
+    a1 = limb.q_crouch[0] + (a1 - limb.q_crouch[0] + np.pi) % (2 * np.pi) - np.pi
   return np.stack([a1, mid], axis=1)
 
 
@@ -146,6 +152,28 @@ class Design:
   friction: float = 1.0
 
 
+# The launch crouch: CoM height above the ground, hand and foot x relative
+# to the CoM (launch toward -x) and body pitch (rad; positive raises the
+# hindquarters), held fixed during the push. The reference's deepest crouch
+# is the default; optimize(search_crouch=True) searches within these bounds.
+CROUCH_NAMES = ('height', 'hand_x', 'foot_x', 'pitch')
+CROUCH_BOUNDS = np.array([[0.25, 0.75], [-1.1, 0.0], [-0.1, 0.7], [-0.5, 0.5]])
+PROXIMAL_CLEARANCE = 0.10   # m, shoulder/hip above the ground in the crouch
+MIDDLE_CLEARANCE = 0.02     # m, knee/elbow above the ground in stance
+
+# Designable latched springs, one per joint (hind proximal, hind middle,
+# fore proximal, fore middle). Each stores its share of the energy budget
+# and, once its limb pair's latch releases, pushes the joint through
+# `travel` rad (signed), with torque tau0 (1 - s / |travel|)^exponent over
+# the travel s (exponent 0: constant torque, 1: linear spring, 2: progressive
+# release) and nothing beyond (a stop/one-way clutch, so a spring never
+# pulls back). Optimized as unit parameters in [-1, 1]:
+#   share (4), travel (4), exponent (4), release time (2: hind, fore)
+SPRING_JOINTS = ('hind_prox', 'hind_mid', 'fore_prox', 'fore_mid')
+MAX_TRAVEL = 3.0     # rad
+MAX_RELEASE = 0.3    # s
+
+
 class ReducedLaunch:
 
   def __init__(self, design, angle=30.0, horizon=0.6, dt=0.001, knots=16):
@@ -157,18 +185,49 @@ class ReducedLaunch:
     self.knots = knots
     a = np.deg2rad(angle)
     self.direction = np.array([-np.cos(a), np.sin(a)])  # launch toward -x
-    self.com_height = None
-    if design.spring_energy > 0:
-      self.add_springs(design.spring_energy)
+    hind, fore = self.limbs
+    self.reference_crouch = np.array([-0.5 * (hind.contact[1] + fore.contact[1]),
+                                      fore.contact[0], hind.contact[0], 0.0])
 
-  def add_springs(self, energy):
-    """Parallel springs on all four joints, energy/4 each at the crouch,
-    resting at the extended end of the joint's range."""
-    for limb in self.limbs:
-      rest = np.where(np.abs(limb.q_hi - limb.q_crouch) >
-                      np.abs(limb.q_lo - limb.q_crouch), limb.q_hi, limb.q_lo)
-      limb.spring_rest = rest
-      limb.spring_k = 2 * (energy / 4) / (limb.q_crouch - rest) ** 2
+  def geometry(self, crouch):
+    """Per-rollout limb geometry for crouches (B, 4): contact, proximal
+    offset, joint limits, crouch angles and springs (B, 2) per limb, and
+    whether the crouch is infeasible (B,)."""
+    B = len(crouch)
+    height, pitch = crouch[:, 0], crouch[:, 3]
+    c, s = np.cos(pitch), np.sin(pitch)
+    zero = np.zeros(B)
+    bad = np.zeros(B, bool)
+    out = []
+    for limb, x_contact in zip(self.limbs, (crouch[:, 2], crouch[:, 1])):
+      x, z = limb.proximal_offset
+      g = {'prox': np.stack([c * x - s * z, s * x + c * z], 1),
+           'contact': np.stack([x_contact, -height], 1)}
+      # proximal joint limits are relative to the body, so they turn with it
+      shift = np.stack([pitch, zero], 1)
+      g['lo'], g['hi'] = limb.q_lo[None] + shift, limb.q_hi[None] + shift
+      g['q0'] = joint_angles(limb, np.zeros((B, 2)), g)
+      reach = (np.linalg.norm(g['contact'] - g['prox'], axis=1) /
+               (limb.l1 + limb.l2))
+      bad |= (reach > 0.97) | (reach < 0.2)
+      bad |= np.any((g['q0'] < g['lo']) | (g['q0'] > g['hi']), axis=1)
+      bad |= g['prox'][:, 1] < -height + PROXIMAL_CLEARANCE
+      # parallel springs on both joints, energy/4 each in the crouch, resting
+      # at the extended end of the joint's range
+      e = self.design.spring_energy
+      g['rest'] = np.where(np.abs(g['hi'] - g['q0']) > np.abs(g['lo'] - g['q0']),
+                           g['hi'], g['lo'])
+      g['k'] = 2 * (e / 4) / np.maximum((g['q0'] - g['rest']) ** 2, 1e-6)
+      out.append(g)
+    return out, bad
+
+  def crouch_from_unit(self, z):
+    lo, hi = CROUCH_BOUNDS[:, 0], CROUCH_BOUNDS[:, 1]
+    return lo + (np.clip(z, -1, 1) + 1) / 2 * (hi - lo)
+
+  def unit_from_crouch(self, crouch):
+    lo, hi = CROUCH_BOUNDS[:, 0], CROUCH_BOUNDS[:, 1]
+    return 2 * (crouch - lo) / (hi - lo) - 1
 
   @property
   def seeds(self):
@@ -205,27 +264,44 @@ class ReducedLaunch:
         out[b, :, c] = np.interp(t, t_knot, params[b, c])
     return np.clip(out, -1, 1)
 
-  def simulate(self, params, record=False):
-    """Batched rollout. Returns takeoff velocity (B, 2), takeoff time,
+  def simulate(self, params, record=False, crouch=None, springs=None):
+    """Batched rollout from crouches (B, 4) (default: the reference's),
+    with designable springs (unit parameters (B, 14), see SPRING_JOINTS;
+    default: the design's legacy linear springs). Returns takeoff velocity (B, 2), takeoff time, per-limb liftoff times,
     penalties and optionally the trajectory."""
     u = self.controls(params)
     B = params.shape[0]
+    if crouch is None:
+      crouch = np.repeat(self.reference_crouch[None], B, axis=0)
+    geom, infeasible = self.geometry(crouch)
+    height = crouch[:, 0]
     p = np.zeros((B, 2))
     v = np.zeros((B, 2))
     stance = np.ones((B, 2), bool)
-    q_prev = [joint_angles(l, p) for l in self.limbs]
+    liftoff_t = np.full((B, 2), np.nan)
+    clash = infeasible.copy()
     takeoff_v = np.full((B, 2), np.nan)
     takeoff_t = np.full(B, np.nan)
     penalty = np.zeros(B)
     work = np.zeros(B)
-    spring0 = self.spring_energy(q_prev)
+    q0 = [g['q0'] for g in geom]
+    spring0 = self.spring_energy(q0, geom)
+    sp = None
+    if springs is not None:
+      sp = self.spring_physical(springs)
+      spring0 = sp['energy'].sum(axis=1)
+      for g in geom:
+        g['k'] = np.zeros_like(g['k'])
+      latch = {'q_rel': [np.zeros((B, 2)), np.zeros((B, 2))],
+               'released': np.zeros((B, 2), bool)}
+    spring_work = np.zeros(B)
     traj = []
     w0 = self.design.no_load_speed
     for k in range(self.n):
       force = np.zeros((B, 2))
       power = np.zeros(B)
-      for i, limb in enumerate(self.limbs):
-        q = joint_angles(limb, p)
+      for i, (limb, g) in enumerate(zip(self.limbs, geom)):
+        q = joint_angles(limb, p, g)
         J = jacobian(limb, q)
         # joint velocities: contact fixed, body moves: dq = -J^-1 v
         det = J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
@@ -241,29 +317,34 @@ class ReducedLaunch:
           tau = lo + (cmd + 1) / 2 * (hi - lo)
         else:
           tau = cmd * stall
-        tau_spring = -limb.spring_k[None] * (q - limb.spring_rest[None])
+        tau_spring = -g['k'] * (q - g['rest'])
+        if sp is not None:
+          tau_spring = tau_spring + self.spring_torque(sp, latch, i, q, k * self.dt)
         # force on the body from the limb: virtual work tau . dq = F . v
         F = -np.einsum('bji,bj->bi', Jinv, tau + tau_spring)
         # unilateral contact and liftoff conditions
-        reach = np.linalg.norm(limb.contact[None] - (p + limb.proximal_offset[None]),
-                               axis=1) / (limb.l1 + limb.l2)
-        limit = np.any((q < limb.q_lo[None]) | (q > limb.q_hi[None]), axis=1)
+        reach = np.linalg.norm(g['contact'] - (p + g['prox']), axis=1) / (limb.l1 + limb.l2)
+        limit = np.any((q < g['lo']) | (q > g['hi']), axis=1)
         # the ground cannot pull: a limb whose force would pull just unloads
         # (foot/hand stays down); it lifts off, for good, when the body moves
         # out of its reach or a joint reaches its limit. Feet never leave and
         # return, so there are no impacts.
         F[F[:, 1] < 0] = 0
         lift = stance[:, i] & ((reach > 0.99) | limit)
+        liftoff_t[lift, i] = k * self.dt
         stance[:, i] &= ~lift
         F *= stance[:, i:i + 1]
+        # a planted limb may not fold flat or put its knee/elbow in the ground
+        middle_z = g['prox'][:, 1] + p[:, 1] + limb.l1 * np.sin(q[:, 0])
+        clash |= stance[:, i] & ((reach < 0.15) |
+                                 (middle_z < -height + MIDDLE_CLEARANCE))
         # friction: tangential force limited to the cone (conservative: the
         # joint torque that would need more grip is lost)
         limit_x = self.design.friction * np.maximum(F[:, 1], 0)
-        slip = np.maximum(np.abs(F[:, 0]) - limit_x, 0)
-        penalty += slip / (self.mass * G) * self.dt * 0  # recorded only
         F[:, 0] = np.clip(F[:, 0], -limit_x, limit_x)
         force += F
         power += np.einsum('bi,bi->b', tau, dq) * stance[:, i]
+        spring_work += np.einsum('bi,bi->b', tau_spring, dq) * stance[:, i] * self.dt
       airborne = ~stance.any(axis=1) & np.isnan(takeoff_t)
       takeoff_v[airborne] = v[airborne]
       takeoff_t[airborne] = k * self.dt
@@ -278,17 +359,56 @@ class ReducedLaunch:
     never = np.isnan(takeoff_t)
     takeoff_v[never] = v[never]
     takeoff_t[never] = self.n * self.dt
-    penalty += never * 0.5
-    result = {'v': takeoff_v, 't': takeoff_t, 'penalty': penalty,
-              'work': work}
+    penalty += never * 0.5 + clash * 1.0
+    result = {'v': takeoff_v, 't': takeoff_t, 'liftoff_t': liftoff_t,
+              'penalty': penalty, 'clash': clash, 'work': work,
+              'spring_J': spring0, 'spring_work': spring_work}
     if record:
       result['traj'] = traj
     return result
 
-  def spring_energy(self, q):
+  def spring_physical(self, z):
+    """Unit spring parameters (B, 14) -> energy, travel, exponent (B, 4)
+    and release time (B, 2)."""
+    z = np.clip(z, -1, 1)
+    share = (z[:, 0:4] + 1) / 2 * self.spring_mask[None]
+    energy = (self.spring_budget * share /
+              np.maximum(share.sum(axis=1, keepdims=True), 1e-9))
+    travel = MAX_TRAVEL * z[:, 4:8]
+    travel = np.where(travel >= 0, 1, -1) * np.maximum(np.abs(travel), 0.1)
+    return {'energy': energy, 'travel': travel, 'exponent': z[:, 8:12] + 1,
+            'release': (z[:, 12:14] + 1) / 2 * MAX_RELEASE}
+
+  @staticmethod
+  def spring_torque(sp, latch, i, q, t):
+    """Torque (B, 2) of limb i's springs at joint angles q, time t."""
+    j = slice(2 * i, 2 * i + 2)
+    newly = (t >= sp['release'][:, i]) & ~latch['released'][:, i]
+    latch['q_rel'][i][newly] = q[newly]
+    latch['released'][newly, i] = True
+    d, n = sp['travel'][:, j], sp['exponent'][:, j]
+    a = np.abs(d)
+    tau0 = sp['energy'][:, j] * (n + 1) / a
+    progress = np.sign(d) * (q - latch['q_rel'][i]) / a
+    left = np.clip(1 - progress, 0, 2)
+    tau = np.sign(d) * tau0 * left ** n * (progress < 1)
+    return tau * latch['released'][:, i:i + 1]
+
+  def spring_unit_default(self):
+    """Equal shares, 1.5 rad travel toward the far end of each joint's
+    range (the legacy springs' direction), linear, released at once."""
+    z = np.zeros(14)
+    for i, limb in enumerate(self.limbs):
+      far = np.where(np.abs(limb.q_hi - limb.q_crouch) >
+                     np.abs(limb.q_lo - limb.q_crouch), 1, -1)
+      z[4 + 2 * i:6 + 2 * i] = 0.5 * far
+    z[12:14] = -1
+    return z
+
+  def spring_energy(self, q, geom):
     e = 0.0
-    for limb, qi in zip(self.limbs, q):
-      e = e + 0.5 * np.sum(limb.spring_k[None] * (qi - limb.spring_rest[None]) ** 2, axis=1)
+    for g, qi in zip(geom, q):
+      e = e + 0.5 * np.sum(g['k'] * (qi - g['rest']) ** 2, axis=1)
     return e
 
   def score(self, res):
@@ -298,47 +418,95 @@ class ReducedLaunch:
     return along - perp - 10 * res['penalty']
 
   def optimize(self, iters=80, pop=256, elite=24, seed=0, verbose=False,
-               init=None):
+               init=None, crouch=None, search_crouch=False, spring_search=None):
     """Cross-entropy optimization of the joint commands; init: warm start
-    (4, knots) commands."""
+    (4, knots) commands. crouch: fixed crouch (4,), default the reference's.
+    search_crouch: also optimize the crouch, starting from `crouch`.
+    spring_search: designable springs: dict with 'energy' (J budget) and
+    optionally 'mask' (4 joints), 'shape' (free exponent), 'staged' (free
+    release times), 'init' (14 unit parameters), 'freeze' (keep init)."""
     rng = np.random.default_rng(seed)
-    if init is None:
-      mean = np.zeros((4, self.knots))
-      std = np.full((4, self.knots), 0.8)
-    else:
-      mean = init.copy()
-      std = np.full((4, self.knots), 0.3)
+    crouch = self.reference_crouch if crouch is None else np.asarray(crouch)
+    nk = 4 * self.knots
+    nc = 4 if search_crouch else 0
+    search = spring_search is not None
+    if search:
+      self.spring_budget = spring_search['energy']
+      self.spring_mask = np.asarray(spring_search.get('mask', np.ones(4)), float)
+    ns = 14 if search else 0
+    size = nk + nc + ns
+    mean = np.zeros(size)
+    std = np.full(size, 0.8)
+    if init is not None:
+      mean[:nk] = init.ravel()
+      std[:nk] = 0.3
+    if nc:
+      mean[nk:nk + nc] = self.unit_from_crouch(crouch)
+      std[nk:nk + nc] = 0.4
+    if ns:
+      z = np.asarray(spring_search.get('init', self.spring_unit_default()), float)
+      mean[nk + nc:] = z
+      std[nk + nc:] = 0.5
+      std[nk + nc:nk + nc + 4] *= self.spring_mask   # masked shares stay put
+      if not spring_search.get('shape'):
+        mean[nk + nc + 8:nk + nc + 12], std[nk + nc + 8:nk + nc + 12] = 0, 0
+      if not spring_search.get('staged'):
+        mean[nk + nc + 12:], std[nk + nc + 12:] = -1, 0
+      if spring_search.get('freeze'):
+        std[nk + nc:] = 0
+    seeds = [np.r_[s.ravel(), mean[nk:]] for s in self.seeds]
+    fixed_std = std == 0
     best, best_score = None, -np.inf
+
+    def split(x):
+      ctrl = x[:, :nk].reshape(-1, 4, self.knots)
+      cr = (self.crouch_from_unit(x[:, nk:nk + nc]) if nc
+            else np.repeat(crouch[None], len(x), axis=0))
+      sp = x[:, nk + nc:] if ns else None
+      return ctrl, cr, sp
+
     for it in range(iters):
-      params = np.clip(mean + std * rng.standard_normal((pop, 4, self.knots)), -1, 1)
+      x = np.clip(mean + std * rng.standard_normal((pop, size)), -1, 1)
       if best is not None:
-        params[0] = best
+        x[0] = best
       elif init is not None:
-        params[0] = init
+        x[0] = mean
       else:
-        params[:len(self.seeds)] = self.seeds
-      res = self.simulate(params)
+        x[:len(seeds)] = seeds
+      ctrl, crouches, sp = split(x)
+      res = self.simulate(ctrl, crouch=crouches, springs=sp)
       s = self.score(res)
       order = np.argsort(s)[::-1]
       if s[order[0]] > best_score:
-        best_score, best = s[order[0]], params[order[0]].copy()
-      e = params[order[:elite]]
+        best_score, best = s[order[0]], x[order[0]].copy()
+      e = x[order[:elite]]
       mean = 0.3 * mean + 0.7 * e.mean(axis=0)
       std = np.maximum(0.3 * std + 0.7 * e.std(axis=0), 0.02)
+      std[fixed_std] = 0
       if verbose and it % 10 == 0:
         print(f'  iter {it:3d} best {best_score:.3f}', flush=True)
-    res = self.simulate(best[None])
+    ctrl, best_crouch, sp = split(best[None])
+    res = self.simulate(ctrl, crouch=best_crouch, springs=sp)
     v = res['v'][0]
-    return {
-        'params': best,
+    out = {
+        'params': ctrl[0],
+        'crouch': dict(zip(CROUCH_NAMES, best_crouch[0].round(4).tolist())),
         'speed': float(np.linalg.norm(v)),
         'angle_deg': float(np.degrees(np.arctan2(v[1], -v[0]))),
         'speed_along': float(v @ self.direction),
         'takeoff_time': float(res['t'][0]),
+        'liftoff_hind_fore': res['liftoff_t'][0].round(3).tolist(),
         'work_J': float(res['work'][0]),
+        'spring_J': float(res['spring_J'][0]),
+        'spring_work_J': float(res['spring_work'][0]),
         'kinetic_energy_J': float(0.5 * self.mass * v @ v),
-        'friction_violation': float(res['penalty'][0]),
+        'infeasible': bool(res['clash'][0]),
     }
+    if sp is not None:
+      out['spring_unit'] = sp[0].tolist()
+      phys = self.spring_physical(sp)
+      out['springs'] = {k: v[0].round(3).tolist() for k, v in phys.items()}
+    return out
 
   def rescale(self, params, from_design):
     """Commands for this design giving the same joint torques as `params`

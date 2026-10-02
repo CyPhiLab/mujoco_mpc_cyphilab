@@ -1,0 +1,1202 @@
+[
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 7.7249244496343925,
+  "angle_deg": 29.871398502326404,
+  "speed_along": 7.72490499106755,
+  "takeoff_time": 0.421,
+  "liftoff_hind_fore": [
+   0.346,
+   0.421
+  ],
+  "work_J": 1751.5531865241373,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1495.8653612313465,
+  "infeasible": false,
+  "seconds": 59
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5064,
+   "hand_x": -0.135,
+   "foot_x": 0.1933,
+   "pitch": -0.187
+  },
+  "speed": 7.775765492588968,
+  "angle_deg": 30.033181529833005,
+  "speed_along": 7.775764188639708,
+  "takeoff_time": 0.303,
+  "liftoff_hind_fore": [
+   0.285,
+   0.303
+  ],
+  "work_J": 1723.2138367917687,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1515.6200187389318,
+  "infeasible": false,
+  "seconds": 86
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.5707,
+   "hand_x": -0.2069,
+   "foot_x": 0.2453,
+   "pitch": -0.1147
+  },
+  "speed": 7.7954591361931795,
+  "angle_deg": 30.014521317092992,
+  "speed_along": 7.79545888582539,
+  "takeoff_time": 0.356,
+  "liftoff_hind_fore": [
+   0.323,
+   0.356
+  ],
+  "work_J": 1707.0773830335602,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1523.3069477136764,
+  "infeasible": false,
+  "seconds": 87
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.544,
+   "hand_x": -0.162,
+   "foot_x": 0.2025,
+   "pitch": -0.167
+  },
+  "speed": 7.8393339975032195,
+  "angle_deg": 29.991785213240583,
+  "speed_along": 7.839333916928928,
+  "takeoff_time": 0.332,
+  "liftoff_hind_fore": [
+   0.31,
+   0.332
+  ],
+  "work_J": 1731.9428722890993,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1540.502333359503,
+  "infeasible": false,
+  "seconds": 89
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 7.893489010928493,
+  "angle_deg": 29.981973688710717,
+  "speed_along": 7.893488620260818,
+  "takeoff_time": 0.442,
+  "liftoff_hind_fore": [
+   0.368,
+   0.442
+  ],
+  "work_J": 1939.853684534604,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1561.8597809367222,
+  "infeasible": false,
+  "seconds": 61
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.413,
+   "hand_x": -0.1422,
+   "foot_x": 0.2523,
+   "pitch": -0.0351
+  },
+  "speed": 7.914859792249789,
+  "angle_deg": 30.032733442465467,
+  "speed_along": 7.9148585005805545,
+  "takeoff_time": 0.3,
+  "liftoff_hind_fore": [
+   0.271,
+   0.3
+  ],
+  "work_J": 1961.997891820462,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1570.3283675654156,
+  "infeasible": false,
+  "seconds": 95
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 10.414750266142654,
+  "angle_deg": 30.41290708542376,
+  "speed_along": 10.414479822740189,
+  "takeoff_time": 0.40700000000000003,
+  "liftoff_hind_fore": [
+   0.347,
+   0.407
+  ],
+  "work_J": 3195.5380019944864,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 2718.9532810352903,
+  "infeasible": false,
+  "seconds": 63
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.4275,
+   "hand_x": -0.1425,
+   "foot_x": 0.1885,
+   "pitch": -0.0723
+  },
+  "speed": 8.055094800117752,
+  "angle_deg": 30.042551083031594,
+  "speed_along": 8.055092578769694,
+  "takeoff_time": 0.315,
+  "liftoff_hind_fore": [
+   0.294,
+   0.315
+  ],
+  "work_J": 2019.1921333535404,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1626.4672998891215,
+  "infeasible": false,
+  "seconds": 99
+ },
+ {
+  "torque_scale": 2,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.401,
+   "hand_x": -0.1731,
+   "foot_x": 0.268,
+   "pitch": -0.0051
+  },
+  "speed": 7.9345975131000035,
+  "angle_deg": 30.524370508361336,
+  "speed_along": 7.9342652186205385,
+  "takeoff_time": 0.295,
+  "liftoff_hind_fore": [
+   0.26,
+   0.295
+  ],
+  "work_J": 1931.4194558582765,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1578.1701614502956,
+  "infeasible": false,
+  "seconds": 99
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 11.033927826882461,
+  "angle_deg": 30.72412429171482,
+  "speed_along": 11.033046625172771,
+  "takeoff_time": 0.418,
+  "liftoff_hind_fore": [
+   0.363,
+   0.418
+  ],
+  "work_J": 3965.07166672244,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 3051.857856727707,
+  "infeasible": false,
+  "seconds": 59
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5773,
+   "hand_x": -0.0984,
+   "foot_x": 0.2846,
+   "pitch": -0.1539
+  },
+  "speed": 10.948164901110781,
+  "angle_deg": 34.5856269163676,
+  "speed_along": 10.913119448699565,
+  "takeoff_time": 0.295,
+  "liftoff_hind_fore": [
+   0.278,
+   0.295
+  ],
+  "work_J": 3333.51024021073,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 3004.600149415091,
+  "infeasible": false,
+  "seconds": 91
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.6086,
+   "hand_x": -0.0866,
+   "foot_x": 0.2119,
+   "pitch": -0.1593
+  },
+  "speed": 11.11539989500219,
+  "angle_deg": 34.452148790695105,
+  "speed_along": 11.081859309675233,
+  "takeoff_time": 0.31,
+  "liftoff_hind_fore": [
+   0.299,
+   0.31
+  ],
+  "work_J": 3368.6629491992594,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 3097.09272334172,
+  "infeasible": false,
+  "seconds": 91
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.631,
+   "hand_x": -0.2149,
+   "foot_x": 0.2793,
+   "pitch": -0.1489
+  },
+  "speed": 10.84086870723204,
+  "angle_deg": 32.40259929801332,
+  "speed_along": 10.83133881748039,
+  "takeoff_time": 0.35000000000000003,
+  "liftoff_hind_fore": [
+   0.324,
+   0.35
+  ],
+  "work_J": 3362.652898839667,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 2945.996277631707,
+  "infeasible": false,
+  "seconds": 89
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5558,
+   "hand_x": -0.1946,
+   "foot_x": 0.2664,
+   "pitch": -0.0102
+  },
+  "speed": 11.533353917946688,
+  "angle_deg": 33.304951831317226,
+  "speed_along": 11.514172080486713,
+  "takeoff_time": 0.343,
+  "liftoff_hind_fore": [
+   0.318,
+   0.343
+  ],
+  "work_J": 3950.9341655068856,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 3334.381307591628,
+  "infeasible": false,
+  "seconds": 91
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.554278543343544,
+  "angle_deg": 29.98915791296493,
+  "speed_along": 5.554278443899638,
+  "takeoff_time": 0.40900000000000003,
+  "liftoff_hind_fore": [
+   0.327,
+   0.409
+  ],
+  "work_J": 883.3677974019424,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 773.3201657063173,
+  "infeasible": false,
+  "seconds": 69
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.5512,
+   "hand_x": -0.1763,
+   "foot_x": 0.1327,
+   "pitch": -0.0598
+  },
+  "speed": 11.927605826734958,
+  "angle_deg": 33.82757830025481,
+  "speed_along": 11.901000740735496,
+  "takeoff_time": 0.34600000000000003,
+  "liftoff_hind_fore": [
+   0.333,
+   0.346
+  ],
+  "work_J": 4154.375426637997,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 3566.24011796678,
+  "infeasible": false,
+  "seconds": 92
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 0.0,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.531,
+   "hand_x": -0.2129,
+   "foot_x": 0.1999,
+   "pitch": -0.0643
+  },
+  "speed": 11.640913703153279,
+  "angle_deg": 33.48420911787761,
+  "speed_along": 11.619396471422457,
+  "takeoff_time": 0.343,
+  "liftoff_hind_fore": [
+   0.323,
+   0.343
+  ],
+  "work_J": 4045.845231410836,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 3396.864033563808,
+  "infeasible": false,
+  "seconds": 92
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 5.592377745349627,
+  "angle_deg": 29.99268647082026,
+  "speed_along": 5.592377699790517,
+  "takeoff_time": 0.445,
+  "liftoff_hind_fore": [
+   0.362,
+   0.445
+  ],
+  "work_J": 978.7905061430583,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 783.9656276899016,
+  "infeasible": false,
+  "seconds": 65
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5124,
+   "hand_x": -0.2433,
+   "foot_x": 0.2873,
+   "pitch": -0.1111
+  },
+  "speed": 5.438216564958565,
+  "angle_deg": 29.997788581321338,
+  "speed_along": 5.43821656090793,
+  "takeoff_time": 0.305,
+  "liftoff_hind_fore": [
+   0.256,
+   0.305
+  ],
+  "work_J": 864.6382432227416,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 741.3392956681816,
+  "infeasible": false,
+  "seconds": 97
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.5948,
+   "hand_x": -0.362,
+   "foot_x": 0.2564,
+   "pitch": -0.0955
+  },
+  "speed": 5.528896136942428,
+  "angle_deg": 29.95837851134908,
+  "speed_along": 5.52889467813364,
+  "takeoff_time": 0.421,
+  "liftoff_hind_fore": [
+   0.362,
+   0.421
+  ],
+  "work_J": 941.6723832666077,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 766.2683493189394,
+  "infeasible": false,
+  "seconds": 98
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.5774,
+   "hand_x": -0.3706,
+   "foot_x": 0.2556,
+   "pitch": -0.111
+  },
+  "speed": 5.5554760863562125,
+  "angle_deg": 29.929894347555038,
+  "speed_along": 5.555471927709392,
+  "takeoff_time": 0.418,
+  "liftoff_hind_fore": [
+   0.359,
+   0.418
+  ],
+  "work_J": 905.7668242395554,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 773.653668604677,
+  "infeasible": false,
+  "seconds": 96
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.47645613968674,
+  "angle_deg": 29.993063003879627,
+  "speed_along": 8.476456077559513,
+  "takeoff_time": 0.378,
+  "liftoff_hind_fore": [
+   0.317,
+   0.378
+  ],
+  "work_J": 2186.5936003646816,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1801.0785855125582,
+  "infeasible": false,
+  "seconds": 63
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.3935,
+   "hand_x": -0.2448,
+   "foot_x": 0.2733,
+   "pitch": -0.0399
+  },
+  "speed": 5.528685500970118,
+  "angle_deg": 29.99967663060521,
+  "speed_along": 5.528685500882065,
+  "takeoff_time": 0.28700000000000003,
+  "liftoff_hind_fore": [
+   0.236,
+   0.287
+  ],
+  "work_J": 924.683909501526,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 766.2099649325122,
+  "infeasible": false,
+  "seconds": 93
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.5352,
+   "hand_x": -0.3553,
+   "foot_x": 0.1836,
+   "pitch": -0.0301
+  },
+  "speed": 5.609219920806503,
+  "angle_deg": 30.010937041119426,
+  "speed_along": 5.60921981861215,
+  "takeoff_time": 0.444,
+  "liftoff_hind_fore": [
+   0.39,
+   0.444
+  ],
+  "work_J": 948.4846470406048,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 788.6947678047704,
+  "infeasible": false,
+  "seconds": 94
+ },
+ {
+  "torque_scale": 4,
+  "no_load_speed": 20,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.5328,
+   "hand_x": -0.3226,
+   "foot_x": 0.2297,
+   "pitch": -0.0922
+  },
+  "speed": 5.594670682778624,
+  "angle_deg": 30.01020411269122,
+  "speed_along": 5.594670594052858,
+  "takeoff_time": 0.41000000000000003,
+  "liftoff_hind_fore": [
+   0.359,
+   0.41
+  ],
+  "work_J": 948.0766193082493,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 784.6086288344765,
+  "infeasible": false,
+  "seconds": 95
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.90167276396559,
+  "angle_deg": 29.987990283481157,
+  "speed_along": 8.901672568413765,
+  "takeoff_time": 0.421,
+  "liftoff_hind_fore": [
+   0.364,
+   0.421
+  ],
+  "work_J": 2649.1864728851806,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1986.311122062639,
+  "infeasible": false,
+  "seconds": 65
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.5876,
+   "hand_x": -0.1089,
+   "foot_x": 0.2992,
+   "pitch": -0.147
+  },
+  "speed": 8.32905284129224,
+  "angle_deg": 31.300687962536053,
+  "speed_along": 8.326906751209185,
+  "takeoff_time": 0.28800000000000003,
+  "liftoff_hind_fore": [
+   0.265,
+   0.288
+  ],
+  "work_J": 1966.1381972841218,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1738.9826897682105,
+  "infeasible": false,
+  "seconds": 97
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5622,
+   "hand_x": -0.134,
+   "foot_x": 0.2991,
+   "pitch": -0.1093
+  },
+  "speed": 8.27786579116978,
+  "angle_deg": 31.409688685880447,
+  "speed_along": 8.275360445584859,
+  "takeoff_time": 0.28200000000000003,
+  "liftoff_hind_fore": [
+   0.256,
+   0.282
+  ],
+  "work_J": 1859.8419449305898,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1717.6741747872236,
+  "infeasible": false,
+  "seconds": 98
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.5574,
+   "hand_x": -0.1466,
+   "foot_x": 0.2769,
+   "pitch": -0.1621
+  },
+  "speed": 8.245639950927286,
+  "angle_deg": 30.33270420156829,
+  "speed_along": 8.24550093503319,
+  "takeoff_time": 0.304,
+  "liftoff_hind_fore": [
+   0.28,
+   0.304
+  ],
+  "work_J": 2015.511113486907,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1704.3263508431328,
+  "infeasible": false,
+  "seconds": 97
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 8.812150696041806,
+  "angle_deg": 30.05805864253488,
+  "speed_along": 8.812146171856629,
+  "takeoff_time": 0.353,
+  "liftoff_hind_fore": [
+   0.294,
+   0.353
+  ],
+  "work_J": 1910.3212182837426,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 1946.560270020355,
+  "infeasible": false,
+  "seconds": 63
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.4208,
+   "hand_x": -0.3126,
+   "foot_x": 0.2619,
+   "pitch": 0.1062
+  },
+  "speed": 8.781797772300186,
+  "angle_deg": 31.76165427387564,
+  "speed_along": 8.777647129872388,
+  "takeoff_time": 0.298,
+  "liftoff_hind_fore": [
+   0.254,
+   0.298
+  ],
+  "work_J": 2176.8143568032374,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1933.1737444883452,
+  "infeasible": false,
+  "seconds": 96
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.473,
+   "hand_x": -0.1948,
+   "foot_x": 0.2329,
+   "pitch": -0.0543
+  },
+  "speed": 8.737088539195286,
+  "angle_deg": 31.055872137334013,
+  "speed_along": 8.735604990366964,
+  "takeoff_time": 0.308,
+  "liftoff_hind_fore": [
+   0.282,
+   0.308
+  ],
+  "work_J": 2325.5211147479754,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1913.539791849687,
+  "infeasible": false,
+  "seconds": 95
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 0.0,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.4199,
+   "hand_x": -0.2924,
+   "foot_x": 0.2415,
+   "pitch": 0.0293
+  },
+  "speed": 8.787360373023335,
+  "angle_deg": 31.459550620924276,
+  "speed_along": 8.784509367783585,
+  "takeoff_time": 0.302,
+  "liftoff_hind_fore": [
+   0.265,
+   0.302
+  ],
+  "work_J": 2369.442325535191,
+  "spring_J": 0.0,
+  "kinetic_energy_J": 1935.623557089744,
+  "infeasible": false,
+  "seconds": 95
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": false,
+  "seed": 0,
+  "crouch": {
+   "height": 0.5025,
+   "hand_x": -0.4829,
+   "foot_x": 0.2889,
+   "pitch": 0.0
+  },
+  "speed": 9.331541326794946,
+  "angle_deg": 30.008933819310883,
+  "speed_along": 9.331541213358541,
+  "takeoff_time": 0.397,
+  "liftoff_hind_fore": [
+   0.341,
+   0.397
+  ],
+  "work_J": 2537.6542733736455,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 2182.784151254505,
+  "infeasible": false,
+  "seconds": 64
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.591,
+   "hand_x": -0.0694,
+   "foot_x": 0.3538,
+   "pitch": -0.1594
+  },
+  "speed": 8.923037934272479,
+  "angle_deg": 32.216211255824874,
+  "speed_along": 8.916363635512683,
+  "takeoff_time": 0.28700000000000003,
+  "liftoff_hind_fore": [
+   0.265,
+   0.287
+  ],
+  "work_J": 1853.7446010241533,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 1995.857373590239,
+  "infeasible": false,
+  "seconds": 97
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.571,
+   "hand_x": -0.0275,
+   "foot_x": 0.3347,
+   "pitch": -0.1422
+  },
+  "speed": 8.916592809606838,
+  "angle_deg": 33.7282245134276,
+  "speed_along": 8.897722694585873,
+  "takeoff_time": 0.257,
+  "liftoff_hind_fore": [
+   0.239,
+   0.257
+  ],
+  "work_J": 1773.0669853991499,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 1992.9751928797994,
+  "infeasible": false,
+  "seconds": 98
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.3,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.5274,
+   "hand_x": 0.0,
+   "foot_x": 0.3332,
+   "pitch": -0.1492
+  },
+  "speed": 8.791440257884197,
+  "angle_deg": 35.05105201948896,
+  "speed_along": 8.75729997115828,
+  "takeoff_time": 0.222,
+  "liftoff_hind_fore": [
+   0.207,
+   0.222
+  ],
+  "work_J": 1689.1181374332532,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 1937.4213562443006,
+  "infeasible": false,
+  "seconds": 99
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 0,
+  "crouch": {
+   "height": 0.4562,
+   "hand_x": -0.1411,
+   "foot_x": 0.3125,
+   "pitch": -0.0335
+  },
+  "speed": 8.981778771043727,
+  "angle_deg": 32.68326956860256,
+  "speed_along": 8.971931036642077,
+  "takeoff_time": 0.279,
+  "liftoff_hind_fore": [
+   0.251,
+   0.279
+  ],
+  "work_J": 2052.5957910410707,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 2022.2215392876456,
+  "infeasible": false,
+  "seconds": 99
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 1,
+  "crouch": {
+   "height": 0.4777,
+   "hand_x": -0.1782,
+   "foot_x": 0.2772,
+   "pitch": -0.0832
+  },
+  "speed": 9.301782596117704,
+  "angle_deg": 32.38264358986411,
+  "speed_along": 9.293740921377886,
+  "takeoff_time": 0.299,
+  "liftoff_hind_fore": [
+   0.273,
+   0.299
+  ],
+  "work_J": 2189.591097748042,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 2168.884344543448,
+  "infeasible": false,
+  "seconds": 98
+ },
+ {
+  "torque_scale": 6,
+  "no_load_speed": 40,
+  "spring_energy": 500,
+  "mass": null,
+  "limb_scale": 1.0,
+  "joint_margin": 0.6,
+  "friction": 1.0,
+  "search_crouch": true,
+  "seed": 2,
+  "crouch": {
+   "height": 0.4263,
+   "hand_x": -0.1421,
+   "foot_x": 0.2878,
+   "pitch": -0.1185
+  },
+  "speed": 9.182173387270206,
+  "angle_deg": 33.90486126580163,
+  "speed_along": 9.160857012895772,
+  "takeoff_time": 0.259,
+  "liftoff_hind_fore": [
+   0.236,
+   0.259
+  ],
+  "work_J": 2157.2098114270448,
+  "spring_J": 500.0,
+  "kinetic_energy_J": 2113.46472147254,
+  "infeasible": false,
+  "seconds": 97
+ }
+]

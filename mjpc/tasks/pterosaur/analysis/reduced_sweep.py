@@ -92,7 +92,7 @@ def main():
             f"limb x{row['limb_scale']:<4g}: {row['speed_along']:5.2f} m/s along "
             f"({row['speed']:.2f} m/s @ {row['angle_deg']:.0f} deg, "
             f"t {row['takeoff_time']:.2f} s, work {row['work_J']:.0f} J, "
-            f"KE {row['kinetic_energy_J']:.0f} J, slip {row['friction_violation']:.3f})",
+            f"KE {row['kinetic_energy_J']:.0f} J, {'INFEASIBLE' if row['infeasible'] else 'ok'})",
             flush=True)
       if args.out:
         with open(args.out, 'w') as f:
