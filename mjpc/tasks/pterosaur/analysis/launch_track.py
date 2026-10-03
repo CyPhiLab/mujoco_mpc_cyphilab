@@ -28,6 +28,9 @@ import launch_trajopt as T
 HERE = os.path.dirname(os.path.abspath(__file__))
 FOOT_LEAD = 0.025          # s, reference feet liftoff before the hands
 FEET_DIST_MARGIN = 0.03   # m, feet free this far before the reference lifts them
+HANDS_DIST_MARGIN = 0.05  # m, hands free this far before the end of their reach
+SPIN_WEIGHT = L.W_SPIN    # launch_ilqr default, scaled by --spin_scale
+S_LOAD = 50.0             # N, hand load shortfall scale (hand_load)
 FOOT_FREE = 0.1            # s, feet must stay planted until this long before
                            # the end of the push, and may leave any time after
 S_TRACK, W_TRACK = 0.15, 1.0       # joint tracking (rad)
@@ -291,7 +294,8 @@ class TrackILQR(L.LaunchILQR):
 
   def __init__(self, push_time, torque, speed, track_scale=1.0,
                min_hand_force=0.0, reference='retimed', window=None,
-               free_hands=False, track_index='time', **kw):
+               free_hands=False, track_index='time', hand_load=None,
+               hand_load_weight=200.0, **kw):
     """push_time: the reference push; window: the optimized push (>=
     push_time; the reference holds its last pose after push_time and the
     takeoff velocity is scored ballistically, see LaunchILQR.z_ref);
@@ -299,7 +303,10 @@ class TrackILQR(L.LaunchILQR):
     or leave whenever), not until the end of the push; track_index:
     'distance' indexes the body-path joint reference and the feet's planted
     phase by how far the body has moved along the launch direction instead
-    of by time (the path without its timing)."""
+    of by time (the path without its timing); hand_load: (stance N, vault
+    N) minimum normal force per hand while the feet are planted and then
+    while the hands can still reach (distance indexing; the hands are kept
+    planted over the same span), weighted hand_load_weight."""
     self.track_scale = track_scale
     self.min_hand_force = min_hand_force
     window = max(window or push_time, push_time)
@@ -320,6 +327,7 @@ class TrackILQR(L.LaunchILQR):
         self.direction = np.array([-np.cos(a), 0.0, np.sin(a)])
         self.table = body_path_table(self.m, self.q0, stroke, kw.get('angle', 30.0))
         self.feet_lift_dist = min(self.table[2]['HL'], self.table[2]['HR']) - FEET_DIST_MARGIN
+        self.hands_lift_dist = min(self.table[2]['FL'], self.table[2]['FR']) - HANDS_DIST_MARGIN
     else:
       self.q_track, self.pitch_track = retimed_reference(push_time, self.dt,
                                                          self.N + 1)
@@ -327,6 +335,9 @@ class TrackILQR(L.LaunchILQR):
       assert track_index == 'time', 'distance indexing needs the bodypath reference'
     self.track_index = track_index
     self.free_hands = free_hands
+    self.hand_load = hand_load
+    self.hand_load_weight = hand_load_weight
+    assert hand_load is None or track_index == 'distance', 'hand_load needs distance indexing'
     if free_hands:
       self.n_hands = self.n_feet
 
@@ -350,7 +361,11 @@ class TrackILQR(L.LaunchILQR):
       dist = self.distance()
       # feet planted until the body is about to carry them out of reach
       self.n_feet = t + 1 if dist < self.feet_lift_dist else 0
-      if self.free_hands:
+      if self.hand_load is not None:
+        self.n_hands = t + 1 if dist < self.hands_lift_dist else 0
+        load = (self.hand_load[0] if self.n_feet else
+                self.hand_load[1] if self.n_hands else 0.0)
+      elif self.free_hands:
         self.n_hands = self.n_feet
       grid, table, _ = self.table
       q_ref = np.array([np.interp(dist, grid, table[:, j]) for j in range(12)])
@@ -366,6 +381,9 @@ class TrackILQR(L.LaunchILQR):
       if self.min_hand_force > 0 and t < self.n_hands:
         short = np.maximum(self.min_hand_force - self.limb_forces()[:2], 0)
         r = np.concatenate([r, np.sqrt(self.dt * W_FMIN) * short / S_FMIN])
+      if self.hand_load is not None:
+        short = np.maximum(load - self.limb_forces()[:2], 0)
+        r = np.concatenate([r, np.sqrt(self.dt * self.hand_load_weight) * short / S_LOAD])
     return r
 
   def pd_warm_start(self, kp=600.0, kd=20.0):
@@ -488,6 +506,13 @@ def parser():
   p.add_argument('--track_index', default='time', choices=['time', 'distance'],
                  help='index the body-path reference by time or by body '
                       'displacement along the launch direction')
+  p.add_argument('--hand_load', type=float, nargs=2, default=None,
+                 metavar=('STANCE_N', 'VAULT_N'),
+                 help='minimum normal force per hand while the feet are planted '
+                      'and then while the hands can reach (needs --track_index distance)')
+  p.add_argument('--hand_load_weight', type=float, default=200.0)
+  p.add_argument('--spin_scale', type=float, default=1.0,
+                 help='scale of the takeoff angular momentum cost')
   p.add_argument('--free_hands', action='store_true',
                  help='hands planted only while the feet are, then free')
   p.add_argument('--init', default=None, help='controls (.npy) to start from')
@@ -501,6 +526,7 @@ def make_design(args, verbose=True):
   process-wide differential control mirroring and plant tolerance)."""
   if args.plant_tol is not None:
     L.PLANT_TOL = args.plant_tol
+  L.W_SPIN = SPIN_WEIGHT * args.spin_scale
   design = dict(no_load_speed=args.no_load_speed)
   if args.arm_motors_on_legs:
     design['arm_motors_on_legs'] = True
@@ -553,7 +579,8 @@ def main():
                        min_hand_force=args.min_hand_force,
                        reference=args.reference, angle=args.angle,
                        window=args.window or None, free_hands=args.free_hands,
-                       track_index=args.track_index, **design)
+                       track_index=args.track_index, hand_load=args.hand_load,
+                       hand_load_weight=args.hand_load_weight, **design)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:

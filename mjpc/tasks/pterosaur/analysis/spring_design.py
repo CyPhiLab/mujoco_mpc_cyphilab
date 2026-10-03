@@ -69,7 +69,8 @@ def main():
                         min_hand_force=args.min_hand_force,
                         reference=args.reference, angle=args.angle,
                         window=args.window or None, free_hands=args.free_hands,
-                        track_index=args.track_index,
+                        track_index=args.track_index, hand_load=args.hand_load,
+                        hand_load_weight=args.hand_load_weight,
                         **design)
   U = np.load(os.path.join(a.run, a.step + '_controls.npy'))[:solver.N]
   power, q = joint_power(solver, U)
