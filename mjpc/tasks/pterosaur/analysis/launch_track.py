@@ -331,14 +331,13 @@ def contact_strip(opt, half, steps=300):
 
 
 def render(opt, traj, det, title, path_base):
-  """Slow-motion video (push + 0.3 s) and a 16-frame strip to 0.1 s after
-  takeoff (needs MUJOCO_GL for offscreen rendering)."""
+  """Real-time 60 fps video of the whole recorded launch and a 16-frame
+  strip to 0.1 s after takeoff (needs MUJOCO_GL for offscreen rendering)."""
   import render_launch as RL
   from PIL import Image
   t_off = det['takeoff_time'] if det.get('took_off') else 0.6
-  end = min(len(traj['time']), int((t_off + 0.3) / T.SIM_DT))
-  RL.render_trajectory(traj['time'][:end], traj['qpos'][:end], title,
-                       path_base + '.mp4', traj['comvel'][:end], slow=4, m=opt.m)
+  RL.render_trajectory(traj['time'], traj['qpos'], title, path_base + '.mp4',
+                       traj['comvel'], slow=1, m=opt.m, fps=60)
   m, d = opt.m, mujoco.MjData(opt.m)
   rec = RL.Recorder(m)
   rec.cam.distance = 3.5
