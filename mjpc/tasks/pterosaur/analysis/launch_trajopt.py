@@ -159,7 +159,8 @@ def scale_arms(spec, s):
   hand sphere). The forearm is mostly tube: mass s, inertia s^3; the
   humerus body is mostly the shoulder gear/motor housing: mass kept,
   inertia s^2."""
-  for name in ['humerus', 'radius_and_ulna']:
+  tubes = ['humerus', 'radius_and_ulna']
+  for name in tubes:
     spec.mesh(name).scale = [s, s, s]
   for name in ARM_BODIES:
     b = spec.body(name)
@@ -170,7 +171,8 @@ def scale_arms(spec, s):
     else:
       b.fullinertia = np.array(b.fullinertia) * s ** 2
     for g in b.geoms:
-      g.pos = np.array(g.pos) * s
+      if g.type != mujoco.mjtGeom.mjGEOM_MESH or g.meshname in tubes:
+        g.pos = np.array(g.pos) * s    # not the shoulder gear housing
     for c in b.bodies:
       c.pos = np.array(c.pos) * s
 
