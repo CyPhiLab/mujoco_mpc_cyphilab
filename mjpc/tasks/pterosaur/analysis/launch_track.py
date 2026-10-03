@@ -54,6 +54,46 @@ PUSH = [(0.45, 8.0, 1.0), (0.45, 9.0, 1.0)]
 # --chain bodypath (with --reference bodypath): the forelimb-push reference
 # at increasing speeds, from a PD warm start on it
 BODYPATH = [(0.45, v, 1.0) for v in (6.0, 7.0, 8.0, 9.0, 10.0)]
+# --chain bodypath_real: realistic motors (--torque 2 --no_load_speed 20)
+# with designed springs, at increasing speeds from a PD warm start
+BODYPATH_REAL = [(0.45, v, 1.0) for v in (3.0, 4.0, 5.0, 6.0, 7.0)]
+
+# Designed latched springs (per side), from the joint work in the best clean
+# launch with ideal 6x motors (tracked_C_bodypath step 1: shoulder2 336 J,
+# elbow 207 J, hip2 252 J, knee 369 J of positive work per side): each joint's
+# share of that work, released when the joint starts its 5-95% work phase,
+# travelling its excursion over that phase (joint angle at its start and end).
+#   joint (left/right qpos[7:] index), work share, release s, q start, q end
+SPRING_DESIGN = [
+    ('shoulder2', (1, 4), 336 / 1164, 0.29, -1.162, 0.693),
+    ('elbow', (2, 5), 207 / 1164, 0.40, 0.903, -0.112),
+    ('hip2', (7, 10), 252 / 1164, 0.21, -0.880, 0.612),
+    ('knee', (8, 11), 369 / 1164, 0.29, -1.000, 0.387),
+]
+SPRING_RAMP = 0.3   # last fraction of the travel over which the torque ramps
+                    # to zero (near-constant torque, then a stop)
+JOINT_NAMES = ['leftarm_shoulder1', 'leftarm_shoulder2', 'leftarm_elbow',
+               'rightarm_shoulder1', 'rightarm_shoulder2', 'rightarm_elbow',
+               'leftleg_hip1', 'leftleg_hip2', 'leftleg_knee',
+               'rightleg_hip1', 'rightleg_hip2', 'rightleg_knee']
+
+
+def designed_springs(budget):
+  """Latched spring actuators (launch_trajopt.add_latched_springs) storing
+  budget J over both sides, and their release times."""
+  springs, times = [], []
+  for name, sides, share, release, q0, q1 in SPRING_DESIGN:
+    energy = budget * share / 2
+    a = abs(q1 - q0)
+    tau0 = energy / (a * (1 - SPRING_RAMP / 2))
+    k = tau0 / (SPRING_RAMP * a)
+    for side in sides:
+      springs.append({'joint': JOINT_NAMES[side], 'k': k, 'rest': q1,
+                      'tau0': float(np.sign(q1 - q0) * tau0)})
+      times.append(release)
+  return springs, times
+
+
 # minimum normal force per hand while planted (residual scale and weight)
 S_FMIN, W_FMIN = 50.0, 20.0
 
@@ -300,7 +340,13 @@ def main():
   p.add_argument('--steps', type=int, default=len(CHAIN))
   p.add_argument('--out', default=os.path.join(HERE, 'tracked'))
   p.add_argument('--chain', default='speed',
-                 choices=['speed', 'relax', 'push', 'bodypath'])
+                 choices=['speed', 'relax', 'push', 'bodypath', 'bodypath_real'])
+  p.add_argument('--no_load_speed', type=float, default=0.0,
+                 help='rad/s, DC-motor torque-speed line (0: ideal motors)')
+  p.add_argument('--springs', default='legacy', choices=['legacy', 'designed'],
+                 help='legacy: --spring_energy joint springs; designed: '
+                      'SPRING_DESIGN latched springs storing --spring_budget')
+  p.add_argument('--spring_budget', type=float, default=2500.0)
   p.add_argument('--reference', default='retimed', choices=['retimed', 'bodypath'])
   p.add_argument('--track_scale', type=float, default=1.0,
                  help='multiplies the chain tracking weights')
@@ -316,7 +362,14 @@ def main():
   if args.plant_tol is not None:
     L.PLANT_TOL = args.plant_tol
   chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
-           'push': PUSH, 'bodypath': BODYPATH}[args.chain]
+           'push': PUSH, 'bodypath': BODYPATH,
+           'bodypath_real': BODYPATH_REAL}[args.chain]
+  design = dict(no_load_speed=args.no_load_speed)
+  if args.springs == 'designed':
+    springs, times = designed_springs(args.spring_budget)
+    design.update(latched_springs=springs, latch_times=times)
+  else:
+    design.update(spring_energy=args.spring_energy)
   chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
   os.makedirs(args.out, exist_ok=True)
   summary_path = os.path.join(args.out, 'summary.json')
@@ -329,8 +382,7 @@ def main():
     t0 = time.time()
     solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
                        min_hand_force=args.min_hand_force,
-                       reference=args.reference,
-                       angle=args.angle, spring_energy=args.spring_energy)
+                       reference=args.reference, angle=args.angle, **design)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:
