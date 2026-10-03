@@ -274,10 +274,13 @@ class TrackILQR(L.LaunchILQR):
     d.qpos[:], d.qvel[:] = self.q0, self.v0
     mujoco.mj_forward(m, d)
     gain = m.actuator_gainprm[:12, 0]
+    # desired joint torques -> actuator forces (differential transmissions)
+    act_map = T.actuator_joint_map(m)
     U = np.empty((self.N, 6))
     v_track = np.gradient(self.q_track, self.dt, axis=0)
     for t in range(self.N):
-      u = (kp * (self.q_track[t] - d.qpos[7:]) + kd * (v_track[t] - d.qvel[6:])) / gain
+      tau = kp * (self.q_track[t] - d.qpos[7:]) + kd * (v_track[t] - d.qvel[6:])
+      u = np.linalg.solve(act_map.T, tau) / gain
       U[t] = T.symmetrize(np.clip(u, -1, 1))
       self.set_ctrl(U[t], t)
       mujoco.mj_step(m, d)
@@ -352,6 +355,9 @@ def main():
                  help='legacy: --spring_energy joint springs; designed: '
                       'SPRING_DESIGN latched springs storing --spring_budget')
   p.add_argument('--spring_budget', type=float, default=2500.0)
+  p.add_argument('--shoulder_differential', action='store_true',
+                 help='shoulder abduction and swing motors drive both joints '
+                      'through a differential')
   p.add_argument('--reference', default='retimed', choices=['retimed', 'bodypath'])
   p.add_argument('--track_scale', type=float, default=1.0,
                  help='multiplies the chain tracking weights')
@@ -370,6 +376,9 @@ def main():
            'push': PUSH, 'bodypath': BODYPATH,
            'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
   design = dict(no_load_speed=args.no_load_speed)
+  if args.shoulder_differential:
+    L.use_shoulder_differential()
+    design['shoulder_differential'] = True
   if args.springs == 'designed':
     springs, times = designed_springs(args.spring_budget)
     design.update(latched_springs=springs, latch_times=times)

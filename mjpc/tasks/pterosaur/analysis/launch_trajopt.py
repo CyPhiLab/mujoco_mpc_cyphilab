@@ -180,6 +180,41 @@ def scale_robot(spec, s):
   root.pos = np.array(root.pos) / s      # the free body's origin stays put
 
 
+def add_shoulder_differential(spec):
+  """Drive each shoulder's abduction (shoulder1) and swing (shoulder2)
+  joints through a differential: motor A acts on swing + abduction, motor B
+  on swing - abduction (fixed tendons), so swing torque = tA + tB and
+  abduction torque = tA - tB, and each motor's speed is the matching sum or
+  difference of joint speeds. On the right side the abduction coefficient is
+  mirrored, so symmetric commands give mirrored motions (see
+  launch_ilqr.use_shoulder_differential for the control mirroring)."""
+  for side, sign in (('left', 1.0), ('right', -1.0)):
+    abd, swing = f'{side}arm_shoulder1', f'{side}arm_shoulder2'
+    for motor, actuator, s in (('A', abd, sign), ('B', swing, -sign)):
+      t = spec.add_tendon()
+      t.name = f'{side}_shoulder_diff_{motor}'
+      t.wrap_joint(swing, 1.0)
+      t.wrap_joint(abd, s)
+      a = spec.actuator(actuator)
+      a.trntype = mujoco.mjtTrn.mjTRN_TENDON
+      a.target = t.name
+
+
+def actuator_joint_map(m):
+  """(12, 12): joint torque per unit force of each limb actuator on each
+  limb hinge (identity for joint actuators, tendon coefficients otherwise)."""
+  out = np.zeros((12, 12))
+  for i in range(12):
+    tid = m.actuator_trnid[i, 0]
+    if m.actuator_trntype[i] == mujoco.mjtTrn.mjTRN_JOINT:
+      out[i, tid - 1] = m.actuator_gear[i, 0]
+    else:
+      adr, num = m.tendon_adr[tid], m.tendon_num[tid]
+      for w in range(adr, adr + num):
+        out[i, m.wrap_objid[w] - 1] = m.wrap_prm[w] * m.actuator_gear[i, 0]
+  return out
+
+
 def clearance_points(limb_scale=1.0, body_scale=1.0):
   return [(b, np.array(p) * body_scale *
            (limb_scale if b in LIMB_BODIES else 1.0), c * body_scale)
@@ -209,7 +244,7 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
                start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
-               body_scale=1.0):
+               body_scale=1.0, shoulder_differential=False):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -254,6 +289,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     add_latched_springs(spec, latched_springs)
   if body_scale != 1.0:
     scale_robot(spec, body_scale)
+  if shoulder_differential:
+    add_shoulder_differential(spec)
   if forearm_mass > 0:
     for name in ['radius_and_ulna', 'radius_and_ulna_2']:
       b = spec.body(name)

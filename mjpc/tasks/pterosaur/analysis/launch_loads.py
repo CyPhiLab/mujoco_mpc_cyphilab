@@ -153,8 +153,7 @@ def analyze(m, qpos0, qvel0, ctrl, last_release, springs):
         pk[k] = max(pk[k], l[k])
       pk['length'] = l['length']
     peak_act = np.maximum(peak_act, np.abs(d.actuator_force))
-    dof = m.jnt_dofadr[m.actuator_trnid[:12, 0]]
-    peak_power = np.maximum(peak_power, d.actuator_force[:12] * d.qvel[dof])
+    peak_power = np.maximum(peak_power, d.actuator_force[:12] * d.actuator_velocity[:12])
     mujoco.mj_step(m, d)
 
   names = [m.actuator(i).name for i in range(m.nu)]

@@ -58,6 +58,14 @@ E[T.LEFT, np.arange(6)] = 1
 E[T.RIGHT, np.arange(6)] = T.MIRROR
 
 
+def use_shoulder_differential():
+  """Controls for launch_trajopt.add_shoulder_differential models: the
+  right differential's tendons are mirrored, so its motor A takes the same
+  command as the left one (process-wide: updates MIRROR and E in place)."""
+  T.MIRROR[0] = 1
+  E[T.RIGHT[0], 0] = 1
+
+
 class LaunchILQR:
 
   def __init__(self, push_time, torque=2.0, speed=6.0, angle=30.0, hand=None,

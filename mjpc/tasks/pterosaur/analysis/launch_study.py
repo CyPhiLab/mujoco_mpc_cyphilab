@@ -114,8 +114,7 @@ def launch_metrics(solver, U):
     mujoco.mj_step(m, d)
     forces.append(solver.limb_forces())
     hand_h.append(min(solver.limb(g)[0] for g in solver.hands))
-    dof = m.actuator_trnid[:12, 0]
-    power = d.actuator_force[:12] * d.qvel[m.jnt_dofadr[dof]]
+    power = d.actuator_force[:12] * d.actuator_velocity[:12]
     work += np.maximum(power, 0).sum() * solver.dt
   forces = np.array(forces)
   episodes = []
