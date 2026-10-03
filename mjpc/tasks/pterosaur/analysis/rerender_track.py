@@ -29,7 +29,7 @@ def main():
                         window=args.window or None, free_hands=args.free_hands,
                         track_index=args.track_index, hand_load=args.hand_load,
                         hand_load_weight=args.hand_load_weight,
-                        **design)
+                        **dict(design, contact_smoothing=row.get('contact_smoothing', 0.0)))
     traj = dict(np.load(os.path.join(run, row['name'] + '.npz')))
     LT.render(solver.opt, traj, row,
               f"{row['name']}: {row['speed']:.1f} m/s @ {row['angle_deg']:.0f} deg",

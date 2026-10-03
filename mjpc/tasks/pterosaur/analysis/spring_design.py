@@ -71,7 +71,7 @@ def main():
                         window=args.window or None, free_hands=args.free_hands,
                         track_index=args.track_index, hand_load=args.hand_load,
                         hand_load_weight=args.hand_load_weight,
-                        **design)
+                        **dict(design, contact_smoothing=row.get('contact_smoothing', 0.0)))
   U = np.load(os.path.join(a.run, a.step + '_controls.npy'))[:solver.N]
   power, q = joint_power(solver, U)
   dt = solver.dt

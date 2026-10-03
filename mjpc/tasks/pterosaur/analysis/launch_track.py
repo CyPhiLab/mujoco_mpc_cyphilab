@@ -30,6 +30,7 @@ FOOT_LEAD = 0.025          # s, reference feet liftoff before the hands
 FEET_DIST_MARGIN = 0.03   # m, feet free this far before the reference lifts them
 HANDS_DIST_MARGIN = 0.05  # m, hands free this far before the end of their reach
 SPIN_WEIGHT = L.W_SPIN    # launch_ilqr default, scaled by --spin_scale
+PITCH_WEIGHT = L.W_PITCH  # launch_ilqr default, scaled by --pitch_scale
 S_LOAD = 50.0             # N, hand load shortfall scale (hand_load)
 FOOT_FREE = 0.1            # s, feet must stay planted until this long before
                            # the end of the push, and may leave any time after
@@ -511,6 +512,12 @@ def parser():
                  help='minimum normal force per hand while the feet are planted '
                       'and then while the hands can reach (needs --track_index distance)')
   p.add_argument('--hand_load_weight', type=float, default=200.0)
+  p.add_argument('--margins', type=float, nargs='*', default=None,
+                 help='contact smoothing continuation: one chain step per '
+                      'smoothing distance (m) at the first --speeds target, '
+                      'e.g. 0.02 0.01 0.005 0')
+  p.add_argument('--pitch_scale', type=float, default=1.0,
+                 help='scale of the pitch-beyond-45-deg cost during the push')
   p.add_argument('--spin_scale', type=float, default=1.0,
                  help='scale of the takeoff angular momentum cost')
   p.add_argument('--free_hands', action='store_true',
@@ -527,6 +534,7 @@ def make_design(args, verbose=True):
   if args.plant_tol is not None:
     L.PLANT_TOL = args.plant_tol
   L.W_SPIN = SPIN_WEIGHT * args.spin_scale
+  L.W_PITCH = PITCH_WEIGHT * args.pitch_scale
   design = dict(no_load_speed=args.no_load_speed)
   if args.arm_motors_on_legs:
     design['arm_motors_on_legs'] = True
@@ -564,6 +572,10 @@ def main():
            'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
   if args.speeds:
     chain = [(chain[0][0], v, chain[0][2]) for v in args.speeds]
+  margins = [0.0] * len(chain)
+  if args.margins:
+    chain = [chain[0]] * len(args.margins)
+    margins = list(args.margins)
   chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
   os.makedirs(args.out, exist_ok=True)
   json.dump(vars(args), open(os.path.join(args.out, 'args.json'), 'w'), indent=1)
@@ -572,15 +584,19 @@ def main():
   U_prev, prev_push = None, None
   if args.init:
     U_prev, prev_push = np.load(args.init), args.init_push
+  plant_tol = L.PLANT_TOL
   for i, (push_time, speed, track_scale) in enumerate(chain[:args.steps]):
+    margin = margins[i]
     i += args.first_step
     t0 = time.time()
+    L.PLANT_TOL = max(plant_tol, margin)
+    step_design = dict(design, contact_smoothing=margin) if margin > 0 else design
     solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
                        min_hand_force=args.min_hand_force,
                        reference=args.reference, angle=args.angle,
                        window=args.window or None, free_hands=args.free_hands,
                        track_index=args.track_index, hand_load=args.hand_load,
-                       hand_load_weight=args.hand_load_weight, **design)
+                       hand_load_weight=args.hand_load_weight, **step_design)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:
@@ -597,14 +613,15 @@ def main():
     strip = contact_strip(opt, half)
     sens = sensitivity(solver, U)
     name = f'step{i}_T{push_time:g}_v{speed:g}' + (
-        f'_track{track_scale:g}' if track_scale != 1 else '')
+        f'_track{track_scale:g}' if track_scale != 1 else '') + (
+        f'_m{margin:g}' if args.margins else '')
     np.save(os.path.join(args.out, name + '_controls.npy'), half)
     traj = opt.record(half, os.path.join(args.out, name + '.npz'))
     if os.environ.get('MUJOCO_GL'):
       render(opt, traj, det, f"{name}: {det['speed']:.1f} m/s @ {det['angle_deg']:.0f} deg",
              os.path.join(args.out, name))
     row = {'name': name, 'push_time': push_time, 'target_speed': speed,
-           'track_scale': track_scale,
+           'track_scale': track_scale, 'contact_smoothing': margin,
            'cost': float(cost), 'seconds': round(time.time() - t0),
            **{k: det[k] for k in ('took_off', 'speed', 'angle_deg', 'takeoff_time',
                                   'spin_per_mass', 'max_pitch_deg', 'taps',

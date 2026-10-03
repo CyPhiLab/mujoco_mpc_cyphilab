@@ -258,7 +258,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
                start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
                body_scale=1.0, shoulder_differential=False,
-               arm_motors_on_legs=False, point_masses=None):
+               arm_motors_on_legs=False, point_masses=None,
+               contact_smoothing=0.0):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -270,7 +271,9 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   scale (scale_robot; actuator gains are then absolute: torque x model);
   arm_motors_on_legs: hip motors = shoulder motors, knee motors = elbow
   motors (before the torque and arm/leg scales); point_masses: see
-  add_point_masses."""
+  add_point_masses; contact_smoothing: m over which the limb-floor contact
+  force fades in before touching (contact margin with impedance ramping
+  from 0 at the margin to full at contact), for optimization continuation."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -310,6 +313,10 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     add_shoulder_differential(spec)
   if point_masses:
     add_point_masses(spec, point_masses)
+  if contact_smoothing > 0:
+    # before compiling: collision bounds include the margin
+    for name in ['FL', 'FR', 'HL', 'HR']:
+      spec.geom(name).margin = contact_smoothing
   if forearm_mass > 0:
     for name in ['radius_and_ulna', 'radius_and_ulna_2']:
       b = spec.body(name)
@@ -349,6 +356,11 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, name)
     m.geom_solimp[g, :3] = FOOT_SOLIMP
     m.geom_solref[g, :2] = FOOT_SOLREF if foot_solref is None else foot_solref
+  if contact_smoothing > 0:
+    smooth = [0.0, FOOT_SOLIMP[1], contact_smoothing, 0.5, 2.0]
+    for name in ['FL', 'FR', 'HL', 'HR', 'floor']:
+      g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, name)
+      m.geom_solimp[g] = smooth          # contact parameters mix both geoms'
   return m
 
 
