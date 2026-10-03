@@ -240,6 +240,17 @@ class TrackILQR(L.LaunchILQR):
     return U
 
 
+def sensitivity(solver, U, eps=1e-5, ndir=4, seed=1):
+  """Largest cost change over ndir random smooth control perturbations of
+  size eps, relative to the cost: ~eps-sized for a smooth rollout, O(0.1-1)
+  when a contact switches on or off (chaotic rollout)."""
+  import launch_refine as R
+  c0 = solver.rollout(U)[2]
+  dirs = R.perturbation(np.random.default_rng(seed), ndir, solver.N, 1.0, solver.dt)
+  return float(max(abs(solver.rollout(np.clip(U + eps * d, -1, 1))[2] - c0)
+                   for d in dirs) / c0)
+
+
 def contact_strip(opt, half, steps=300):
   """Per-limb contact over the first steps (2 ms each), '#' = touching."""
   m, d = opt.m, mujoco.MjData(opt.m)
@@ -295,10 +306,15 @@ def main():
                  help='multiplies the chain tracking weights')
   p.add_argument('--min_hand_force', type=float, default=0.0,
                  help='N per hand while planted (0: off)')
+  p.add_argument('--plant_tol', type=float, default=None,
+                 help='m, height counted as planted (launch_ilqr default 1 mm; '
+                      '0: a planted limb must touch)')
   p.add_argument('--init', default=None, help='controls (.npy) to start from')
   p.add_argument('--init_push', type=float, default=0.45)
   p.add_argument('--first_step', type=int, default=0, help='numbering offset')
   args = p.parse_args()
+  if args.plant_tol is not None:
+    L.PLANT_TOL = args.plant_tol
   chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
            'push': PUSH, 'bodypath': BODYPATH}[args.chain]
   chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
@@ -329,6 +345,7 @@ def main():
     _, det = opt.evaluate(half[None], detail=True)
     det = det[0]
     strip = contact_strip(opt, half)
+    sens = sensitivity(solver, U)
     name = f'step{i}_T{push_time:g}_v{speed:g}' + (
         f'_track{track_scale:g}' if track_scale != 1 else '')
     np.save(os.path.join(args.out, name + '_controls.npy'), half)
@@ -342,12 +359,13 @@ def main():
            **{k: det[k] for k in ('took_off', 'speed', 'angle_deg', 'takeoff_time',
                                   'spin_per_mass', 'max_pitch_deg', 'taps',
                                   'calm_rad_s')},
-           'contacts': strip}
+           'sensitivity_1e-5': sens, 'contacts': strip}
     summary.append(row)
     json.dump(summary, open(summary_path, 'w'), indent=1)
     print(f"{name}: {det['speed']:.2f} m/s @ {det['angle_deg']:.0f} deg, takeoff "
           f"{det['takeoff_time']:.3f} s, taps {det['taps']}, spin "
-          f"{det['spin_per_mass']:.2f}, pitch {det['max_pitch_deg']:.0f} "
+          f"{det['spin_per_mass']:.2f}, pitch {det['max_pitch_deg']:.0f}, "
+          f"sensitivity {sens:.3g} "
           f"[{row['seconds']} s]", flush=True)
     for n, s in strip.items():
       print(f'   {n:10s} {s[:260]}', flush=True)
