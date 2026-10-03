@@ -1,0 +1,45 @@
+{
+ "torque": 2.0,
+ "spring_energy": 500.0,
+ "angle": 30.0,
+ "iters": 60,
+ "steps": 6,
+ "out": "tracked_Q2_smooth_fromN4",
+ "chain": "bodypath_real",
+ "no_load_speed": 20.0,
+ "springs": "designed",
+ "spring_budget": 2500.0,
+ "spring_design": "tracked_J_real_nosprings_loose_diff_strongleg/step1_T0.45_v4_track0.1_springs.json",
+ "spring_profile": "linear",
+ "spring_efficiency": 0.9,
+ "spring_mass": 2.5,
+ "spring_density": 500.0,
+ "arm_motors_on_legs": true,
+ "shoulder_differential": true,
+ "reference": "bodypath",
+ "track_scale": 0.03,
+ "min_hand_force": 0.0,
+ "plant_tol": null,
+ "speeds": [
+  5.0
+ ],
+ "window": 0.65,
+ "track_index": "distance",
+ "hand_load": [
+  100.0,
+  300.0
+ ],
+ "hand_load_weight": 200.0,
+ "margins": [
+  0.02,
+  0.01,
+  0.005,
+  0.0
+ ],
+ "pitch_scale": 1.0,
+ "spin_scale": 1.0,
+ "free_hands": true,
+ "init": "tracked_N4_handload_spin0.2_scratch/step1_T0.45_v4_track0.03_controls.npy",
+ "init_push": 0.45,
+ "first_step": 0
+}
