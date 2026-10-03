@@ -27,6 +27,7 @@ def main():
                           min_hand_force=args.min_hand_force,
                           reference=args.reference, angle=args.angle,
                         window=args.window or None, free_hands=args.free_hands,
+                        track_index=args.track_index,
                         **design)
     traj = dict(np.load(os.path.join(run, row['name'] + '.npz')))
     LT.render(solver.opt, traj, row,

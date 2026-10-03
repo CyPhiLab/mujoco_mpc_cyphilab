@@ -27,6 +27,7 @@ import launch_trajopt as T
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FOOT_LEAD = 0.025          # s, reference feet liftoff before the hands
+FEET_DIST_MARGIN = 0.03   # m, feet free this far before the reference lifts them
 FOOT_FREE = 0.1            # s, feet must stay planted until this long before
                            # the end of the push, and may leave any time after
 S_TRACK, W_TRACK = 0.15, 1.0       # joint tracking (rad)
@@ -251,17 +252,54 @@ def body_path_reference(m, q0, push_time, dt, n, angle_deg=30.0,
   return joints, pitch, liftoff, stroke, p
 
 
+def body_path_table(m, q0, stroke, angle_deg=30.0, n=241):
+  """The body-path reference by distance instead of time: limb joints (n,
+  12) with the body at dist along the launch direction (crouch pitch), each
+  hand/foot kept on its starting spot by IK until out of reach (then
+  frozen). Returns the distance grid (n,), joints, per-limb liftoff
+  distance."""
+  d = mujoco.MjData(m)
+  d.qpos[:] = q0
+  mujoco.mj_kinematics(m, d)
+  gid = {g: mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, g) for g, _ in PATH_LIMBS}
+  targets = {g: d.geom_xpos[gid[g]].copy() for g, _ in PATH_LIMBS}
+  a = np.deg2rad(angle_deg)
+  direction = np.array([-np.cos(a), 0.0, np.sin(a)])
+  grid = np.linspace(0.0, stroke, n)
+  joints = np.empty((n, 12))
+  frozen = {g: False for g, _ in PATH_LIMBS}
+  lift = {g: stroke for g, _ in PATH_LIMBS}
+  q = q0.copy()
+  for k, dist in enumerate(grid):
+    q[:3] = q0[:3] + dist * direction
+    d.qpos[:] = q
+    for g, h in PATH_LIMBS:
+      if frozen[g]:
+        continue
+      if not limb_ik(m, d, gid[g], h, targets[g]):
+        frozen[g] = True
+        lift[g] = dist
+        for hh in h:                            # keep the last reached pose
+          d.qpos[7 + hh] = joints[k - 1, hh] if k else q0[7 + hh]
+    q = d.qpos.copy()
+    joints[k] = q[7:]
+  return grid, joints, lift
+
+
 class TrackILQR(L.LaunchILQR):
   """LaunchILQR plus tracking of the retimed reference during the push."""
 
   def __init__(self, push_time, torque, speed, track_scale=1.0,
                min_hand_force=0.0, reference='retimed', window=None,
-               free_hands=False, **kw):
+               free_hands=False, track_index='time', **kw):
     """push_time: the reference push; window: the optimized push (>=
     push_time; the reference holds its last pose after push_time and the
     takeoff velocity is scored ballistically, see LaunchILQR.z_ref);
     free_hands: hands planted only while the feet are (then free to push
-    or leave whenever), not until the end of the push."""
+    or leave whenever), not until the end of the push; track_index:
+    'distance' indexes the body-path joint reference and the feet's planted
+    phase by how far the body has moved along the launch direction instead
+    of by time (the path without its timing)."""
     self.track_scale = track_scale
     self.min_hand_force = min_hand_force
     window = max(window or push_time, push_time)
@@ -277,10 +315,18 @@ class TrackILQR(L.LaunchILQR):
       self.n_feet = int(round((min(lift['HL'], lift['HR']) - 0.02) / self.dt))
       if window > push_time:
         self.z_ref = self.reference_com_height(push_time, stroke, kw.get('angle', 30.0))
+      if track_index == 'distance':
+        a = np.deg2rad(kw.get('angle', 30.0))
+        self.direction = np.array([-np.cos(a), 0.0, np.sin(a)])
+        self.table = body_path_table(self.m, self.q0, stroke, kw.get('angle', 30.0))
+        self.feet_lift_dist = min(self.table[2]['HL'], self.table[2]['HR']) - FEET_DIST_MARGIN
     else:
       self.q_track, self.pitch_track = retimed_reference(push_time, self.dt,
                                                          self.N + 1)
       assert window == push_time, 'window needs the bodypath reference'
+      assert track_index == 'time', 'distance indexing needs the bodypath reference'
+    self.track_index = track_index
+    self.free_hands = free_hands
     if free_hands:
       self.n_hands = self.n_feet
 
@@ -295,11 +341,25 @@ class TrackILQR(L.LaunchILQR):
     mujoco.mj_comPos(self.m, d)
     return float(d.subtree_com[1][2])
 
+  def distance(self):
+    """Base displacement along the launch direction."""
+    return float((self.d.qpos[:3] - self.q0[:3]) @ self.direction)
+
   def residual(self, t):
+    if self.track_index == 'distance':
+      dist = self.distance()
+      # feet planted until the body is about to carry them out of reach
+      self.n_feet = t + 1 if dist < self.feet_lift_dist else 0
+      if self.free_hands:
+        self.n_hands = self.n_feet
+      grid, table, _ = self.table
+      q_ref = np.array([np.interp(dist, grid, table[:, j]) for j in range(12)])
+    else:
+      q_ref = self.q_track[t]
     r = super().residual(t)
     if t < self.n_push:
       d = self.d
-      track = np.sqrt(W_TRACK) * (d.qpos[7:] - self.q_track[t]) / S_TRACK
+      track = np.sqrt(W_TRACK) * (d.qpos[7:] - q_ref) / S_TRACK
       pitch = (np.sqrt(W_TRACK_PITCH) * (pitch_of(d.qpos[3:7]) - self.pitch_track[t])
                / S_TRACK_PITCH)
       r = np.concatenate([r, np.sqrt(self.dt * self.track_scale) * np.r_[track, pitch]])
@@ -425,6 +485,9 @@ def parser():
   p.add_argument('--window', type=float, default=0.0,
                  help='optimized push (s, > the reference push): the hands may '
                       'keep pushing past it; takeoff scored ballistically')
+  p.add_argument('--track_index', default='time', choices=['time', 'distance'],
+                 help='index the body-path reference by time or by body '
+                      'displacement along the launch direction')
   p.add_argument('--free_hands', action='store_true',
                  help='hands planted only while the feet are, then free')
   p.add_argument('--init', default=None, help='controls (.npy) to start from')
@@ -490,7 +553,7 @@ def main():
                        min_hand_force=args.min_hand_force,
                        reference=args.reference, angle=args.angle,
                        window=args.window or None, free_hands=args.free_hands,
-                       **design)
+                       track_index=args.track_index, **design)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:
