@@ -109,6 +109,9 @@ class LaunchILQR:
     mujoco.mj_setState(m, self.d, self.opt.x0, mujoco.mjtState.mjSTATE_FULLPHYSICS)
     mujoco.mj_forward(m, self.d)
     self.q0, self.v0 = self.d.qpos.copy(), self.d.qvel.copy()
+    # CoM height for the ballistic takeoff velocity (None: velocity at the
+    # end of the push as is)
+    self.z_ref = None
 
   # ----- residuals ----- #
   def limb(self, g):
@@ -168,7 +171,14 @@ class LaunchILQR:
 
   def takeoff_residual(self):
     d = self.d
-    v = d.subtree_linvel[1]
+    v = d.subtree_linvel[1].copy()
+    if self.z_ref is not None:
+      # ballistic equivalent: the upward CoM speed crossing height z_ref on
+      # the same flight path, sqrt(e) (e is invariant in flight, so the end
+      # of the push need not be the takeoff, and height still gained pushing
+      # counts); linear below e = 1 so a path short of z_ref keeps a gradient
+      e = v[2] ** 2 - 2 * self.m.opt.gravity[2] * (d.subtree_com[1][2] - self.z_ref)
+      v[2] = np.sqrt(e) if e >= 1.0 else 0.5 * (e + 1.0)
     L = d.sensordata[self.angmom] / self.mass
     return np.concatenate([np.sqrt(W_TAKEOFF_V) * (v - self.v_target) / S_TAKEOFF_V,
                            np.sqrt(W_SPIN) * L / S_SPIN])

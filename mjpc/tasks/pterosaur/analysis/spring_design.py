@@ -67,7 +67,9 @@ def main():
   solver = LT.TrackILQR(row['push_time'], args.torque, row['target_speed'],
                         track_scale=row['track_scale'],
                         min_hand_force=args.min_hand_force,
-                        reference=args.reference, angle=args.angle, **design)
+                        reference=args.reference, angle=args.angle,
+                        window=args.window or None, free_hands=args.free_hands,
+                        **design)
   U = np.load(os.path.join(a.run, a.step + '_controls.npy'))[:solver.N]
   power, q = joint_power(solver, U)
   dt = solver.dt

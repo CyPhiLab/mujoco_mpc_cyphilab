@@ -255,22 +255,45 @@ class TrackILQR(L.LaunchILQR):
   """LaunchILQR plus tracking of the retimed reference during the push."""
 
   def __init__(self, push_time, torque, speed, track_scale=1.0,
-               min_hand_force=0.0, reference='retimed', **kw):
+               min_hand_force=0.0, reference='retimed', window=None,
+               free_hands=False, **kw):
+    """push_time: the reference push; window: the optimized push (>=
+    push_time; the reference holds its last pose after push_time and the
+    takeoff velocity is scored ballistically, see LaunchILQR.z_ref);
+    free_hands: hands planted only while the feet are (then free to push
+    or leave whenever), not until the end of the push."""
     self.track_scale = track_scale
     self.min_hand_force = min_hand_force
-    super().__init__(push_time, torque, speed,
-                     feet_lift_frac=(push_time - FOOT_FREE) / push_time,
+    window = max(window or push_time, push_time)
+    super().__init__(window, torque, speed,
+                     feet_lift_frac=(push_time - FOOT_FREE) / window,
                      hands_lift_frac=1.0, **kw)
     if reference == 'bodypath':
       # forelimb push: feet planted until shortly before the legs straighten
       # in the reference (then free), hands until the end of the push
-      self.q_track, self.pitch_track, lift, _, _ = body_path_reference(
+      self.q_track, self.pitch_track, lift, stroke, _ = body_path_reference(
           self.m, self.q0, push_time, self.dt, self.N + 1,
           kw.get('angle', 30.0), ref_speed=speed)
       self.n_feet = int(round((min(lift['HL'], lift['HR']) - 0.02) / self.dt))
+      if window > push_time:
+        self.z_ref = self.reference_com_height(push_time, stroke, kw.get('angle', 30.0))
     else:
       self.q_track, self.pitch_track = retimed_reference(push_time, self.dt,
                                                          self.N + 1)
+      assert window == push_time, 'window needs the bodypath reference'
+    if free_hands:
+      self.n_hands = self.n_feet
+
+  def reference_com_height(self, push_time, stroke, angle):
+    """CoM height of the body-path reference at the end of its push."""
+    d = mujoco.MjData(self.m)
+    a = np.deg2rad(angle)
+    d.qpos[:] = self.q0
+    d.qpos[:3] += stroke * np.array([-np.cos(a), 0.0, np.sin(a)])
+    d.qpos[7:] = self.q_track[int(round(push_time / self.dt))]
+    mujoco.mj_kinematics(self.m, d)
+    mujoco.mj_comPos(self.m, d)
+    return float(d.subtree_com[1][2])
 
   def residual(self, t):
     r = super().residual(t)
@@ -396,6 +419,14 @@ def parser():
   p.add_argument('--plant_tol', type=float, default=None,
                  help='m, height counted as planted (launch_ilqr default 1 mm; '
                       '0: a planted limb must touch)')
+  p.add_argument('--speeds', type=float, nargs='*', default=None,
+                 help='override the chain target speeds (push time and '
+                      'tracking of its first step)')
+  p.add_argument('--window', type=float, default=0.0,
+                 help='optimized push (s, > the reference push): the hands may '
+                      'keep pushing past it; takeoff scored ballistically')
+  p.add_argument('--free_hands', action='store_true',
+                 help='hands planted only while the feet are, then free')
   p.add_argument('--init', default=None, help='controls (.npy) to start from')
   p.add_argument('--init_push', type=float, default=0.45)
   p.add_argument('--first_step', type=int, default=0, help='numbering offset')
@@ -442,6 +473,8 @@ def main():
   chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
            'push': PUSH, 'bodypath': BODYPATH,
            'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
+  if args.speeds:
+    chain = [(chain[0][0], v, chain[0][2]) for v in args.speeds]
   chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
   os.makedirs(args.out, exist_ok=True)
   json.dump(vars(args), open(os.path.join(args.out, 'args.json'), 'w'), indent=1)
@@ -455,7 +488,9 @@ def main():
     t0 = time.time()
     solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
                        min_hand_force=args.min_hand_force,
-                       reference=args.reference, angle=args.angle, **design)
+                       reference=args.reference, angle=args.angle,
+                       window=args.window or None, free_hands=args.free_hands,
+                       **design)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:

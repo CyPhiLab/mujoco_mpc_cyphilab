@@ -25,7 +25,9 @@ def main():
     solver = LT.TrackILQR(row['push_time'], args.torque, row['target_speed'],
                           track_scale=row['track_scale'],
                           min_hand_force=args.min_hand_force,
-                          reference=args.reference, angle=args.angle, **design)
+                          reference=args.reference, angle=args.angle,
+                        window=args.window or None, free_hands=args.free_hands,
+                        **design)
     traj = dict(np.load(os.path.join(run, row['name'] + '.npz')))
     LT.render(solver.opt, traj, row,
               f"{row['name']}: {row['speed']:.1f} m/s @ {row['angle_deg']:.0f} deg",
