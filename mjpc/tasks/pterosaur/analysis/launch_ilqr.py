@@ -112,6 +112,9 @@ class LaunchILQR:
     # CoM height for the ballistic takeoff velocity (None: velocity at the
     # end of the push as is)
     self.z_ref = None
+    # weight of the takeoff velocity error across the launch direction
+    # relative to along it (1: plain vector error)
+    self.direction_weight = 1.0
 
   # ----- residuals ----- #
   def limb(self, g):
@@ -180,7 +183,12 @@ class LaunchILQR:
       e = v[2] ** 2 - 2 * self.m.opt.gravity[2] * (d.subtree_com[1][2] - self.z_ref)
       v[2] = np.sqrt(e) if e >= 1.0 else 0.5 * (e + 1.0)
     L = d.sensordata[self.angmom] / self.mass
-    return np.concatenate([np.sqrt(W_TAKEOFF_V) * (v - self.v_target) / S_TAKEOFF_V,
+    err = v - self.v_target
+    if self.direction_weight != 1.0:
+      u = self.v_target / np.linalg.norm(self.v_target)
+      along = err @ u
+      err = along * u + self.direction_weight * (err - along * u)
+    return np.concatenate([np.sqrt(W_TAKEOFF_V) * err / S_TAKEOFF_V,
                            np.sqrt(W_SPIN) * L / S_SPIN])
 
   def residual_at(self, q, v, t):

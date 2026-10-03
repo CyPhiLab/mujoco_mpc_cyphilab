@@ -302,7 +302,8 @@ class TrackILQR(L.LaunchILQR):
                min_hand_force=0.0, reference='retimed', window=None,
                free_hands=False, track_index='time', hand_load=None,
                hand_load_weight=200.0, swing_only=False, pitch_weight=None,
-               pitch_tol=0.0, hand_vault_dist=None, **kw):
+               pitch_tol=0.0, hand_vault_dist=None, direction_weight=1.0,
+               z_ref=None, **kw):
     """push_time: the reference push; window: the optimized push (>=
     push_time; the reference holds its last pose after push_time and the
     takeoff velocity is scored ballistically, see LaunchILQR.z_ref);
@@ -360,6 +361,9 @@ class TrackILQR(L.LaunchILQR):
       self.hands_lift_dist = min(self.hands_lift_dist,
                                  self.feet_lift_dist + hand_vault_dist)
     self._vel = np.zeros(6)
+    self.direction_weight = direction_weight
+    if z_ref is not None:
+      self.z_ref = z_ref
     assert hand_load is None or track_index == 'distance', 'hand_load needs distance indexing'
     if free_hands:
       self.n_hands = self.n_feet
@@ -513,7 +517,8 @@ def solver_kwargs(args):
               hand_load=args.hand_load, hand_load_weight=args.hand_load_weight,
               hand_vault_dist=args.hand_vault_dist, swing_only=args.swing_only,
               pitch_weight=args.pitch_weight, pitch_tol=args.pitch_tol,
-              force_cap=args.force_cap)
+              force_cap=args.force_cap, direction_weight=args.direction_weight,
+              z_ref=args.z_ref)
 
 
 def solver_for_step(run, row):
@@ -597,6 +602,12 @@ def parser():
                  help='trunk pitch tracking weight, independent of --track_scale')
   p.add_argument('--pitch_tol', type=float, default=0.0,
                  help='rad of pitch error left free')
+  p.add_argument('--z_ref', type=float, default=None,
+                 help='CoM height (m) for the ballistic takeoff velocity '
+                      '(default: the reference end-of-push CoM height)')
+  p.add_argument('--direction_weight', type=float, default=1.0,
+                 help='weight of the takeoff velocity error across the launch '
+                      'direction relative to along it')
   p.add_argument('--force_cap', type=float, default=0.0,
                  help='per-limb normal force above this (N) is penalized')
   p.add_argument('--margins', type=float, nargs='*', default=None,
