@@ -303,7 +303,7 @@ class TrackILQR(L.LaunchILQR):
                free_hands=False, track_index='time', hand_load=None,
                hand_load_weight=200.0, swing_only=False, pitch_weight=None,
                pitch_tol=0.0, hand_vault_dist=None, direction_weight=1.0,
-               z_ref=None, **kw):
+               z_ref=None, z_ref_rise=None, **kw):
     """push_time: the reference push; window: the optimized push (>=
     push_time; the reference holds its last pose after push_time and the
     takeoff velocity is scored ballistically, see LaunchILQR.z_ref);
@@ -364,6 +364,12 @@ class TrackILQR(L.LaunchILQR):
     self.direction_weight = direction_weight
     if z_ref is not None:
       self.z_ref = z_ref
+    if z_ref_rise is not None:
+      d = mujoco.MjData(self.m)
+      d.qpos[:] = self.q0
+      mujoco.mj_kinematics(self.m, d)
+      mujoco.mj_comPos(self.m, d)
+      self.z_ref = float(d.subtree_com[1][2]) + z_ref_rise
     assert hand_load is None or track_index == 'distance', 'hand_load needs distance indexing'
     if free_hands:
       self.n_hands = self.n_feet
@@ -508,6 +514,16 @@ def render(opt, traj, det, title, path_base):
   sheet.save(path_base + '_frames.png')
 
 
+def arm_crouch(torque, arm_length):
+  """Start pose for a forelimb length: the reference crouch re-solved so
+  all four limbs sit on the floor (launch_design.crouch_qpos)."""
+  import launch_design as D
+  ref = T.reference()
+  q_ref = ref['qpos'][T.push_start_index(ref)]
+  q, _ = D.crouch_qpos(T.load_model(torque, arm_length=arm_length), q_ref)
+  return q
+
+
 def solver_kwargs(args):
   """TrackILQR keyword options from the command line (beside the push
   time, torque, speed, tracking scale and design)."""
@@ -518,7 +534,7 @@ def solver_kwargs(args):
               hand_vault_dist=args.hand_vault_dist, swing_only=args.swing_only,
               pitch_weight=args.pitch_weight, pitch_tol=args.pitch_tol,
               force_cap=args.force_cap, direction_weight=args.direction_weight,
-              z_ref=args.z_ref)
+              z_ref=args.z_ref, z_ref_rise=args.z_ref_rise)
 
 
 def solver_for_step(run, row):
@@ -605,6 +621,12 @@ def parser():
   p.add_argument('--z_ref', type=float, default=None,
                  help='CoM height (m) for the ballistic takeoff velocity '
                       '(default: the reference end-of-push CoM height)')
+  p.add_argument('--z_ref_rise', type=float, default=None,
+                 help='ballistic CoM height as a rise (m) over the start CoM '
+                      'height (overrides --z_ref)')
+  p.add_argument('--arm_length', type=float, default=None,
+                 help='forelimb length factor; the start crouch is re-solved '
+                      '(all limbs on the floor, from rest), also for 1')
   p.add_argument('--direction_weight', type=float, default=1.0,
                  help='weight of the takeoff velocity error across the launch '
                       'direction relative to along it')
@@ -636,6 +658,9 @@ def make_design(args, verbose=True):
   design = dict(no_load_speed=args.no_load_speed)
   if args.arm_motors_on_legs:
     design['arm_motors_on_legs'] = True
+  if args.arm_length is not None:
+    design.update(arm_length=args.arm_length,
+                  start_qpos=arm_crouch(args.torque, args.arm_length))
   if args.shoulder_differential:
     L.use_shoulder_differential()
     design['shoulder_differential'] = True

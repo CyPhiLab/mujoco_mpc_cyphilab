@@ -150,6 +150,31 @@ def scale_limbs(spec, s):
       c.pos = np.array(c.pos) * s
 
 
+ARM_BODIES = ['bevel_out', 'bevel_out_2', 'radius_and_ulna', 'radius_and_ulna_2']
+FOREARM_BODIES = ['radius_and_ulna', 'radius_and_ulna_2']
+
+
+def scale_arms(spec, s):
+  """Lengthen the humerus and forearm by s (tube meshes, child positions,
+  hand sphere). The forearm is mostly tube: mass s, inertia s^3; the
+  humerus body is mostly the shoulder gear/motor housing: mass kept,
+  inertia s^2."""
+  for name in ['humerus', 'radius_and_ulna']:
+    spec.mesh(name).scale = [s, s, s]
+  for name in ARM_BODIES:
+    b = spec.body(name)
+    b.ipos = np.array(b.ipos) * s
+    if name in FOREARM_BODIES:
+      b.mass = b.mass * s
+      b.fullinertia = np.array(b.fullinertia) * s ** 3
+    else:
+      b.fullinertia = np.array(b.fullinertia) * s ** 2
+    for g in b.geoms:
+      g.pos = np.array(g.pos) * s
+    for c in b.bodies:
+      c.pos = np.array(c.pos) * s
+
+
 def scale_robot(spec, s):
   """Geometric scaling of the whole robot by s: lengths s, masses s^3,
   inertias s^5, joint friction s^4 and armature s^5 (dynamic similarity:
@@ -217,9 +242,10 @@ def actuator_joint_map(m):
   return out
 
 
-def clearance_points(limb_scale=1.0, body_scale=1.0):
+def clearance_points(limb_scale=1.0, body_scale=1.0, arm_length=1.0):
   return [(b, np.array(p) * body_scale *
-           (limb_scale if b in LIMB_BODIES else 1.0), c * body_scale)
+           (limb_scale if b in LIMB_BODIES else 1.0) *
+           (arm_length if b in ARM_BODIES else 1.0), c * body_scale)
           for b, p, c in CLEARANCE]
 
 
@@ -259,7 +285,7 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
                body_scale=1.0, shoulder_differential=False,
                arm_motors_on_legs=False, point_masses=None,
-               contact_smoothing=0.0):
+               contact_smoothing=0.0, arm_length=1.0):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -273,7 +299,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   motors (before the torque and arm/leg scales); point_masses: see
   add_point_masses; contact_smoothing: m over which the limb-floor contact
   force fades in before touching (contact margin with impedance ramping
-  from 0 at the margin to full at contact), for optimization continuation."""
+  from 0 at the margin to full at contact), for optimization continuation;
+  arm_length: forelimb length factor (scale_arms)."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -305,6 +332,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   ref = reference()
   if limb_scale != 1.0:
     scale_limbs(spec, limb_scale)
+  if arm_length != 1.0:
+    scale_arms(spec, arm_length)
   if latched_springs:
     add_latched_springs(spec, latched_springs)
   if body_scale != 1.0:
@@ -450,7 +479,8 @@ class LaunchOpt:
     self.m = load_model(torque, hand, foot_solref, **design)
     self.start_qpos = design.get('start_qpos')
     self.clearance = clearance_points(design.get('limb_scale', 1.0),
-                                      design.get('body_scale', 1.0))
+                                      design.get('body_scale', 1.0),
+                                      design.get('arm_length', 1.0))
     self.latch_times = np.asarray(latch_times if latch_times is not None else [],
                                   float)
     assert self.m.nu == 12 + len(self.latch_times)
