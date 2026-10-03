@@ -42,8 +42,10 @@ KNOT_DT = 0.05          # control knot spacing: controls are piecewise linear
 FOOT_SOLIMP = [0.9, 0.95, 0.001]
 FOOT_SOLREF = [0.0067, 3]
 
-# left/right mirror sign per limb joint (shoulder1 axes are mirrored)
-MIRROR = np.array([-1, 1, 1, 1, 1, 1])
+# left/right mirror sign per limb joint: the abduction hinges (shoulder1,
+# hip1) have the same world axis on both sides, so a mirrored motion needs
+# opposite angles; the sagittal hinges' (y) axes are their own mirror
+MIRROR = np.array([-1, 1, 1, -1, 1, 1])
 LEFT = np.array([0, 1, 2, 6, 7, 8])
 RIGHT = np.array([3, 4, 5, 9, 10, 11])
 
@@ -244,7 +246,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
                start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
-               body_scale=1.0, shoulder_differential=False):
+               body_scale=1.0, shoulder_differential=False,
+               arm_motors_on_legs=False):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -253,7 +256,9 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   convex hulls overlap by ~3 cm all along the reference, more with longer
   limbs, so they push the limbs apart); forearm_mass: kg per forearm
   (0 = model), inertia scaled with it; body_scale: whole-robot geometric
-  scale (scale_robot; actuator gains are then absolute: torque x model)."""
+  scale (scale_robot; actuator gains are then absolute: torque x model);
+  arm_motors_on_legs: hip motors = shoulder motors, knee motors = elbow
+  motors (before the torque and arm/leg scales)."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -308,6 +313,9 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   q = ref['qpos'][:, 7:]
   lo, hi = q.min(axis=0) - joint_margin, q.max(axis=0) + joint_margin
   m.opt.timestep = SIM_DT
+  if arm_motors_on_legs:
+    # hip1/hip2 <- shoulder1/shoulder2, knee <- elbow, both sides
+    m.actuator_gainprm[6:12, 0] = m.actuator_gainprm[0:6, 0]
   m.actuator_gainprm[:12, 0] *= torque
   m.actuator_gainprm[:6, 0] *= arm_scale    # arms: actuators 0-5
   m.actuator_gainprm[6:12, 0] *= leg_scale  # legs: actuators 6-11

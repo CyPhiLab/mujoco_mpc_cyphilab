@@ -355,6 +355,8 @@ def main():
                  help='legacy: --spring_energy joint springs; designed: '
                       'SPRING_DESIGN latched springs storing --spring_budget')
   p.add_argument('--spring_budget', type=float, default=2500.0)
+  p.add_argument('--arm_motors_on_legs', action='store_true',
+                 help='hip motors = shoulder motors, knee motors = elbow motors')
   p.add_argument('--shoulder_differential', action='store_true',
                  help='shoulder abduction and swing motors drive both joints '
                       'through a differential')
@@ -376,6 +378,8 @@ def main():
            'push': PUSH, 'bodypath': BODYPATH,
            'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
   design = dict(no_load_speed=args.no_load_speed)
+  if args.arm_motors_on_legs:
+    design['arm_motors_on_legs'] = True
   if args.shoulder_differential:
     L.use_shoulder_differential()
     design['shoulder_differential'] = True
