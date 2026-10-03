@@ -29,6 +29,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FOOT_LEAD = 0.025          # s, reference feet liftoff before the hands
 FEET_DIST_MARGIN = 0.03   # m, feet free this far before the reference lifts them
 HANDS_DIST_MARGIN = 0.05  # m, hands free this far before the end of their reach
+# middle-ground formulation (swing_only): touchdown speed near the ground
+S_TOUCHDOWN, W_TOUCHDOWN = 0.1, 10.0    # downward limb speed (m/s)
+TOUCHDOWN_HEIGHT = 0.02                 # m, penalty fades out above this
+ABDUCTION = np.array([0, 3, 6, 9])
+SWING_JOINTS = {'FL': [1, 2], 'FR': [4, 5], 'HL': [7, 8], 'HR': [10, 11]}
 SPIN_WEIGHT = L.W_SPIN    # launch_ilqr default, scaled by --spin_scale
 PITCH_WEIGHT = L.W_PITCH  # launch_ilqr default, scaled by --pitch_scale
 S_LOAD = 50.0             # N, hand load shortfall scale (hand_load)
@@ -296,7 +301,8 @@ class TrackILQR(L.LaunchILQR):
   def __init__(self, push_time, torque, speed, track_scale=1.0,
                min_hand_force=0.0, reference='retimed', window=None,
                free_hands=False, track_index='time', hand_load=None,
-               hand_load_weight=200.0, **kw):
+               hand_load_weight=200.0, swing_only=False, pitch_weight=None,
+               pitch_tol=0.0, hand_vault_dist=None, **kw):
     """push_time: the reference push; window: the optimized push (>=
     push_time; the reference holds its last pose after push_time and the
     takeoff velocity is scored ballistically, see LaunchILQR.z_ref);
@@ -307,7 +313,15 @@ class TrackILQR(L.LaunchILQR):
     of by time (the path without its timing); hand_load: (stance N, vault
     N) minimum normal force per hand while the feet are planted and then
     while the hands can still reach (distance indexing; the hands are kept
-    planted over the same span), weighted hand_load_weight."""
+    planted over the same span), weighted hand_load_weight.
+
+    Middle ground between full joint tracking and none (distance
+    indexing): swing_only tracks a limb's sagittal joints only once its
+    planted phase is over (abduction always), penalizes limbs moving down
+    fast near the ground (hammering, tapping); pitch_weight tracks trunk
+    pitch at its own weight (default: with the joints), outside +-pitch_tol
+    rad, during the push and in flight; hand_vault_dist: the hands' planted
+    and vault-load phase ends this far (m) past the feet's."""
     self.track_scale = track_scale
     self.min_hand_force = min_hand_force
     window = max(window or push_time, push_time)
@@ -338,6 +352,14 @@ class TrackILQR(L.LaunchILQR):
     self.free_hands = free_hands
     self.hand_load = hand_load
     self.hand_load_weight = hand_load_weight
+    self.swing_only = swing_only
+    self.pitch_weight = pitch_weight
+    self.pitch_tol = pitch_tol
+    assert not swing_only or track_index == 'distance', 'swing_only needs distance indexing'
+    if track_index == 'distance' and hand_vault_dist is not None:
+      self.hands_lift_dist = min(self.hands_lift_dist,
+                                 self.feet_lift_dist + hand_vault_dist)
+    self._vel = np.zeros(6)
     assert hand_load is None or track_index == 'distance', 'hand_load needs distance indexing'
     if free_hands:
       self.n_hands = self.n_feet
@@ -373,12 +395,25 @@ class TrackILQR(L.LaunchILQR):
     else:
       q_ref = self.q_track[t]
     r = super().residual(t)
+    d = self.d
+    e = pitch_of(d.qpos[3:7]) - self.pitch_track[min(t, len(self.pitch_track) - 1)]
+    e = np.sign(e) * max(abs(e) - self.pitch_tol, 0.0)
+    pitch = np.sqrt(W_TRACK_PITCH) * e / S_TRACK_PITCH
+    if self.pitch_weight is not None:
+      # trunk pitch at its own weight, through the push and the flight
+      r = np.concatenate([r, [np.sqrt(self.dt * self.pitch_weight) * pitch]])
     if t < self.n_push:
-      d = self.d
       track = np.sqrt(W_TRACK) * (d.qpos[7:] - q_ref) / S_TRACK
-      pitch = (np.sqrt(W_TRACK_PITCH) * (pitch_of(d.qpos[3:7]) - self.pitch_track[t])
-               / S_TRACK_PITCH)
-      r = np.concatenate([r, np.sqrt(self.dt * self.track_scale) * np.r_[track, pitch]])
+      if self.swing_only:
+        mask = np.zeros(12)
+        mask[ABDUCTION] = 1.0
+        for limb, joints in SWING_JOINTS.items():
+          planted = self.n_hands if limb[0] == 'F' else self.n_feet
+          mask[joints] = 0.0 if planted else 1.0
+        track = track * mask
+        r = np.concatenate([r, self.touchdown_residual()])
+      parts = [track] if self.pitch_weight is not None else [track, [pitch]]
+      r = np.concatenate([r, np.sqrt(self.dt * self.track_scale) * np.concatenate(parts)])
       if self.min_hand_force > 0 and t < self.n_hands:
         short = np.maximum(self.min_hand_force - self.limb_forces()[:2], 0)
         r = np.concatenate([r, np.sqrt(self.dt * W_FMIN) * short / S_FMIN])
@@ -386,6 +421,19 @@ class TrackILQR(L.LaunchILQR):
         short = np.maximum(load - self.limb_forces()[:2], 0)
         r = np.concatenate([r, np.sqrt(self.dt * self.hand_load_weight) * short / S_LOAD])
     return r
+
+  def touchdown_residual(self):
+    """Downward speed of each limb sphere near the ground (fading out by
+    TOUCHDOWN_HEIGHT): strikes and taps, not planted limbs."""
+    m, d = self.m, self.d
+    r = np.zeros(4)
+    for i, g in enumerate(self.hands + self.feet):
+      h = d.geom_xpos[g, 2] - m.geom_size[g, 0] - T.FLOOR_Z
+      near = min(max(1.0 - h / TOUCHDOWN_HEIGHT, 0.0), 1.0)
+      if near > 0:
+        mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_GEOM, g, self._vel, 0)
+        r[i] = near * max(-self._vel[5], 0.0)
+    return np.sqrt(self.dt * W_TOUCHDOWN) * r / S_TOUCHDOWN
 
   def pd_warm_start(self, kp=600.0, kd=20.0):
     """Controls (N, 6) tracking the retimed reference with PD."""
@@ -456,6 +504,33 @@ def render(opt, traj, det, title, path_base):
   sheet.save(path_base + '_frames.png')
 
 
+def solver_kwargs(args):
+  """TrackILQR keyword options from the command line (beside the push
+  time, torque, speed, tracking scale and design)."""
+  return dict(min_hand_force=args.min_hand_force, reference=args.reference,
+              angle=args.angle, window=args.window or None,
+              free_hands=args.free_hands, track_index=args.track_index,
+              hand_load=args.hand_load, hand_load_weight=args.hand_load_weight,
+              hand_vault_dist=args.hand_vault_dist, swing_only=args.swing_only,
+              pitch_weight=args.pitch_weight, pitch_tol=args.pitch_tol,
+              force_cap=args.force_cap)
+
+
+def solver_for_step(run, row):
+  """The TrackILQR of a launch_track.py run's step (summary row), rebuilt
+  from the run's args.json; returns (solver, args)."""
+  args = parser().parse_args([])
+  vars(args).update(json.load(open(os.path.join(run, 'args.json'))))
+  design = make_design(args, verbose=False)
+  margin = row.get('contact_smoothing', 0.0)
+  if margin > 0:
+    design['contact_smoothing'] = margin
+  L.PLANT_TOL = max(L.PLANT_TOL, margin)
+  solver = TrackILQR(row['push_time'], args.torque, row['target_speed'],
+                     track_scale=row['track_scale'], **solver_kwargs(args), **design)
+  return solver, args
+
+
 def parser():
   p = argparse.ArgumentParser()
   p.add_argument('--torque', type=float, default=6.0)
@@ -512,6 +587,18 @@ def parser():
                  help='minimum normal force per hand while the feet are planted '
                       'and then while the hands can reach (needs --track_index distance)')
   p.add_argument('--hand_load_weight', type=float, default=200.0)
+  p.add_argument('--hand_vault_dist', type=float, default=None,
+                 help='hands planted and vault-loaded only this far (m) past '
+                      'the feet liftoff distance')
+  p.add_argument('--swing_only', action='store_true',
+                 help='track joints only of limbs past their planted phase '
+                      '(abduction always) and penalize limb touchdown speed')
+  p.add_argument('--pitch_weight', type=float, default=None,
+                 help='trunk pitch tracking weight, independent of --track_scale')
+  p.add_argument('--pitch_tol', type=float, default=0.0,
+                 help='rad of pitch error left free')
+  p.add_argument('--force_cap', type=float, default=0.0,
+                 help='per-limb normal force above this (N) is penalized')
   p.add_argument('--margins', type=float, nargs='*', default=None,
                  help='contact smoothing continuation: one chain step per '
                       'smoothing distance (m) at the first --speeds target, '
@@ -592,11 +679,7 @@ def main():
     L.PLANT_TOL = max(plant_tol, margin)
     step_design = dict(design, contact_smoothing=margin) if margin > 0 else design
     solver = TrackILQR(push_time, args.torque, speed, track_scale=track_scale,
-                       min_hand_force=args.min_hand_force,
-                       reference=args.reference, angle=args.angle,
-                       window=args.window or None, free_hands=args.free_hands,
-                       track_index=args.track_index, hand_load=args.hand_load,
-                       hand_load_weight=args.hand_load_weight, **step_design)
+                       **solver_kwargs(args), **step_design)
     if U_prev is None:
       U = solver.pd_warm_start()
     else:

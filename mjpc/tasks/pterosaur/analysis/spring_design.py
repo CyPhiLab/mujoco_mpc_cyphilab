@@ -59,19 +59,9 @@ def main():
   p.add_argument('step')
   p.add_argument('--out', default=None)
   a = p.parse_args()
-  args = LT.parser().parse_args([])
-  vars(args).update(json.load(open(os.path.join(a.run, 'args.json'))))
-  design = LT.make_design(args, verbose=False)
   row = next(r for r in json.load(open(os.path.join(a.run, 'summary.json')))
              if r['name'] == a.step)
-  solver = LT.TrackILQR(row['push_time'], args.torque, row['target_speed'],
-                        track_scale=row['track_scale'],
-                        min_hand_force=args.min_hand_force,
-                        reference=args.reference, angle=args.angle,
-                        window=args.window or None, free_hands=args.free_hands,
-                        track_index=args.track_index, hand_load=args.hand_load,
-                        hand_load_weight=args.hand_load_weight,
-                        **dict(design, contact_smoothing=row.get('contact_smoothing', 0.0)))
+  solver, _ = LT.solver_for_step(a.run, row)
   U = np.load(os.path.join(a.run, a.step + '_controls.npy'))[:solver.N]
   power, q = joint_power(solver, U)
   dt = solver.dt
