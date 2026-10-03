@@ -242,12 +242,23 @@ def add_latched_springs(spec, springs):
     a.forcerange = [0, sp['tau0']] if sp['tau0'] > 0 else [sp['tau0'], 0]
 
 
+def add_point_masses(spec, masses):
+  """masses: list of (body name, kg): a point mass welded at the body's
+  origin (its joint), e.g. spring hardware."""
+  for i, (body, mass) in enumerate(masses):
+    b = spec.body(body).add_body()
+    b.name = f'point_mass_{i}_{body}'
+    b.mass = mass
+    b.inertia = [1e-6] * 3
+    b.explicitinertial = True
+
+
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
                start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
                body_scale=1.0, shoulder_differential=False,
-               arm_motors_on_legs=False):
+               arm_motors_on_legs=False, point_masses=None):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -258,7 +269,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   (0 = model), inertia scaled with it; body_scale: whole-robot geometric
   scale (scale_robot; actuator gains are then absolute: torque x model);
   arm_motors_on_legs: hip motors = shoulder motors, knee motors = elbow
-  motors (before the torque and arm/leg scales)."""
+  motors (before the torque and arm/leg scales); point_masses: see
+  add_point_masses."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -296,6 +308,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
     scale_robot(spec, body_scale)
   if shoulder_differential:
     add_shoulder_differential(spec)
+  if point_masses:
+    add_point_masses(spec, point_masses)
   if forearm_mass > 0:
     for name in ['radius_and_ulna', 'radius_and_ulna_2']:
       b = spec.body(name)

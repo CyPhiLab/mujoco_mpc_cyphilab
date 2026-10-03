@@ -82,20 +82,37 @@ JOINT_NAMES = ['leftarm_shoulder1', 'leftarm_shoulder2', 'leftarm_elbow',
                'rightleg_hip1', 'rightleg_hip2', 'rightleg_knee']
 
 
-def designed_springs(budget):
+# spring hardware mount (point mass) per spring joint: the proximal end of
+# the segment the spring rides on (shoulder/hip housing, top of the
+# humerus/femur with a cable to the elbow/knee), keeping limb inertia low
+SPRING_MOUNT = {'leftarm_shoulder2': 'smaller_housing',
+                'rightarm_shoulder2': 'smaller_housing_2',
+                'leftarm_elbow': 'bevel_out', 'rightarm_elbow': 'bevel_out_2',
+                'leftleg_hip2': 'leg_motor_1', 'rightleg_hip2': 'hip',
+                'leftleg_knee': 'leg_motor_2', 'rightleg_knee': 'femur'}
+
+
+def designed_springs(budget, design=SPRING_DESIGN, ramp=SPRING_RAMP,
+                     efficiency=1.0, mass=0.0):
   """Latched spring actuators (launch_trajopt.add_latched_springs) storing
-  budget J over both sides, and their release times."""
-  springs, times = [], []
-  for name, sides, share, release, q0, q1 in SPRING_DESIGN:
+  budget J over both sides, and their release times. ramp: fraction of the
+  travel over which the torque ramps to zero (1 = linear spring);
+  efficiency: fraction of the stored energy returned (hysteresis); mass:
+  spring hardware kg over both sides, split by energy, as point masses
+  (launch_trajopt.add_point_masses)."""
+  springs, times, masses = [], [], []
+  for name, sides, share, release, q0, q1 in design:
     energy = budget * share / 2
     a = abs(q1 - q0)
-    tau0 = energy / (a * (1 - SPRING_RAMP / 2))
-    k = tau0 / (SPRING_RAMP * a)
+    tau0 = efficiency * energy / (a * (1 - ramp / 2))
+    k = tau0 / (ramp * a)
     for side in sides:
       springs.append({'joint': JOINT_NAMES[side], 'k': k, 'rest': q1,
                       'tau0': float(np.sign(q1 - q0) * tau0)})
       times.append(release)
-  return springs, times
+      if mass > 0:
+        masses.append((SPRING_MOUNT[JOINT_NAMES[side]], mass * share / 2))
+  return springs, times, masses
 
 
 # minimum normal force per hand while planted (residual scale and weight)
@@ -338,7 +355,7 @@ def render(opt, traj, det, title, path_base):
   sheet.save(path_base + '_frames.png')
 
 
-def main():
+def parser():
   p = argparse.ArgumentParser()
   p.add_argument('--torque', type=float, default=6.0)
   p.add_argument('--spring_energy', type=float, default=500.0)
@@ -355,6 +372,18 @@ def main():
                  help='legacy: --spring_energy joint springs; designed: '
                       'SPRING_DESIGN latched springs storing --spring_budget')
   p.add_argument('--spring_budget', type=float, default=2500.0)
+  p.add_argument('--spring_design', default=None,
+                 help='spring_design.py JSON (default: SPRING_DESIGN)')
+  p.add_argument('--spring_profile', default='flat', choices=['flat', 'linear'],
+                 help='flat: constant torque then a ramp over SPRING_RAMP; '
+                      'linear: a plain linear spring')
+  p.add_argument('--spring_efficiency', type=float, default=1.0,
+                 help='fraction of the stored energy returned')
+  p.add_argument('--spring_mass', type=float, default=0.0,
+                 help='spring hardware kg (both sides); if > 0 the budget is '
+                      'spring_mass x spring_density and the mass is added')
+  p.add_argument('--spring_density', type=float, default=500.0,
+                 help='J of stored energy per kg of spring hardware')
   p.add_argument('--arm_motors_on_legs', action='store_true',
                  help='hip motors = shoulder motors, knee motors = elbow motors')
   p.add_argument('--shoulder_differential', action='store_true',
@@ -371,12 +400,14 @@ def main():
   p.add_argument('--init', default=None, help='controls (.npy) to start from')
   p.add_argument('--init_push', type=float, default=0.45)
   p.add_argument('--first_step', type=int, default=0, help='numbering offset')
-  args = p.parse_args()
+  return p
+
+
+def make_design(args, verbose=True):
+  """TrackILQR design kwargs from the command line (also sets the
+  process-wide differential control mirroring and plant tolerance)."""
   if args.plant_tol is not None:
     L.PLANT_TOL = args.plant_tol
-  chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
-           'push': PUSH, 'bodypath': BODYPATH,
-           'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
   design = dict(no_load_speed=args.no_load_speed)
   if args.arm_motors_on_legs:
     design['arm_motors_on_legs'] = True
@@ -384,12 +415,37 @@ def main():
     L.use_shoulder_differential()
     design['shoulder_differential'] = True
   if args.springs == 'designed':
-    springs, times = designed_springs(args.spring_budget)
+    spring_design = SPRING_DESIGN
+    if args.spring_design:
+      spring_design = [(r['name'], tuple(r['sides']), r['share'], r['release'],
+                        r['q0'], r['q1']) for r in json.load(open(args.spring_design))]
+    budget = (args.spring_mass * args.spring_density if args.spring_mass > 0
+              else args.spring_budget)
+    springs, times, masses = designed_springs(
+        budget, spring_design, ramp=1.0 if args.spring_profile == 'linear' else SPRING_RAMP,
+        efficiency=args.spring_efficiency, mass=args.spring_mass)
     design.update(latched_springs=springs, latch_times=times)
+    if masses:
+      design['point_masses'] = masses
+    if verbose:
+      print(f'springs: {budget:.0f} J stored, {args.spring_mass:g} kg')
+    for sp, t in zip(springs, times) if verbose else ():
+      print(f"  {sp['joint']:20s} release {t:.3f} s, k {sp['k']:6.0f} N m/rad, "
+            f"rest {sp['rest']:+.3f}, peak torque {sp['tau0']:+5.0f} N m")
   else:
     design.update(spring_energy=args.spring_energy)
+  return design
+
+
+def main():
+  args = parser().parse_args()
+  design = make_design(args)
+  chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
+           'push': PUSH, 'bodypath': BODYPATH,
+           'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
   chain = [(T_, v, w * args.track_scale) for T_, v, w in chain]
   os.makedirs(args.out, exist_ok=True)
+  json.dump(vars(args), open(os.path.join(args.out, 'args.json'), 'w'), indent=1)
   summary_path = os.path.join(args.out, 'summary.json')
   summary = json.load(open(summary_path)) if os.path.exists(summary_path) else []
   U_prev, prev_push = None, None
