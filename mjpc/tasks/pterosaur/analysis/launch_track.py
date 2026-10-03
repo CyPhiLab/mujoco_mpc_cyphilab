@@ -57,6 +57,10 @@ BODYPATH = [(0.45, v, 1.0) for v in (6.0, 7.0, 8.0, 9.0, 10.0)]
 # --chain bodypath_real: realistic motors (--torque 2 --no_load_speed 20)
 # with designed springs, at increasing speeds from a PD warm start
 BODYPATH_REAL = [(0.45, v, 1.0) for v in (3.0, 4.0, 5.0, 6.0, 7.0)]
+# --chain relax_real: from a bodypath_real solution (--init), the tracking
+# loosened step by step at increasing speeds
+RELAX_REAL = [(0.45, 4.0, 0.3), (0.45, 4.0, 0.1), (0.45, 5.0, 0.1),
+              (0.45, 6.0, 0.1)]
 
 # Designed latched springs (per side), from the joint work in the best clean
 # launch with ideal 6x motors (tracked_C_bodypath step 1: shoulder2 336 J,
@@ -340,7 +344,8 @@ def main():
   p.add_argument('--steps', type=int, default=len(CHAIN))
   p.add_argument('--out', default=os.path.join(HERE, 'tracked'))
   p.add_argument('--chain', default='speed',
-                 choices=['speed', 'relax', 'push', 'bodypath', 'bodypath_real'])
+                 choices=['speed', 'relax', 'push', 'bodypath', 'bodypath_real',
+                          'relax_real'])
   p.add_argument('--no_load_speed', type=float, default=0.0,
                  help='rad/s, DC-motor torque-speed line (0: ideal motors)')
   p.add_argument('--springs', default='legacy', choices=['legacy', 'designed'],
@@ -363,7 +368,7 @@ def main():
     L.PLANT_TOL = args.plant_tol
   chain = {'speed': [(T_, v, 1.0) for T_, v in CHAIN], 'relax': RELAX,
            'push': PUSH, 'bodypath': BODYPATH,
-           'bodypath_real': BODYPATH_REAL}[args.chain]
+           'bodypath_real': BODYPATH_REAL, 'relax_real': RELAX_REAL}[args.chain]
   design = dict(no_load_speed=args.no_load_speed)
   if args.springs == 'designed':
     springs, times = designed_springs(args.spring_budget)
