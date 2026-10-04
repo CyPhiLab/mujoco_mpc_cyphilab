@@ -102,27 +102,52 @@ SPRING_MOUNT = {'leftarm_shoulder2': 'smaller_housing',
                 'leftleg_knee': 'leg_motor_2', 'rightleg_knee': 'femur'}
 
 
+SLACK_STIFFNESS = 20.0   # cancel-spring stiffness / spring stiffness (slack)
+
+
 def designed_springs(budget, design=SPRING_DESIGN, ramp=SPRING_RAMP,
-                     efficiency=1.0, mass=0.0):
+                     efficiency=1.0, mass=0.0, torque_cap=None, slack=False):
   """Latched spring actuators (launch_trajopt.add_latched_springs) storing
   budget J over both sides, and their release times. ramp: fraction of the
   travel over which the torque ramps to zero (1 = linear spring);
   efficiency: fraction of the stored energy returned (hysteresis); mass:
   spring hardware kg over both sides, split by energy, as point masses
-  (launch_trajopt.add_point_masses)."""
+  (launch_trajopt.add_point_masses); torque_cap: {joint name: N m} peak
+  spring torque limit (the energy and hardware mass shrink with it); slack:
+  springs do nothing past their preload angle (add_latched_springs cancel
+  entries), so none returns more than its stored energy."""
   springs, times, masses = [], [], []
   for name, sides, share, release, q0, q1 in design:
     energy = budget * share / 2
     a = abs(q1 - q0)
     tau0 = efficiency * energy / (a * (1 - ramp / 2))
+    fraction = 1.0
+    cap = (torque_cap or {}).get(JOINT_NAMES[sides[0]])
+    if cap is not None and tau0 > cap:
+      fraction, tau0 = cap / tau0, cap
     k = tau0 / (ramp * a)
     for side in sides:
+      sign = float(np.sign(q1 - q0))
       springs.append({'joint': JOINT_NAMES[side], 'k': k, 'rest': q1,
-                      'tau0': float(np.sign(q1 - q0) * tau0)})
+                      'tau0': sign * tau0, 'energy_J': energy * fraction})
       times.append(release)
+      if slack:
+        springs.append({'joint': JOINT_NAMES[side], 'cancel': True, 'q0': q0,
+                        'k': SLACK_STIFFNESS * k, 'tau0': sign * tau0})
+        times.append(release)
       if mass > 0:
-        masses.append((SPRING_MOUNT[JOINT_NAMES[side]], mass * share / 2))
+        masses.append((SPRING_MOUNT[JOINT_NAMES[side]], mass * share / 2 * fraction))
   return springs, times, masses
+
+
+def motor_stall_torque(design):
+  """{joint name: N m} stall torque the limb motors can apply to each
+  joint together (both shoulder motors through a differential)."""
+  m = T.load_model(design['torque'], no_load_speed=design.get('no_load_speed', 0.0),
+                   shoulder_differential=design.get('shoulder_differential', False),
+                   arm_motors_on_legs=design.get('arm_motors_on_legs', False))
+  stall = np.abs(T.actuator_joint_map(m)).T @ m.actuator_gainprm[:12, 0]
+  return dict(zip(JOINT_NAMES, stall))
 
 
 # minimum normal force per hand while planted (residual scale and weight)
@@ -579,6 +604,11 @@ def parser():
   p.add_argument('--spring_mass', type=float, default=0.0,
                  help='spring hardware kg (both sides); if > 0 the budget is '
                       'spring_mass x spring_density and the mass is added')
+  p.add_argument('--spring_torque_cap', action='store_true',
+                 help="cap each spring's peak torque at its joint's motor stall torque")
+  p.add_argument('--spring_slack', action='store_true',
+                 help='springs do nothing past their preload angle (no energy '
+                      'beyond what they store)')
   p.add_argument('--spring_density', type=float, default=500.0,
                  help='J of stored energy per kg of spring hardware')
   p.add_argument('--arm_motors_on_legs', action='store_true',
@@ -671,17 +701,25 @@ def make_design(args, verbose=True):
                         r['q0'], r['q1']) for r in json.load(open(args.spring_design))]
     budget = (args.spring_mass * args.spring_density if args.spring_mass > 0
               else args.spring_budget)
+    cap = (motor_stall_torque(dict(design, torque=args.torque))
+           if args.spring_torque_cap else None)
     springs, times, masses = designed_springs(
         budget, spring_design, ramp=1.0 if args.spring_profile == 'linear' else SPRING_RAMP,
-        efficiency=args.spring_efficiency, mass=args.spring_mass)
+        efficiency=args.spring_efficiency, mass=args.spring_mass,
+        torque_cap=cap, slack=args.spring_slack)
     design.update(latched_springs=springs, latch_times=times)
     if masses:
       design['point_masses'] = masses
     if verbose:
-      print(f'springs: {budget:.0f} J stored, {args.spring_mass:g} kg')
+      stored = sum(sp['energy_J'] for sp in springs if not sp.get('cancel'))
+      print(f'springs: {stored:.0f} J stored (budget {budget:.0f} J), '
+            f'{sum(mm for _, mm in masses):.2f} kg')
     for sp, t in zip(springs, times) if verbose else ():
+      if sp.get('cancel'):
+        continue
       print(f"  {sp['joint']:20s} release {t:.3f} s, k {sp['k']:6.0f} N m/rad, "
-            f"rest {sp['rest']:+.3f}, peak torque {sp['tau0']:+5.0f} N m")
+            f"rest {sp['rest']:+.3f}, peak torque {sp['tau0']:+5.0f} N m, "
+            f"{sp['energy_J']:4.0f} J" + (f" (cap {cap[sp['joint']]:.0f})" if cap else ''))
   else:
     design.update(spring_energy=args.spring_energy)
   return design

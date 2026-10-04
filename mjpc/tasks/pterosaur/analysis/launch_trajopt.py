@@ -255,13 +255,25 @@ def add_latched_springs(spec, springs):
   """Latched springs as joint actuators whose control is the latch (0
   locked, 1 released): torque k (rest - q), clipped to [0, tau0] (or
   [-tau0, 0]), i.e. constant tau0 then a linear ramp to zero at rest, and
-  nothing past it (a stop). springs: list of dicts joint, k, rest, tau0."""
+  nothing past it (a stop). springs: list of dicts joint, k, rest, tau0.
+  An entry with 'cancel': True (and q0, the preload angle) instead cancels
+  that spring beyond q0 (torque k (q - q0), clipped to [-tau0, 0] or
+  [0, -tau0]): a released spring then does nothing past its preload angle,
+  so it never returns more than its stored energy."""
   for sp in springs:
     a = spec.add_actuator()
-    a.name = 'spring_' + sp['joint']
+    a.name = ('spring_cancel_' if sp.get('cancel') else 'spring_') + sp['joint']
     a.target = sp['joint']
     a.trntype = mujoco.mjtTrn.mjTRN_JOINT
     a.gaintype = mujoco.mjtGain.mjGAIN_AFFINE
+    if sp.get('cancel'):
+      a.gainprm[:3] = [-sp['k'] * sp['q0'], sp['k'], 0]
+      a.biastype = mujoco.mjtBias.mjBIAS_NONE
+      a.ctrllimited = True
+      a.ctrlrange = [0, 1]
+      a.forcelimited = True
+      a.forcerange = [-sp['tau0'], 0] if sp['tau0'] > 0 else [0, -sp['tau0']]
+      continue
     a.gainprm[:3] = [sp['k'] * sp['rest'], -sp['k'], 0]
     a.biastype = mujoco.mjtBias.mjBIAS_NONE
     a.ctrllimited = True
