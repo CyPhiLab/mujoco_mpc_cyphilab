@@ -604,6 +604,8 @@ def parser():
   p.add_argument('--spring_mass', type=float, default=0.0,
                  help='spring hardware kg (both sides); if > 0 the budget is '
                       'spring_mass x spring_density and the mass is added')
+  p.add_argument('--release_delay', nargs='*', default=None, metavar='JOINT=S',
+                 help='delay spring releases, e.g. shoulder2=0.05 hip2=0.05')
   p.add_argument('--spring_torque_cap', action='store_true',
                  help="cap each spring's peak torque at its joint's motor stall torque")
   p.add_argument('--spring_slack', action='store_true',
@@ -699,6 +701,10 @@ def make_design(args, verbose=True):
     if args.spring_design:
       spring_design = [(r['name'], tuple(r['sides']), r['share'], r['release'],
                         r['q0'], r['q1']) for r in json.load(open(args.spring_design))]
+    if args.release_delay:
+      delay = {k: float(v) for k, v in (kv.split('=') for kv in args.release_delay)}
+      spring_design = [(n, sd, sh, rel + delay.get(n, 0.0), q0, q1)
+                       for n, sd, sh, rel, q0, q1 in spring_design]
     budget = (args.spring_mass * args.spring_density if args.spring_mass > 0
               else args.spring_budget)
     cap = (motor_stall_torque(dict(design, torque=args.torque))
