@@ -656,6 +656,9 @@ def parser():
   p.add_argument('--z_ref_rise', type=float, default=None,
                  help='ballistic CoM height as a rise (m) over the start CoM '
                       'height (overrides --z_ref)')
+  p.add_argument('--no_trunk_limb_collision', action='store_true',
+                 help='exclude trunk-humerus/femur contacts (their convex hulls '
+                      'overlap ~26 mm in the reference crouch)')
   p.add_argument('--arm_length', type=float, default=None,
                  help='forelimb length factor; the start crouch is re-solved '
                       '(all limbs on the floor, from rest), also for 1')
@@ -688,6 +691,8 @@ def make_design(args, verbose=True):
   L.W_SPIN = SPIN_WEIGHT * args.spin_scale
   L.W_PITCH = PITCH_WEIGHT * args.pitch_scale
   design = dict(no_load_speed=args.no_load_speed)
+  if args.no_trunk_limb_collision:
+    design['trunk_limb_collision'] = False
   if args.arm_motors_on_legs:
     design['arm_motors_on_legs'] = True
   if args.arm_length is not None:
