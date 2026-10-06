@@ -293,6 +293,9 @@ def add_point_masses(spec, masses):
     b.explicitinertial = True
 
 
+LAST_SPEC = None
+
+
 def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                leg_scale=1.0, spring_energy=0.0, joint_margin=JOINT_MARGIN,
                limb_scale=1.0, no_load_speed=0.0, latched_springs=None,
@@ -373,6 +376,8 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   if hand:
     hand_pad(spec, hand, ref['qpos'][push_start_index(ref)]
              if start_qpos is None else start_qpos)
+  global LAST_SPEC
+  LAST_SPEC = spec     # for export_model.py (edits below go to the model only)
   m = spec.compile()
   q = ref['qpos'][:, 7:]
   lo, hi = q.min(axis=0) - joint_margin, q.max(axis=0) + joint_margin

@@ -1,0 +1,363 @@
+<mujoco model="MuJoCo Model">
+  <compiler angle="radian" meshdir="assets/"/>
+
+  <option integrator="implicit"/>
+
+  <size memory="4M" nkey="1" nuser_sensor="5"/>
+
+  <visual>
+    <global azimuth="160" elevation="-20"/>
+    <quality shadowsize="2048"/>
+    <headlight ambient="0.3 0.3 0.3" diffuse="0.6 0.6 0.6" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+  </visual>
+
+  <default>
+    <default class="pterosaur">
+      <joint armature="0.005" frictionloss="0.1"/>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom group="3"/>
+      </default>
+      <default class="foot">
+        <geom size="0.02 0 0" contype="2" condim="6" priority="1" friction="1.2 0.02 0.01" solimp="0.015 1 0.031"/>
+      </default>
+    </default>
+    <default class="torque">
+      <general ctrlrange="-1 1" ctrllimited="true" gainprm="40"/>
+    </default>
+    <default class="task">
+      <site size="0.02 0.005 0.005" group="5" rgba="1 0 0 1"/>
+      <default class="flight">
+        <site size="0.019 0.005 0.005" rgba="1 0.3 0.3 1"/>
+      </default>
+      <default class="stance">
+        <site size="0.018 0.005 0.005" group="4" rgba="0.3 1 0.3 1"/>
+      </default>
+    </default>
+    <default class="prop">
+      <geom type="box" rgba="0 0.4 1 1"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="2d" colorspace="auto" name="blue_grid" builtin="checker" mark="edge" rgb1="0.02 0.14 0.44" rgb2="0.27 0.55 1" markrgb="1 1 1" width="300" height="300"/>
+    <texture type="2d" colorspace="auto" name="grey_grid" builtin="checker" mark="edge" rgb1="0.26 0.26 0.26" rgb2="0.6 0.6 0.6" markrgb="1 1 1" width="300" height="300"/>
+    <texture type="skybox" colorspace="auto" name="skybox" builtin="gradient" rgb1="0.66 0.79 1" rgb2="0.9 0.91 0.93" width="800" height="4800"/>
+    <texture type="skybox" colorspace="auto" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" colorspace="auto" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="blue_grid" texture="blue_grid" texuniform="true" reflectance="0.2"/>
+    <material name="grey_grid" texture="grey_grid" texuniform="true" reflectance="0.2"/>
+    <material name="self" rgba="0.7 0.5 0.3 1"/>
+    <material name="self_default" rgba="0.7 0.5 0.3 1"/>
+    <material name="self_highlight" rgba="0 0.5 0.3 1"/>
+    <material name="effector" rgba="0.7 0.4 0.2 1"/>
+    <material name="effector_default" rgba="0.7 0.4 0.2 1"/>
+    <material name="effector_highlight" rgba="0 0.5 0.3 1"/>
+    <material name="decoration" rgba="0.2 0.6 0.3 1"/>
+    <material name="eye" rgba="0 0.2 1 1"/>
+    <material name="target" rgba="0.6 0.3 0.3 1"/>
+    <material name="target_default" rgba="0.6 0.3 0.3 1"/>
+    <material name="target_highlight" rgba="0.6 0.3 0.3 0.4"/>
+    <material name="site" rgba="0.5 0.5 0.5 0.3"/>
+    <material name="body_material" rgba="0.980392 0.713725 0.00392157 1"/>
+    <material name="housing_bearing_material" rgba="0.768627 0.886275 0.952941 1"/>
+    <material name="smaller_housing_material" rgba="0.917647 0.917647 0.917647 1"/>
+    <material name="humerus_material" rgba="0.498039 0.498039 0.498039 1"/>
+    <material name="bevel_out_material" rgba="0.615686 0.811765 0.929412 1"/>
+    <material name="radius_and_ulna_material" rgba="0.498039 0.498039 0.498039 1"/>
+    <material name="finger_material" rgba="0.980392 0.713725 0.00392157 1"/>
+    <material name="hip_material" rgba="0.647059 0.647059 0.647059 1"/>
+    <material name="leg_motor_1_material" rgba="0.615686 0.811765 0.929412 1"/>
+    <material name="femur_material" rgba="0.768627 0.886275 0.952941 1"/>
+    <material name="leg_motor_3_material" rgba="0.917647 0.917647 0.917647 1"/>
+    <material name="leg_motor_2_material" rgba="0.231373 0.380392 0.705882 1"/>
+    <material name="tibia_material" rgba="0.498039 0.498039 0.498039 1"/>
+    <material name="groundplane" texture="groundplane" texrepeat="5 5" texuniform="true" reflectance="0.2"/>
+    <mesh name="femur" file="femur.stl"/>
+    <mesh name="hip" file="hip.stl"/>
+    <mesh name="housing_bearing" file="housing_bearing.stl"/>
+    <mesh name="smaller_housing" file="smaller_housing.stl"/>
+    <mesh name="finger" file="finger.stl"/>
+    <mesh name="body" file="body.stl"/>
+    <mesh name="humerus" file="humerus.stl"/>
+    <mesh name="tibia" file="tibia.stl"/>
+    <mesh name="radius_and_ulna" file="radius_and_ulna.stl"/>
+    <mesh name="bevel_out" file="bevel_out.stl"/>
+    <mesh name="leg_motor_2" file="leg_motor_2.stl"/>
+    <mesh name="leg_motor_1" file="leg_motor_1.stl"/>
+    <mesh name="leg_motor_3" file="leg_motor_3.stl"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" pos="0 0 -1" type="plane" conaffinity="3" material="groundplane"/>
+    <light pos="0 0 3.5" type="directional"/>
+    <body name="body" childclass="pterosaur">
+      <inertial pos="-0.329162 0.2607 0.205848" quat="0.618511 0.618511 -0.342701 0.342701" mass="21.9159" diaginertia="1.82175 1.36685 0.542959"/>
+      <joint name="body_freejoint" type="free" armature="0" frictionloss="0"/>
+      <geom name="height_probe_visual" size="0.03" pos="-0.329162 0.2607 0.205848" contype="0" conaffinity="0" group="2" rgba="1 1 0 0.6"/>
+      <geom class="visual" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" material="body_material" mesh="body"/>
+      <geom class="collision" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" type="mesh" material="body_material" mesh="body"/>
+      <geom class="visual" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="collision" pos="-1.16424 0.2607 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" type="mesh" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="visual" pos="-1.31895 1.12179 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="collision" pos="-1.31895 1.12179 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" type="mesh" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="visual" pos="-1.31895 0.2607 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="collision" pos="-1.31895 0.2607 0.824836" quat="0.618511 -0.342701 -0.342701 0.618511" type="mesh" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="visual" pos="-1.16424 1.12179 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" material="housing_bearing_material" mesh="housing_bearing"/>
+      <geom class="collision" pos="-1.16424 1.12179 0.72808" quat="0.618511 -0.342701 -0.342701 0.618511" type="mesh" material="housing_bearing_material" mesh="housing_bearing"/>
+      <site name="com" size="0.001" pos="-0.329162 0.2607 0.205848" rgba="1 0 0 1"/>
+      <site name="head" class="task" pos="-0.029162 0.2607 0.205848"/>
+      <body name="smaller_housing" pos="-0.342251 -0.169846 0.214034" quat="0.484652 0 0.874707 0">
+        <inertial pos="-1.24807e-06 0.00682513 -0.0787398" quat="0.707128 -1.57178e-06 -7.81234e-06 0.707086" mass="1.343" diaginertia="0.013795 0.0135155 0.00927768"/>
+        <joint name="leftarm_shoulder1" range="-2.30808 0.293118" limited="true"/>
+        <geom class="visual" pos="0.430546 0 -0.969486" quat="0 1 0 0" material="smaller_housing_material" mesh="smaller_housing"/>
+        <body name="bevel_out" pos="0 -0.0762 -0.07874" quat="0.0909266 0.0909266 -0.701236 0.701236">
+          <inertial pos="-0.0753731 0 0.0347345" quat="0.43073 0.560778 0.560778 0.43073" mass="4.75962" diaginertia="0.0797297 0.0796501 0.0108048"/>
+          <joint name="leftarm_shoulder2" range="-1.73025 1.55614" limited="true"/>
+          <geom class="visual" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 0 0" material="humerus_material" mesh="humerus"/>
+          <geom class="collision" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 0 0" type="mesh" material="humerus_material" mesh="humerus"/>
+          <geom class="visual" pos="0.430546 -0.890746 -0.0762" quat="0.707107 0.707107 0 0" material="bevel_out_material" mesh="bevel_out"/>
+          <body name="radius_and_ulna" pos="-0.381 0 0.1016" quat="0.943004 0 0 0.332781">
+            <inertial pos="-0.306294 0 -0.01905" quat="0 0.707107 0 0.707107" mass="1.60866" diaginertia="0.0697199 0.0693551 0.000762134"/>
+            <joint name="leftarm_elbow" range="-0.7423 1.53233" limited="true"/>
+            <geom class="visual" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" material="radius_and_ulna_material" mesh="radius_and_ulna"/>
+            <geom class="collision" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" type="mesh" material="radius_and_ulna_material" mesh="radius_and_ulna"/>
+            <geom name="FL" size="0.02" pos="-0.675 0 -0.02" contype="2" condim="6" priority="1" friction="1 0.02 0.01" solref="0.0067 3"/>
+            <site name="FL" size="0.02" pos="-0.675 0 -0.02"/>
+          </body>
+        </body>
+      </body>
+      <body name="smaller_housing_2" pos="-0.342251 0.691246 0.214034" quat="0 0.874707 0 0.484652">
+        <inertial pos="-1.24807e-06 0.00682513 -0.0787398" quat="0.707128 -1.57178e-06 -7.81234e-06 0.707086" mass="1.343" diaginertia="0.013795 0.0135155 0.00927768"/>
+        <joint name="rightarm_shoulder1" range="-0.295388 2.30617" limited="true"/>
+        <geom class="visual" pos="0.430546 0 -0.969486" quat="0 1 0 0" material="smaller_housing_material" mesh="smaller_housing"/>
+        <body name="bevel_out_2" pos="0 -0.0762 -0.07874" quat="0.707107 -0.707107 0 0">
+          <inertial pos="-0.0728804 0.0192235 -0.0347345" quat="0.62822 0.482551 0.371755 0.484027" mass="4.75962" diaginertia="0.0797297 0.0796501 0.0108049"/>
+          <joint name="rightarm_shoulder2" range="-1.73159 1.55314" limited="true"/>
+          <geom class="visual" pos="0.643487 0.751481 0.0762" quat="0.701236 -0.701236 0.0909266 -0.0909266" material="humerus_material" mesh="humerus"/>
+          <geom class="collision" pos="0.643487 0.751481 0.0762" quat="0.701236 -0.701236 0.0909266 -0.0909266" type="mesh" material="humerus_material" mesh="humerus"/>
+          <geom class="visual" pos="-0.751481 0.643487 0.0762" quat="0.560144 -0.560144 -0.431554 0.431554" material="bevel_out_material" mesh="bevel_out"/>
+          <body name="radius_and_ulna_2" pos="-0.3684 0.0971719 -0.0635" quat="0.977967 0 0 0.208758">
+            <inertial pos="-0.306294 0 -0.01905" quat="0 0.707107 0 0.707107" mass="1.60866" diaginertia="0.0697199 0.0693551 0.000762134"/>
+            <joint name="rightarm_elbow" range="-0.7369 1.53357" limited="true"/>
+            <geom class="visual" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" material="radius_and_ulna_material" mesh="radius_and_ulna"/>
+            <geom class="collision" pos="0.811546 -0.890746 -0.1778" quat="0.707107 0.707107 0 0" type="mesh" material="radius_and_ulna_material" mesh="radius_and_ulna"/>
+            <geom name="FR" size="0.02" pos="-0.675 0 -0.02" contype="2" condim="6" priority="1" friction="1 0.02 0.01" solref="0.0067 3"/>
+            <site name="FR" size="0.02" pos="-0.675 0 -0.02"/>
+          </body>
+        </body>
+      </body>
+      <body name="leg_motor_1" pos="-0.124306 0.1575 0.0777372" quat="0.618511 -0.342701 -0.342701 0.618511">
+        <inertial pos="-0.0085028 -1.1347e-08 -0.0878363" quat="0.704254 0.0634614 0.0634616 0.704252" mass="2.7422" diaginertia="0.0181836 0.0169596 0.00916813"/>
+        <joint name="leftleg_hip1" range="-0.327376 0.381876" limited="true"/>
+        <geom class="visual" pos="0.1032 0 1.22654" quat="1 0 0 0" material="hip_material" mesh="hip"/>
+        <geom class="collision" pos="0.1032 0 1.22654" quat="1 0 0 0" type="mesh" material="hip_material" mesh="hip"/>
+        <geom class="visual" pos="0.1032 0 1.22654" quat="1 0 0 0" material="leg_motor_1_material" mesh="leg_motor_1"/>
+        <geom class="collision" pos="0.1032 0 1.22654" quat="1 0 0 0" type="mesh" material="leg_motor_1_material" mesh="leg_motor_1"/>
+        <body name="leg_motor_2" pos="-0.1075 0 -0.146612" quat="0.399172 -0.583663 -0.399172 0.583663">
+          <inertial pos="0.0727822 0 0.0216101" quat="0 0.6709 0 0.741548" mass="3.21492" diaginertia="0.0416266 0.0395144 0.00417972"/>
+          <joint name="leftleg_hip2" range="-1.60002 1.72115" limited="true"/>
+          <geom class="visual" pos="0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" material="femur_material" mesh="femur"/>
+          <geom class="collision" pos="0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" type="mesh" material="femur_material" mesh="femur"/>
+          <geom class="visual" pos="0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" material="leg_motor_3_material" mesh="leg_motor_3"/>
+          <geom class="collision" pos="0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" type="mesh" material="leg_motor_3_material" mesh="leg_motor_3"/>
+          <geom class="visual" pos="0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" material="leg_motor_2_material" mesh="leg_motor_2"/>
+          <geom class="collision" pos="0 -1.37315 -0.2107" quat="0.5 0.5 0.5 -0.5" type="mesh" material="leg_motor_2_material" mesh="leg_motor_2"/>
+          <geom name="LK_visual" size="0.03" pos="0.353 0 0.033" rgba="0 1 1 0.3"/>
+          <geom name="LK" size="0.03" pos="0.353 0 0.033" contype="2" condim="6" priority="1" friction="1 0.02 0.01" solimp="0.015 1 0.031"/>
+          <site name="LK" size="0.03" pos="0.353 0 0.033"/>
+          <body name="tibia" pos="0.3302 0 0.03115" quat="0 0.962486 0.271331 0">
+            <inertial pos="0.164731 0 -0.00635" quat="0 0.707107 0 0.707107" mass="0.440746" diaginertia="0.00548761 0.00537275 0.000126716"/>
+            <joint name="leftleg_knee" range="-1.6531 0.481906" limited="true"/>
+            <geom name="HL" class="foot" pos="0.3681 0 0" solref="0.0067 3" solimp="0.9 0.95 0.001"/>
+            <geom class="visual" pos="-0.3302 1.37315 0.24185" quat="0.5 -0.5 -0.5 -0.5" material="tibia_material" mesh="tibia"/>
+            <geom class="collision" pos="-0.3302 1.37315 0.24185" quat="0.5 -0.5 -0.5 -0.5" type="mesh" material="tibia_material" mesh="tibia"/>
+            <site name="RL" size="0.02" pos="0.3681 0 0"/>
+          </body>
+        </body>
+      </body>
+      <body name="hip" pos="-0.124306 0.3639 0.0777372" quat="0.618511 -0.342701 -0.342701 0.618511">
+        <inertial pos="0.0085028 1.1347e-08 -0.0878363" quat="0.704254 -0.0634614 -0.0634616 0.704252" mass="2.7422" diaginertia="0.0181836 0.0169596 0.00916813"/>
+        <joint name="rightleg_hip1" range="-0.328164 0.346007" limited="true"/>
+        <geom class="visual" pos="0.1032 0 1.22654" quat="1 0 0 0" material="leg_motor_1_material" mesh="leg_motor_1"/>
+        <geom class="collision" pos="0.1032 0 1.22654" quat="1 0 0 0" type="mesh" material="leg_motor_1_material" mesh="leg_motor_1"/>
+        <geom class="visual" pos="-0.1032 0 1.22654" quat="0 0 0 1" material="hip_material" mesh="hip"/>
+        <geom class="collision" pos="-0.1032 0 1.22654" quat="0 0 0 1" type="mesh" material="hip_material" mesh="hip"/>
+        <body name="femur" pos="0.1075 0 -0.146612" quat="0.5 0.5 -0.5 -0.5">
+          <inertial pos="-0.0678277 -0.0263943 -0.0216101" quat="-0.13681 0.659383 0.123774 0.728819" mass="3.21492" diaginertia="0.0416266 0.0395144 0.00417975"/>
+          <joint name="rightleg_hip2" range="-1.60841 1.69754" limited="true"/>
+          <geom class="visual" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" material="leg_motor_2_material" mesh="leg_motor_2"/>
+          <geom class="collision" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" type="mesh" material="leg_motor_2_material" mesh="leg_motor_2"/>
+          <geom class="visual" pos="0.497971 -1.27968 0.2107" quat="0.399172 0.583663 -0.399172 0.583663" material="femur_material" mesh="femur"/>
+          <geom class="collision" pos="0.497971 -1.27968 0.2107" quat="0.399172 0.583663 -0.399172 0.583663" type="mesh" material="femur_material" mesh="femur"/>
+          <geom class="visual" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" material="leg_motor_3_material" mesh="leg_motor_3"/>
+          <geom class="collision" pos="-0.497971 1.27968 0.2107" quat="0.583663 -0.399172 -0.583663 -0.399172" type="mesh" material="leg_motor_3_material" mesh="leg_motor_3"/>
+          <geom name="RK_visual" size="0.03" pos="-0.329 -0.128 -0.047" rgba="0 1 1 0.3"/>
+          <geom name="RK" size="0.03" pos="-0.329 -0.128 -0.047" contype="2" condim="6" priority="1" friction="1 0.02 0.01" solimp="0.015 1 0.031"/>
+          <site name="RK" size="0.03" pos="-0.329 -0.128 -0.047"/>
+          <body name="tibia_2" pos="-0.307722 -0.119746 -0.04385" quat="0 0.444243 -0.895906 0">
+            <inertial pos="0.164731 0 -0.00635" quat="0 0.707107 0 0.707107" mass="0.440746" diaginertia="0.00548761 0.00537275 0.000126716"/>
+            <joint name="rightleg_knee" range="-1.66929 0.456623" limited="true"/>
+            <geom name="HR" class="foot" pos="0.3681 0 0" solref="0.0067 3" solimp="0.9 0.95 0.001"/>
+            <geom class="visual" pos="-0.3302 -1.37315 -0.25455" quat="0.5 0.5 0.5 -0.5" material="tibia_material" mesh="tibia"/>
+            <geom class="collision" pos="-0.3302 -1.37315 -0.25455" quat="0.5 0.5 0.5 -0.5" type="mesh" material="tibia_material" mesh="tibia"/>
+            <site name="RR" size="0.02" pos="0.3681 0 0"/>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="goal" pos="0 0 0.7" mocap="true">
+      <geom size="0.12" contype="0" conaffinity="0" group="2" rgba="0 1 0 0.5"/>
+    </body>
+  </worldbody>
+
+  <tendon>
+    <fixed name="left_shoulder_diff_A">
+      <joint joint="leftarm_shoulder2" coef="1"/>
+      <joint joint="leftarm_shoulder1" coef="1"/>
+    </fixed>
+    <fixed name="left_shoulder_diff_B">
+      <joint joint="leftarm_shoulder2" coef="1"/>
+      <joint joint="leftarm_shoulder1" coef="-1"/>
+    </fixed>
+    <fixed name="right_shoulder_diff_A">
+      <joint joint="rightarm_shoulder2" coef="1"/>
+      <joint joint="rightarm_shoulder1" coef="-1"/>
+    </fixed>
+    <fixed name="right_shoulder_diff_B">
+      <joint joint="rightarm_shoulder2" coef="1"/>
+      <joint joint="rightarm_shoulder1" coef="1"/>
+    </fixed>
+  </tendon>
+
+  <actuator>
+    <general name="leftarm_shoulder1" class="pterosaur" tendon="left_shoulder_diff_A" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="leftarm_shoulder2" class="pterosaur" tendon="left_shoulder_diff_B" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="leftarm_elbow" class="pterosaur" joint="leftarm_elbow" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-80 80" biastype="affine" gainprm="80" biasprm="0 0 -4"/>
+    <general name="rightarm_shoulder1" class="pterosaur" tendon="right_shoulder_diff_A" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="rightarm_shoulder2" class="pterosaur" tendon="right_shoulder_diff_B" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="rightarm_elbow" class="pterosaur" joint="rightarm_elbow" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-80 80" biastype="affine" gainprm="80" biasprm="0 0 -4"/>
+    <general name="leftleg_hip1" class="pterosaur" joint="leftleg_hip1" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="leftleg_hip2" class="pterosaur" joint="leftleg_hip2" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="leftleg_knee" class="pterosaur" joint="leftleg_knee" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-80 80" biastype="affine" gainprm="80" biasprm="0 0 -4"/>
+    <general name="rightleg_hip1" class="pterosaur" joint="rightleg_hip1" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="rightleg_hip2" class="pterosaur" joint="rightleg_hip2" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-200 200" biastype="affine" gainprm="200" biasprm="0 0 -10"/>
+    <general name="rightleg_knee" class="pterosaur" joint="rightleg_knee" ctrlrange="-1 1" ctrllimited="true" forcelimited="true" forcerange="-80 80" biastype="affine" gainprm="80" biasprm="0 0 -4"/>
+  </actuator>
+
+  <sensor>
+    <user dim="3" needstage="acc" datatype="real" name="Upright" user="6 1 0 3 0.05"/>
+    <user dim="1" needstage="acc" datatype="real" name="Height" user="6 1 0 3 0.04"/>
+    <user dim="3" needstage="acc" datatype="real" name="Position" user="2 0.2 0 0.5 0.1"/>
+    <user dim="1" needstage="acc" datatype="real" name="LaunchVelocity" user="0 1 0 0.5 0.1"/>
+    <user dim="4" needstage="acc" datatype="real" name="Gait" user="6 0 0 10 0.03"/>
+    <user dim="2" needstage="acc" datatype="real" name="Balance" user="2 0.2 0 0.3 0.1"/>
+    <user dim="12" needstage="acc" datatype="real" name="Effort" user="0 0.05 0 0.1 0"/>
+    <user dim="15" needstage="acc" datatype="real" name="Posture" user="0 0.1 0 1 0"/>
+    <user dim="3" needstage="acc" datatype="real" name="Orientation" user="0 0 0 0.03 0"/>
+    <user dim="3" needstage="acc" datatype="real" name="Angmom" user="0 0 0 0.03 0"/>
+    <user dim="4" needstage="acc" datatype="real" name="GroundContact" user="0 0.5 0 1 0.1"/>
+    <user dim="3" needstage="acc" datatype="real" name="RefBasePos" user="0 0 0 20 0"/>
+    <user dim="3" needstage="acc" datatype="real" name="RefBaseOri" user="0 0 0 20 0"/>
+    <user dim="12" needstage="acc" datatype="real" name="RefJointPos" user="0 0 0 20 0"/>
+    <user dim="6" needstage="acc" datatype="real" name="RefBaseVel" user="0 0 0 5 0"/>
+    <user dim="12" needstage="acc" datatype="real" name="RefJointVel" user="0 0 0 1 0"/>
+    <user dim="6" needstage="acc" datatype="real" name="RefTakeoff" user="0 0 0 10 0"/>
+    <user dim="12" needstage="acc" datatype="real" name="Symmetry" user="0 0 0 20 0"/>
+    <user dim="6" needstage="acc" datatype="real" name="Clearance" user="0 0 0 50 0"/>
+    <framepos objtype="site" objname="com" name="torso_pos"/>
+    <framepos objtype="site" objname="FR" name="FR_pos"/>
+    <framepos objtype="site" objname="FL" name="FL_pos"/>
+    <framepos objtype="site" objname="RR" name="RR_pos"/>
+    <framepos objtype="site" objname="RL" name="RL_pos"/>
+    <jointpos joint="rightarm_shoulder1" name="pos_FR_hip_joint"/>
+    <jointpos joint="rightarm_shoulder2" name="pos_FR_thigh_joint"/>
+    <jointpos joint="rightarm_elbow" name="pos_FR_calf_joint"/>
+    <jointpos joint="leftarm_shoulder1" name="pos_FL_hip_joint"/>
+    <jointpos joint="leftarm_shoulder2" name="pos_FL_thigh_joint"/>
+    <jointpos joint="leftarm_elbow" name="pos_FL_calf_joint"/>
+    <jointpos joint="rightleg_hip1" name="pos_RR_hip_joint"/>
+    <jointpos joint="rightleg_hip2" name="pos_RR_thigh_joint"/>
+    <jointpos joint="rightleg_knee" name="pos_RR_calf_joint"/>
+    <jointpos joint="leftleg_hip1" name="pos_RL_hip_joint"/>
+    <jointpos joint="leftleg_hip2" name="pos_RL_thigh_joint"/>
+    <jointpos joint="leftleg_knee" name="pos_RL_calf_joint"/>
+    <touch site="FR" name="FR_touch"/>
+    <touch site="FL" name="FL_touch"/>
+    <touch site="RR" name="RR_touch"/>
+    <touch site="RL" name="RL_touch"/>
+    <touch site="RK" name="RK_touch"/>
+    <touch site="LK" name="LK_touch"/>
+    <framepos objtype="site" objname="head" name="trace0"/>
+    <subtreecom body="body" name="torso_subtreecom"/>
+    <subtreelinvel body="body" name="torso_subtreelinvel"/>
+    <subtreelinvel body="body" name="torso_angmom"/>
+    <subtreeangmom body="body" name="torso_subtreeangmom"/>
+    <contact subtree1="body" geom2="floor" name="to_floor"/>
+    <contact subtree1="body" geom2="floor" data="force" reduce="netforce" name="to_grf"/>
+    <contact body1="radius_and_ulna" geom2="floor" name="to_hand_l"/>
+    <contact body1="radius_and_ulna_2" geom2="floor" name="to_hand_r"/>
+    <contact body1="tibia" geom2="floor" name="to_foot_l"/>
+    <contact body1="tibia_2" geom2="floor" name="to_foot_r"/>
+    <subtreeangmom body="body" name="to_angmom"/>
+    <framexaxis objtype="xbody" objname="body" name="to_body_x"/>
+    <framepos objtype="xbody" objname="radius_and_ulna" name="to_pos_radius_and_ulna"/>
+    <framexaxis objtype="xbody" objname="radius_and_ulna" name="to_x_radius_and_ulna"/>
+    <framezaxis objtype="xbody" objname="radius_and_ulna" name="to_z_radius_and_ulna"/>
+    <framepos objtype="xbody" objname="radius_and_ulna_2" name="to_pos_radius_and_ulna_2"/>
+    <framexaxis objtype="xbody" objname="radius_and_ulna_2" name="to_x_radius_and_ulna_2"/>
+    <framezaxis objtype="xbody" objname="radius_and_ulna_2" name="to_z_radius_and_ulna_2"/>
+    <framepos objtype="xbody" objname="tibia" name="to_pos_tibia"/>
+    <framexaxis objtype="xbody" objname="tibia" name="to_x_tibia"/>
+    <framezaxis objtype="xbody" objname="tibia" name="to_z_tibia"/>
+    <framepos objtype="xbody" objname="tibia_2" name="to_pos_tibia_2"/>
+    <framexaxis objtype="xbody" objname="tibia_2" name="to_x_tibia_2"/>
+    <framezaxis objtype="xbody" objname="tibia_2" name="to_z_tibia_2"/>
+  </sensor>
+
+  <custom>
+    <numeric name="agent_planner" size="1" data="2"/>
+    <numeric name="agent_horizon" size="1" data="0.35"/>
+    <numeric name="agent_timestep" size="1" data="0.01"/>
+    <numeric name="sampling_spline_points" size="1" data="3"/>
+    <numeric name="sampling_trajectories" size="1" data="60"/>
+    <numeric name="sampling_exploration" size="1" data="0.04"/>
+    <numeric name="gradient_spline_points" size="1" data="5"/>
+    <numeric name="residual_select_Gait" size="1" data="0"/>
+    <numeric name="residual_select_Gait switch" size="1" data="0"/>
+    <numeric name="residual_Cadence" size="3" data="2 0 4"/>
+    <numeric name="residual_Amplitude" size="3" data="0.06 0 0.2"/>
+    <numeric name="residual_Duty ratio" size="3" data="0 0 1"/>
+    <numeric name="residual_Walk speed" size="3" data="0 0 4"/>
+    <numeric name="residual_Walk turn" size="3" data="0 -2 2"/>
+    <numeric name="residual_select_Flip dir" size="1" data="0"/>
+    <numeric name="residual_select_Biped type" size="1" data="0"/>
+    <numeric name="residual_Heading" size="3" data="0 -3.14 3.14"/>
+    <numeric name="residual_Arm posture" size="3" data="0.03 0 1"/>
+    <numeric name="residual_Launch speed" size="3" data="5 0 12"/>
+    <numeric name="residual_Launch angle" size="3" data="30 0 60"/>
+    <numeric name="residual_Ref start" size="3" data="0 0 1.9"/>
+    <numeric name="residual_Push time" size="3" data="0 0 1.2"/>
+    <numeric name="estimator" size="1" data="0"/>
+    <numeric name="estimator_sensor_start" size="1" data="19"/>
+    <numeric name="estimator_number_sensor" size="1" data="21"/>
+    <numeric name="estimator_timestep" size="1" data="0.005"/>
+    <numeric name="batch_configuration_length" size="1" data="3"/>
+    <numeric name="batch_scale_prior" size="1" data="0.001"/>
+    <numeric name="launch_ref_takeoff" size="1" data="1.94"/>
+    <numeric name="launch_ref_hands_contact" size="261" data="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+    <numeric name="launch_ref_feet_contact" size="261" data="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+    <text name="task_transition" data="Quadruped|Biped|Walk|Scramble|Flip|Launch|Launch Track"/>
+    <text name="residual_list_Gait" data="Stand|Walk|Trot|Canter|Gallop"/>
+    <text name="residual_list_Gait switch" data="Manual|Automatic"/>
+    <text name="residual_list_Flip dir" data="Back Flip|Front Flip"/>
+    <text name="residual_list_Biped type" data="Foot Stand|Hand Stand"/>
+  </custom>
+
+  <keyframe>
+    <key name="launch_start" qpos="0.841664 0 -0.581633 0.992063 0 -0.125738 0 -0.00907562 -1.35206 1.20294 0.00608408 -1.35332 1.20417 0.0153576 -1.26596 -1.3531 0.0164834 -1.27388 -1.36929"/>
+  </keyframe>
+</mujoco>
