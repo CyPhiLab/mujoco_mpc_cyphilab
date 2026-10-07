@@ -659,6 +659,11 @@ def parser():
   p.add_argument('--no_trunk_limb_collision', action='store_true',
                  help='exclude trunk-humerus/femur contacts (their convex hulls '
                       'overlap ~26 mm in the reference crouch)')
+  p.add_argument('--hip_spring', type=float, nargs=2, default=None,
+                 metavar=('Q_FREE', 'TAU_CROUCH'),
+                 help='one-sided hip2 extension spring, always engaged: '
+                      'torque k (q_free - q) for q < q_free, TAU_CROUCH (N m) '
+                      'at the crouch; hardware mass at --spring_density')
   p.add_argument('--hip_flex_stop', type=float, default=None,
                  help='hip2 flexion hard stop (rad, lower limit), e.g. -1.29 '
                       '(crouch -1.27) with --no_trunk_limb_collision')
@@ -738,6 +743,25 @@ def make_design(args, verbose=True):
             f"{sp['energy_J']:4.0f} J" + (f" (cap {cap[sp['joint']]:.0f})" if cap else ''))
   else:
     design.update(spring_energy=args.spring_energy)
+  if args.hip_spring:
+    q_free, tau_crouch = args.hip_spring
+    ref = T.reference()
+    q_crouch = ref['qpos'][T.push_start_index(ref)][7 + 7]      # left hip2
+    k = tau_crouch / (q_free - q_crouch)
+    energy = 0.5 * tau_crouch * (q_free - q_crouch)
+    springs = list(design.get('latched_springs', []))
+    times = list(design.get('latch_times', []))
+    masses = list(design.get('point_masses', []))
+    for side in ('leftleg_hip2', 'rightleg_hip2'):
+      springs.append({'joint': side, 'k': k, 'rest': q_free, 'tau0': tau_crouch,
+                      'energy_J': energy})
+      times.append(0.0)                    # engaged from the start: no latch
+      masses.append((SPRING_MOUNT[side], energy / args.spring_density))
+    design.update(latched_springs=springs, latch_times=times, point_masses=masses)
+    if verbose:
+      print(f'hip springs: free at {q_free:+.2f} rad, k {k:.0f} N m/rad, '
+            f'{tau_crouch:.0f} N m and {energy:.0f} J per side at the crouch '
+            f'({q_crouch:+.3f}), {2 * energy / args.spring_density:.2f} kg')
   return design
 
 
