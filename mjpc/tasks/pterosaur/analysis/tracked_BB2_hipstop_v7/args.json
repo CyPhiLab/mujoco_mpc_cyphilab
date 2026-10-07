@@ -45,15 +45,12 @@
  "direction_weight": 3.0,
  "force_cap": 1500.0,
  "margins": [
-  0.02,
-  0.01,
-  0.005,
   0.0
  ],
  "pitch_scale": 1.0,
  "spin_scale": 1.0,
  "free_hands": false,
- "init": null,
+ "init": "tracked_BB2_hipstop_v7/step2_T0.45_v7_m0.005_controls.npy",
  "init_push": 0.45,
- "first_step": 0
+ "first_step": 3
 }
