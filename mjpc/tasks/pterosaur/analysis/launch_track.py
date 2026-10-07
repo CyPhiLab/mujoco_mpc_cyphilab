@@ -659,6 +659,9 @@ def parser():
   p.add_argument('--no_trunk_limb_collision', action='store_true',
                  help='exclude trunk-humerus/femur contacts (their convex hulls '
                       'overlap ~26 mm in the reference crouch)')
+  p.add_argument('--hip_flex_stop', type=float, default=None,
+                 help='hip2 flexion hard stop (rad, lower limit), e.g. -1.29 '
+                      '(crouch -1.27) with --no_trunk_limb_collision')
   p.add_argument('--arm_length', type=float, default=None,
                  help='forelimb length factor; the start crouch is re-solved '
                       '(all limbs on the floor, from rest), also for 1')
@@ -693,6 +696,8 @@ def make_design(args, verbose=True):
   design = dict(no_load_speed=args.no_load_speed)
   if args.no_trunk_limb_collision:
     design['trunk_limb_collision'] = False
+  if args.hip_flex_stop is not None:
+    design['hip_flex_stop'] = args.hip_flex_stop
   if args.arm_motors_on_legs:
     design['arm_motors_on_legs'] = True
   if args.arm_length is not None:

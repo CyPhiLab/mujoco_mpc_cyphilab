@@ -302,7 +302,7 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
                start_qpos=None, trunk_limb_collision=True, forearm_mass=0.0,
                body_scale=1.0, shoulder_differential=False,
                arm_motors_on_legs=False, point_masses=None,
-               contact_smoothing=0.0, arm_length=1.0):
+               contact_smoothing=0.0, arm_length=1.0, hip_flex_stop=None):
   """limb_scale: limb segment length factor; no_load_speed: DC-motor
   torque-speed line (stall torque at rest, zero at this joint speed, rad/s;
   0 = ideal); latched_springs: see add_latched_springs (actuators after the
@@ -317,7 +317,9 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   add_point_masses; contact_smoothing: m over which the limb-floor contact
   force fades in before touching (contact margin with impedance ramping
   from 0 at the margin to full at contact), for optimization continuation;
-  arm_length: forelimb length factor (scale_arms)."""
+  arm_length: forelimb length factor (scale_arms); hip_flex_stop: lower
+  limit (rad, most flexed) of the hip2 joints, a hard stop at the crouch so
+  the thighs cannot fold into the trunk with trunk-limb contacts off."""
   bodies = sorted({b for b, _, _ in CLEARANCE})
   frames = ''.join(
       f'<framepos name="to_pos_{b}" objtype="xbody" objname="{b}"/>'
@@ -400,6 +402,10 @@ def load_model(torque, hand=None, foot_solref=None, arm_scale=1.0,
   for j in range(12):
     m.jnt_limited[j + 1] = 1
     m.jnt_range[j + 1] = [lo[j], hi[j]]
+  if hip_flex_stop is not None:
+    for name in ('leftleg_hip2', 'rightleg_hip2'):
+      j = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, name)
+      m.jnt_range[j, 0] = max(m.jnt_range[j, 0], hip_flex_stop)
   for name in ['HL', 'HR'] if hand else ['FL', 'FR', 'HL', 'HR']:
     g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, name)
     m.geom_solimp[g, :3] = FOOT_SOLIMP
