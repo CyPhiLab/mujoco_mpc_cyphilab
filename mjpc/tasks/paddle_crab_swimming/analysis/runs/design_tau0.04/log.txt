@@ -8,3 +8,6 @@ init from runs/ladder_mY/step10_max_dt0.001.npz
   lm    7 cost   225.8077 mu  4.6e-03 v +0.0911 T 1.136 lat +0.0001 yaw +0.007 cyc 0.200 eff 0.602 sat 0.159
   lm    8 cost   216.5904 mu  1.5e-03 v +0.0919 T 1.135 lat +0.0000 yaw +0.007 cyc 0.193 eff 0.595 sat 0.158
   lm    9 cost   212.3728 mu  5.1e+01 v +0.0931 T 1.136 lat +0.0003 yaw +0.006 cyc 0.165 eff 0.596 sat 0.152
+  lm   10 cost   179.9072 mu  1.7e+01 v +0.0956 T 1.137 lat +0.0010 yaw +0.005 cyc 0.155 eff 0.599 sat 0.149
+[step1_v0.125_dt0.002] v 0.0956 T 1.137 lat +0.0010 yaw +0.005 eff 0.599 cot 5.79 cyc 0.155 feasible False
+ v 0.125 not met (reached 0.0956), retry 1
