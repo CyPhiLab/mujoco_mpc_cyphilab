@@ -26,5 +26,33 @@
     "work_per_cycle": 62.21940309226209,
     "cot": 6.778597999553693,
     "cost": 101.5623932368074
+  },
+  {
+    "step": 2,
+    "name": "v0.1_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1,
+    "feasible": false,
+    "straight": false,
+    "from_rest": false,
+    "symmetry_index": 0.3101102341234157,
+    "seconds": 466.1,
+    "file": "step2_v0.1_dt0.002.npz",
+    "period": 1.1441851848669684,
+    "speed": 0.07403323376168564,
+    "lateral_rate": 0.006331723083809791,
+    "yaw_rate": 0.044075936878288785,
+    "depth_rate": -0.004159640041311574,
+    "heading": 0.18263922910119829,
+    "tilt_mean": 0.13259963596225124,
+    "tilt_rms": 0.04765037667234663,
+    "cycle_error": 0.5055342746808354,
+    "effort": 0.5693566534152847,
+    "saturated": 0.10751748251748251,
+    "command_clipped": 0.02471833721833722,
+    "work_per_cycle": 62.842908153981504,
+    "cot": 6.786144825466964,
+    "cost": 84.69849915752509
   }
 ]
