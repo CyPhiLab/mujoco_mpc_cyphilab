@@ -15,7 +15,8 @@ window counts. Its residual vector (least squares, everything scaled so 1 is
 "this much error") holds
   speed       mean forward speed (world -Y) minus the target
   straight    lateral drift rate, yaw rate, depth rate, mean heading
-  level       mean and RMS body tilt
+  level       steady body tilt (weight 'tilt') and its oscillation
+              about that ('wobble')
   cycle       state at the start of the last cycle minus at its end
               (joints, servo filter states, body-frame velocities, tilt):
               zero on a limit cycle
@@ -46,14 +47,15 @@ S_LATERAL = 0.003     # m/s drift
 S_YAW = 0.02          # rad/s drift
 S_DEPTH = 0.003       # m/s drift
 S_HEADING = 0.1       # rad mean heading off the start heading
-S_TILT = 0.1          # rad mean / RMS tilt
+S_TILT = 0.1          # rad steady tilt / tilt oscillation (wobble)
 S_CYCLE_Q = 0.02      # rad joint / filter state mismatch over one cycle
 S_CYCLE_V = 0.01      # m/s body velocity mismatch
 S_CYCLE_W = 0.05      # rad/s body angular velocity mismatch
 S_SAT = 0.05          # fraction of the force / command range
 
 DEFAULT_WEIGHTS = dict(speed=4.0, lateral=1.0, yaw=1.0, depth=0.3,
-                       heading=0.3, tilt=0.3, cycle=0.3, effort=1.0,
+                       heading=0.3, tilt=0.3, wobble=0.3, cycle=0.3,
+                       effort=1.0,
                        saturation=1.0)
 
 
@@ -115,7 +117,7 @@ class Problem:
 
   def __init__(self, dt=0.005, k=K_DEFAULT, warm=3, measure=2,
                speed=0.05, max_speed=False, weights=None, x0=None,
-               tau=C.TAU, direction=tuple(C.FORWARD)):
+               tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world xy-plane; the body keeps its start heading,
     # so this picks which side of the robot leads.
@@ -125,7 +127,8 @@ class Problem:
     self.speed, self.max_speed = speed, max_speed
     self.weights = dict(DEFAULT_WEIGHTS, **(weights or {}))
     self.layout = Layout(k)
-    self.m = C.load_model(dt=dt, tau=tau, ground=False)
+    self.ctrl_limit = ctrl_limit
+    self.m = C.load_model(dt=dt, tau=tau, ground=False, ctrl_limit=ctrl_limit)
     C.check_layout(self.m)
     self.d = mujoco.MjData(self.m)
     self.state_layout = C.StateLayout(self.m)
@@ -137,7 +140,8 @@ class Problem:
     return dict(dt=self.dt, k=self.layout.k, warm=self.warm,
                 measure=self.measure, speed=self.speed,
                 max_speed=self.max_speed, weights=self.weights,
-                x0=self.x0.tolist(), direction=self.direction.tolist())
+                x0=self.x0.tolist(), direction=self.direction.tolist(),
+                ctrl_limit=self.ctrl_limit)
 
   def nstep(self, period):
     return int(np.ceil((self.warm + self.measure) * period / self.dt)) + 2
@@ -239,7 +243,7 @@ class Problem:
          np.sqrt(w['depth']) * depth / S_DEPTH,
          np.sqrt(w['heading']) * heading / S_HEADING],
         np.sqrt(w['tilt']) * tilt_mean / S_TILT,
-        [np.sqrt(w['tilt']) * tilt_rms / S_TILT],
+        [np.sqrt(w['wobble']) * tilt_rms / S_TILT],
         np.sqrt(w['cycle'] / cycle.size) * cycle,
         [np.sqrt(w['effort']) * effort / 0.1],
         np.sqrt(w['saturation']) * np.sqrt(
@@ -424,8 +428,12 @@ def lm(evaluate, layout, theta, iters=30, eps=1e-4, mu=1e-2, max_step=0.3,
 
 # ----- Seeds ----- #
 
-def seeds(layout, n=256, period=1.0, amplitude=0.6, seed=0):
+def seeds(layout, n=256, period=1.0, amplitude=0.6, seed=0, offset=None):
   """Random first-harmonic strokes: half left/right mirrored, half free.
+
+  Offsets (the posture the stroke oscillates about) are N(0, 0.2) of each
+  half-range by default, i.e. near the zero pose; offset=x draws them
+  uniformly within +-x of the half-range instead.
 
   A stroke per actuator is c + A cos(phase - phi); amplitudes and phases are
   random, so the batch covers rowing (proximal sweep + paddle feather in
@@ -436,7 +444,8 @@ def seeds(layout, n=256, period=1.0, amplitude=0.6, seed=0):
   for i in range(n):
     amp = amplitude * rng.uniform(0, 1, C.NU) * (rng.uniform(size=C.NU) < 0.6)
     phi = rng.uniform(-np.pi, np.pi, C.NU)
-    c = 0.2 * rng.standard_normal(C.NU)
+    c = (0.2 * rng.standard_normal(C.NU) if offset is None
+         else rng.uniform(-offset, offset, C.NU))
     if i % 2 == 0:  # mirrored: left copies right through MirrorSign
       right = slice(0, 9)
       amp[9:], phi[9:], c[9:] = amp[right], phi[right], c[right]
@@ -465,3 +474,62 @@ def symmetry_index(layout, theta):
   t = np.asarray(theta)[1:]
   mt = mirror_theta(layout, theta)[1:]
   return float(np.linalg.norm(t - mt) / max(np.linalg.norm(t) * 2, 1e-9))
+
+
+def crab_seeds(layout, half, n=256, direction=(1, 0, 0), seed=0):
+  """Strokes modelled on blue crab swimming (sideways, along the leg axis).
+
+  The crab holds its walking legs still in a streamlined pose and drives
+  itself with the rear paddles raised high, sculling: a fore-aft sweep with
+  the blade feathered in quadrature, the two paddles offset in phase. Here
+  the rear legs are the paddles (mid joint raises, proximal sweeps, distal
+  feathers); the front and centre legs get constant offsets, the front ones
+  swept toward the swim axis, with small oscillations. direction is +-X.
+  Commands are in radians, then normalized by half (the command
+  half-ranges).
+  """
+  rng = np.random.default_rng(seed)
+  side = 1.0 if direction[0] >= 0 else -1.0
+  out = []
+  for _ in range(n):
+    c = np.zeros(C.NU)
+    a = np.zeros((C.NU, layout.k))
+    b = np.zeros((C.NU, layout.k))
+
+    def stroke(i, amp, phase):
+      a[i, 0] += amp * np.cos(phase)
+      b[i, 0] += amp * np.sin(phase)
+
+    # Walking legs (front and centre, both sides): streamlined offsets. The
+    # front legs (+-45 deg at rest) turn toward the X axis: right proximal
+    # positive turns a right leg toward +Y, left proximal toward -Y.
+    for leg, sweep in ((0, -0.79), (3, 0.0), (9, 0.79), (12, 0.0)):
+      c[leg] = sweep * rng.uniform(0.3, 1.2) + 0.2 * rng.standard_normal()
+      c[leg + 1] = rng.uniform(-0.8, 0.8)                 # mid: hold up/down
+      c[leg + 2] = rng.uniform(-0.6, 0.6)                 # distal
+      for j in range(3):
+        stroke(leg + j, rng.uniform(0, 0.25), rng.uniform(-np.pi, np.pi))
+    # Paddles: raised (beside the body up to over the back), sculling.
+    lift = rng.uniform(1.0, 2.6)
+    offset = rng.choice([0.0, 0.5 * np.pi, np.pi, rng.uniform(-np.pi, np.pi)])
+    sweep_amp = rng.uniform(0.3, 1.0)
+    feather_amp = rng.uniform(0.5, 1.5)
+    feather_lead = rng.choice([-0.5 * np.pi, 0.5 * np.pi])
+    heave_amp = rng.uniform(0.0, 0.5)
+    for k, (prox, sign) in enumerate(((6, 1.0), (15, -1.0))):
+      phase = offset * k
+      c[prox] = 0.3 * rng.standard_normal()
+      c[prox + 1] = lift + 0.15 * rng.standard_normal()
+      c[prox + 2] = 0.3 * rng.standard_normal()
+      stroke(prox, sweep_amp, phase)
+      stroke(prox + 1, heave_amp, phase + rng.uniform(-np.pi, np.pi))
+      stroke(prox + 2, feather_amp * sign, phase + feather_lead)
+    if side < 0:   # lead with the other side: mirror left and right
+      idx = C.MIRROR_INDEX
+      c, a, b = (C.MIRROR_SIGN * c[idx], C.MIRROR_SIGN[:, None] * a[idx],
+                 C.MIRROR_SIGN[:, None] * b[idx])
+    period = np.exp(rng.uniform(np.log(0.4), np.log(1.2)))
+    out.append(clip_theta(layout, layout.join(
+        period, c / half, a / half[:, None], b / half[:, None])))
+  return np.array(out)
+

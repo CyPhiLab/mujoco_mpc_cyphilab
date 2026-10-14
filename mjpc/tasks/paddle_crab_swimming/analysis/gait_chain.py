@@ -71,7 +71,7 @@ class Chain:
         self.summary = json.load(f)
     self.step = 0
     self.x0 = None          # None: start from rest; else a steady state
-    model = C.load_model(ground=False)
+    model = C.load_model(ground=False, ctrl_limit=args.ctrl_limit)
     self.state_layout = C.StateLayout(model)
     self.rest = C.initial_state(model)
     self.weights = parse_weights(args.weights)
@@ -87,7 +87,7 @@ class Chain:
     a = self.args
     return G.Problem(dt=dt, k=a.k, warm=a.warm if x0 is None else a.warm_steady,
                      measure=a.measure, speed=speed, weights=self.weights,
-                     direction=a.direction, x0=x0)
+                     direction=a.direction, x0=x0, ctrl_limit=a.ctrl_limit)
 
   def straight(self, metrics):
     a = self.args
@@ -119,7 +119,7 @@ class Chain:
     path = os.path.join(self.out, tag + '.npz')
     np.savez(path, theta=theta, k=problem.layout.k, dt=problem.dt,
              speed_target=problem.speed, max_speed=problem.max_speed,
-             direction=problem.direction, x0=problem.x0,
+             direction=problem.direction, x0=problem.x0, half=problem.half,
              warm=problem.warm, measure=problem.measure,
              metrics=json.dumps(metrics), joints=np.array(C.JOINTS),
              actuators=np.array(C.ACTUATORS), residual=res[0],
@@ -146,7 +146,8 @@ class Chain:
       import render_gait
       try:
         render_gait.render(os.path.join(self.out, tag + '.mp4'), theta,
-                           problem.layout.k, C.SIM_DT, cycles=6)
+                           problem.layout.k, C.SIM_DT, cycles=6,
+                           half=problem.half)
         render_gait.plot(os.path.join(self.out, tag + '_plots.png'), path)
       except Exception as e:  # rendering is a convenience, not the result
         self.log(f'  render failed: {e}')
@@ -169,7 +170,15 @@ class Chain:
     a = self.args
     problem = self.problem(a.dts[0], speed)
     t0 = time.time()
-    seeds = G.seeds(problem.layout, n=a.seeds, seed=a.seed)
+    families = {
+        'random': lambda n: G.seeds(problem.layout, n=n, seed=a.seed),
+        'wide': lambda n: G.seeds(problem.layout, n=n, seed=a.seed + 1,
+                                  offset=0.8),
+        'crab': lambda n: G.crab_seeds(problem.layout, problem.half, n=n,
+                                       direction=a.direction, seed=a.seed)}
+    styles = a.seed_style.split('+')
+    seeds = np.concatenate([families[style](a.seeds // len(styles))
+                            for style in styles])
     self.log(f'search: {len(seeds)} seeds at dt {a.dts[0]}')
     with G.Evaluator(problem, a.processes) as ev:
       res, info = ev(seeds)
@@ -312,6 +321,15 @@ def main():
                       'refined at the rest (5 ms is too coarse for the kp 50 '
                       'servos: the same stroke moves ~20%% differently)')
   p.add_argument('--k', type=int, default=G.K_DEFAULT)
+  p.add_argument('--ctrl_limit', type=float, default=None,
+                 help='servo command range +-this (rad), in place of the '
+                      'task ctrlranges')
+  p.add_argument('--seed_style', default='random',
+                 help="search seed families, '+'-joined: random (first-"
+                      "harmonic strokes about the zero pose), wide (the same "
+                      "with offsets anywhere in +-0.8 of the range), crab "
+                      "(raised sculling paddles, streamlined legs; "
+                      "G.crab_seeds)")
   p.add_argument('--warm', type=int, default=4,
                  help='cycles before scoring, from rest (the search)')
   p.add_argument('--warm_steady', type=int, default=2,

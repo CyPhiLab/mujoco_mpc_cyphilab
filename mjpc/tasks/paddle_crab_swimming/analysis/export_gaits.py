@@ -41,6 +41,7 @@ def load_step(path):
               metrics=json.loads(str(z['metrics'])), phase=z['phase'],
               qpos=z['qpos'], ctrl=z['ctrl'], warm=int(z['warm']),
               measure=int(z['measure']),
+              half=z['half'] if 'half' in z else None,
               direction=(z['direction'] if 'direction' in z
                          else C.FORWARD).astype(float))
 
@@ -70,9 +71,18 @@ def steady_metrics(step):
   the body is still speeding up; this is where it ends up.
   """
   problem = G.Problem(dt=C.SIM_DT, k=step['k'], warm=STEADY_WARM, measure=2,
-                      direction=step['direction'])
+                      direction=step['direction'],
+                      ctrl_limit=ctrl_limit(step['half']))
   _, info = problem.evaluate(step['theta'][None])
   return info[0]
+
+
+def ctrl_limit(half):
+  """The uniform command limit a gait was optimized with, or None for the
+  task's own ctrlranges."""
+  if half is None or not np.allclose(half, half[0]):
+    return None
+  return float(half[0])
 
 
 def coefficients(theta, k, half):
@@ -101,7 +111,7 @@ def write_mjpc(path, gaits, half):
            '    <text name="residual_list_Gait" data="Off|%s" />'
            % '|'.join(gaits)]
   for name, step in gaits.items():
-    period, c, a, b = coefficients(step['theta'], step['k'], half)
+    period, c, a, b = coefficients(step['theta'], step['k'], step['half'])
     data = np.concatenate([[period, step['k'], step['steady']['speed']],
                            step['direction'], c, a.ravel(), b.ravel()])
     text = ' '.join(f'{x:.9g}' for x in data)
@@ -174,7 +184,7 @@ def write_package(out, gaits, half, hz):
                c=[], a=[], b=[], table_time=[], table_ctrl=[],
                joint_phase=[], joint_qpos=[])
   for name, step in gaits.items():
-    period, c, a, b = coefficients(step['theta'], step['k'], half)
+    period, c, a, b = coefficients(step['theta'], step['k'], step['half'])
     pad = lambda x: np.pad(x, ((0, 0), (0, kmax - x.shape[1])))
     n = int(round(period * hz))
     t = np.arange(n) / hz
@@ -188,7 +198,7 @@ def write_package(out, gaits, half, hz):
     table['a'].append(pad(a))
     table['b'].append(pad(b))
     table['table_time'].append(t)
-    table['table_ctrl'].append((np.clip(raw, -1, 1) * half[:, None]).T)
+    table['table_ctrl'].append((np.clip(raw, -1, 1) * step['half'][:, None]).T)
     table['joint_phase'].append(step['phase'])
     table['joint_qpos'].append(step['qpos'][:, 7:])
     np.savetxt(os.path.join(out, f'{name}_commands_{hz:g}hz.csv'),
@@ -214,7 +224,8 @@ def write_package(out, gaits, half, hz):
         check=True, capture_output=True, text=True).stdout.strip()
     replay_speed = float(re.search(r'speed ([-0-9.]+)', out_text).group(1))
     problem = G.Problem(dt=C.SIM_DT, k=step['k'], warm=cycles, measure=1,
-                        direction=step['direction'])
+                        direction=step['direction'],
+                        ctrl_limit=ctrl_limit(step['half']))
     states, _, _ = problem.rollout(step['theta'][None])
     L = problem.state_layout
     n = int(np.ceil(cycles * np.exp(step['theta'][0]) / C.SIM_DT))
@@ -265,6 +276,10 @@ def main():
     name, path = item.split('=')
     paths[name] = path
   gaits = {n: load_step(path) for n, path in paths.items()}
+  half = C.load_model(ground=False).actuator_ctrlrange[:, 1].copy()
+  for step in gaits.values():
+    if step['half'] is None:
+      step['half'] = half
   for name, step in gaits.items():
     step['steady'] = steady_metrics(step)
     print(f'{name}: {step["path"]} dt {step["dt"]} '
@@ -274,7 +289,6 @@ def main():
   if args.run:
     with open(os.path.join(args.run, 'steady.json'), 'w') as f:
       json.dump({n: s['steady'] for n, s in gaits.items()}, f, indent=2)
-  half = C.load_model(ground=False).actuator_ctrlrange[:, 1].copy()
   if args.mjpc:
     write_mjpc(args.mjpc, gaits, half)
   if args.package:

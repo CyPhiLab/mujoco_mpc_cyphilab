@@ -64,26 +64,33 @@ def patched_xml():
       return f.read()
 
 
-def load_model(dt=SIM_DT, tau=TAU, ground=True):
-  """The patched crab with filter servos (the MJPC callback's law).
-
-  ground=False drops the (visual only, contacts are off) heightfield floor.
-  """
-  xml = patched_xml()
-  if not ground:
-    # hfield_ground.xml also sets the mesh directory.
-    xml = xml.replace('<include file="hfield_ground.xml" />',
-                      '<compiler meshdir="asset" />')
+def _compile(xml):
   # Written next to robot_xdomain.xml so its relative includes and the mesh
   # directory resolve the way they do in the build directory.
   fd, path = tempfile.mkstemp(suffix='.xml', prefix='.crab_', dir=TASK_DIR)
   try:
     with os.fdopen(fd, 'w') as f:
       f.write(xml)
-    m = mujoco.MjModel.from_xml_path(path)
+    return mujoco.MjModel.from_xml_path(path)
   finally:
     os.remove(path)
+
+
+def load_model(dt=SIM_DT, tau=TAU, ground=True, ctrl_limit=None):
+  """The patched crab with filter servos (the MJPC callback's law).
+
+  ground=False drops the (visual only, contacts are off) heightfield floor.
+  ctrl_limit replaces every servo's command range with +-ctrl_limit.
+  """
+  xml = patched_xml()
+  if not ground:
+    # hfield_ground.xml also sets the mesh directory.
+    xml = xml.replace('<include file="hfield_ground.xml" />',
+                      '<compiler meshdir="asset" />')
+  m = _compile(xml)
   set_timestep(m, dt, tau)
+  if ctrl_limit is not None:
+    m.actuator_ctrlrange[:] = [-ctrl_limit, ctrl_limit]
   return m
 
 
