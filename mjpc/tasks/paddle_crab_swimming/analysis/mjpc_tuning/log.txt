@@ -1,0 +1,1 @@
+Gait=paddles_lead            speed 0.1101 m/s  dx +0.221 m  dy -3.295 m  dz +0.292 m  yaw +0.349 rad
