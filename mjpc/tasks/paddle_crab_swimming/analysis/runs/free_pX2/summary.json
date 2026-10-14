@@ -1,0 +1,30 @@
+[
+  {
+    "step": 1,
+    "name": "v0.1_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1,
+    "feasible": false,
+    "straight": true,
+    "from_rest": false,
+    "symmetry_index": 0.4450773430570684,
+    "seconds": 496.4,
+    "file": "step1_v0.1_dt0.002.npz",
+    "period": 1.1534999095996674,
+    "speed": 0.09248896405600647,
+    "lateral_rate": 0.001047205831039669,
+    "yaw_rate": 0.0042169748558034265,
+    "depth_rate": -0.006701556669067118,
+    "heading": 0.055611458193586705,
+    "tilt_mean": 0.636552527319406,
+    "tilt_rms": 0.0372105260636336,
+    "cycle_error": 0.3462813414648772,
+    "effort": 0.5824238302325287,
+    "saturated": 0.06687867399055604,
+    "command_clipped": 0.025344511901320227,
+    "work_per_cycle": 66.16296397188071,
+    "cot": 5.672798556448825,
+    "cost": 23.591270181819652
+  }
+]
