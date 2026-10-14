@@ -315,7 +315,8 @@ void Trajectory::UpdateReturn(const Task* task) {
 
   for (int t = 0; t < horizon; t++) {
     // compute stage cost
-    costs[t] = task->CostValue(DataAt(residual, t * task->num_residual));
+    const double* r = DataAt(residual, t * task->num_residual);
+    costs[t] = residual_fn ? residual_fn->CostValue(r) : task->CostValue(r);
 
     // update total return
     total_return += costs[t];

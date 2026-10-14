@@ -1,4 +1,6 @@
 <mujoco>
+  <compiler meshdir="asset" texturedir="asset"/>
+
   <!-- No ground plane for fluid environments -->
   <worldbody>
     <!-- Empty worldbody content - ground plane not included -->

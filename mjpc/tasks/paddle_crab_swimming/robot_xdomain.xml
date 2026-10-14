@@ -1,15 +1,16 @@
 <mujoco model="hexapod">
-  <option timestep=".0001"/>
-  <option cone="elliptic" jacobian="sparse" gravity='0 0 -.1' density="1000" viscosity="0.001"/>
-  <size memory="4G"/>
+  <option timestep=".001"/>
+  <option cone="elliptic" jacobian="sparse" gravity='0 0 0' density="1000" viscosity="0.001"/>
+  <size memory="16M"/>
   <include file="hfield_ground.xml"/>
+  <!-- <include file="noground.xml"/> -->
   <visual>
     <scale com=".5" framewidth=".05" jointwidth=".01"/>
     <global offheight="2160" offwidth="1920"/>
   </visual>
   <default>
     <default class="dynamixel">
-      <position ctrlrange="-3.14 3.14" ctrllimited="true" forcerange="-3.1 3.1" forcelimited="true" kp="20"/>
+      <position ctrlrange="-3.14 3.14" ctrllimited="true" forcerange="-3.1 3.1" forcelimited="true" kp="50"/>
     </default>
     <default class="DVL">
       <camera mode = "fixed" projection="perspective" resolution="2 2" fovy="45"/>
@@ -17,150 +18,180 @@
   </default>
 
   <asset>
+      <mesh name="paddle" file="Swimming_Paddle.stl" scale=".001 .001 .001"/>
+
   </asset>
   <worldbody>
       <camera pos="0.026 1.593 4.498" xyaxes="-1.000 0.017 0.000 -0.013 -0.728 0.685" name="main_camera"/>
+     <camera pos="0.732 1.193 3.466" xyaxes="-0.902 0.431 -0.000 -0.239 -0.500 0.832" name="legcam"/>
+      <camera pos="1.457 -1.139 3.433" xyaxes="0.564 0.826 0.000 -0.304 0.207 0.930" name="flipcam"/>
+      <camera pos="-1.457 -1.139 3.433" xyaxes="0.564 -0.826 0.000 0.304 0.207 0.930" name="flipcam_l"/>
 
-      <body name='plate' pos='0 00 3' euler='0 0 0' gravcomp=".37">
+      <!-- Unrotated: rear paddles sit at world -Y,-->
+
+      <body name='plate' pos='0 00 2' euler='0 0 0' gravcomp=".37">
         <geom fluidshape="ellipsoid" type='box' size='.15 .2 .003'  mass='1'/>
-        <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' euler='0 0 45'  pos='.15 .2 0' mass=".34"/>
-        <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044'  pos='.15 0 0'  mass=".34"/>
-        <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.15 -0.2 0' euler='0 0 -45' mass=".34"/>
-        <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='-.15 .2 0' euler='0 0 -45' mass=".34"/>
-        <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='-.15 0 0' euler='0 0 0' mass=".34"/>
-        <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='-.15 -0.2 0' euler='0 0 45' mass=".34"/>
-        <camera class="DVL" name="DVLcam" pos="0 -0.15 0" euler="0 0 45"/>
+        <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' euler='0 0 45'  pos='.15 .2 .017' mass=".34"/>
+        <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017'  pos='.15 0 .017'  mass=".34"/>
+        <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='.15 -0.2 .017' euler='0 0 -45' mass=".34"/>
+        <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='-.15 .2 .017' euler='0 0 -45' mass=".34"/>
+        <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='-.15 0 .017' euler='0 0 0' mass=".34"/>
+        <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='-.15 -0.2 .017' euler='0 0 45' mass=".34"/>
+        <camera class="DVL" name="DVLcam" pos="0 0.15 0" euler="0 0 45"/>
 
-        <freejoint/>
+        <!-- <site name="range_to_ground" pos="0 0.2 -.011" euler="0 180 90" size="0.001 0.001 0.001" rgba=".5 1 1 1" type="box"/> -->
         <body name= 'box' pos='0 0 0'  euler = "0 0 0">
           <camera pos="-.879 0.100 0.00" euler = "0 -90 0" name="plate_camera" mode="track"/>
           <site name="IMU" pos="0 0.051 0" euler="0 0 0" size="0.001 0.001 0.001" rgba="1 0 0 1" type="box"/>
-          <!-- <geom fluidshape="ellipsoid" type='cylinder' size='.1 .1'  mass=".8" /> -->
         </body>
+
+
+        <body name="cylinder" pos="0 0 0" euler="90 0 0">
+          <geom fluidshape="ellipsoid" type='cylinder' size='.0506 .112 .01' mass='1' rgba=".2 .2 .2 1"/>
+          <!-- 224 mm long 112 diameter -->
+        </body>
+        <!-- Ballast placed to put the centre of mass on y=0; the legs and their
+             mounts are themselves biased toward +Y. -->
+        <body name = 'foam' pos='0 0.0921 0' euler = "0 0 0" gravcomp= "1.5">
+          <geom fluidshape="ellipsoid" type='box' size='.01 .01 .01'  mass='2' rgba="1 1 1 0.5"/>
+        </body>
+
+        <!-- <body name = 'foam_block2' pos='0 .2 0' euler = "0 0 0" gravcomp= "1.5">
+          <geom fluidshape="ellipsoid" type='box' size='.01 .01 .01'  mass='2' rgba="1 1 1 0.5"/>
+        </body> -->
+        <freejoint/>
+
         <!-- ================= FRONT RIGHT ================= -->
-        <body name='proximal segment front right' pos='.15 .2 0' euler='0 0 45' gravcomp=".37">
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 .04'/>
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 -0.04'/>
-          <joint name="psfr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-          <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.12 0 0' euler='90 0 0' mass=".34"/>
+        <body name='proximal segment front right' pos='.15 .2 0.017' euler='0 0 45' gravcomp=".37">
+          <geom fluidshape="ellipsoid" type='box' size='.02 0.01 .01' pos='0.04 0 0'/>
+          <joint name="psfr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+          <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.072 0 0' euler='90 0 0' mass=".34"/>
+          <body name='mid segment front right' pos='.072 0 0' euler='90 0 0' gravcomp=".37">
+            <geom fluidshape="ellipsoid" type='box' size='.04 0.01 .01' pos='0.04 0 0'/>
 
-          <body name='mid segment front right' pos='.12 0 0' euler='90 0 0' gravcomp=".37">
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 0.04'/>
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 -0.04'/>
-            <joint name="msfr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-            <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.2 0 0' mass=".34"/>
+            <joint name="msfr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+            <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.1 0 0' mass=".34"/>
 
-            <body name='distal segment front right' pos='.2 0 0' gravcomp=".37">
-              <joint name="dsfr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-              <geom fluidshape="ellipsoid" type='box' size='.02 .01 0.09887' pos='0.128 0 0' euler="0 90 0"/>
+            <body name='distal segment front right' pos='.1 0 0' gravcomp=".37">
+              <joint name="dsfr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+              <geom fluidshape="ellipsoid" type='box' size='.01 .005 0.05' pos='0.05 0 0' euler="0 90 0"/>
+              <site name="IK_site_fr" pos='0.1 0 0' euler="0 90 0" size="0.005 0.005 0.005" rgba="0 1 0 1" type="box"/>
             </body>
           </body>
         </body>
 
+
+
         <!-- ================= CENTER RIGHT ================= -->
-        <body name='proximal segment center right' pos='.15 0 0' euler='0 0 0' gravcomp=".37">
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 .04'/>
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 -0.04'/>
-          <joint name="pscr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-          <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.12 0 0' euler='90 0 0' mass=".34"/>
+        <body name='proximal segment center right' pos='.15 0 .017' euler='0 0 0' gravcomp=".37">
+          <geom fluidshape="ellipsoid" type='box' size='.02 0.01 .01' pos='0.04 0 0'/>
+          <joint name="pscr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+          <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.072 0 0' euler='90 0 0' mass=".34"/>
 
-          <body name='mid segment center right' pos='.12 0 0' euler='90 0 0' gravcomp=".37">
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 0.04'/>
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 -0.04'/>
-            <joint name="mscr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-            <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.2 0 0' mass=".34"/>
+          <body name='mid segment center right' pos='.072 0 0' euler='90 0 0' gravcomp=".37">
+            <geom fluidshape="ellipsoid" type='box' size='.04 0.01 .01' pos='0.04 0 0'/>
 
-            <body name='distal segment center right' pos='.2 0 0' gravcomp=".37">
-              <joint name="dscr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-              <geom fluidshape="ellipsoid" type='box' size='.02 .01 0.09887' pos='0.128 0 0' euler="0 90 0"/>
+            <joint name="mscr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+            <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.1 0 0' mass=".34"/>
+
+            <body name='distal segment center right' pos='.1 0 0' gravcomp=".37">
+              <joint name="dscr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+              <geom fluidshape="ellipsoid" type='box' size='.01 .005 0.05' pos='0.05 0 0' euler="0 90 0"/>
             </body>
           </body>
         </body>
 
         <!-- ================= BACK RIGHT ================= -->
-        <body name='proximal segment back right' pos='.15 -.2 0' euler='0 0 -45' gravcomp=".37">
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 .04'/>
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 -0.04'/>
-          <joint name="psbr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-          <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.12 0 0' euler='90 0 0' mass=".34"/>
+        <body name='proximal segment back right' pos='.15 -.2 0.017' euler='0 0 -45' gravcomp=".37">
+          <geom fluidshape="ellipsoid" type='box' size='.02 0.01 .01' pos='0.04 0 0'/>
+          <joint name="psbr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+          <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.072 0 0' euler='90 0 0' mass=".34"/>
 
-          <body name='mid segment back right' pos='.12 0 0' euler='90 0 0' gravcomp=".37">
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 0.04'/>
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 -0.04'/>
-            <joint name="msbr" type="hinge" axis="0 0 1" pos="0.028 0 0" damping="1"/>
-            <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.2 0 0' mass=".34"/>
+          <body name='mid segment back right' pos='.072 0 0' euler='90 0 0' gravcomp=".37">
+            <geom fluidshape="ellipsoid" type='box' size='.025 0.01 .01' pos='0.04 0 0'/>
 
-            <body name='distal segment back right' pos='.2 0 0' gravcomp="1">
-              <joint name="dsbr" type="hinge" axis="1 0 0" pos="0.028 0 0" damping="1"/>
-              <geom fluidshape="ellipsoid" type='ellipsoid' size='.07 0.02 0.08' pos='0.15 0 0' euler = "0 90 0" mass="0.34"/>
+            <joint name="msbr" type="hinge" axis="0 0 1" pos="0.01 0 0" damping="1.0"/>
+            <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.055 0.01 0' euler="0 0 90" mass=".34"/>
+
+            <body name='distal segment back right' pos='0.04 0 0' gravcomp=".37">
+              <joint name="dsbr" type="hinge" axis="1 0 0" pos="0.028 0.016 0" damping="1.0"/>
+              <geom fluidshape="ellipsoid" type='mesh' mesh='paddle' pos='0.03 0.03 -0.05' euler = "0 0 -90" mass="0.34"/>
+              <site name="IK_site_br" pos='0.157 0.017 0' euler="0 0 0" size="0.005 0.005 0.005" rgba="0 1 0 1" type="box"/>
+
             </body>
 
           </body>
         </body>
 
         <!-- ================= FRONT LEFT ================= -->
-        <body name='proximal segment front left' pos='-.15 .2 0' euler='0 180 45' gravcomp=".37">
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 .04'/>
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 -0.04'/>
-          <joint name="psfl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-          <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.12 0 0' euler='90 0 0' mass=".34"/>
+        <body name='proximal segment front left' pos='-.15 .2 0.017' euler='0 180 45' gravcomp=".37">
+          <geom fluidshape="ellipsoid" type='box' size='.02 0.01 .01' pos='0.04 0 0'/>
+          <joint name="psfl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+          <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.072 0 0' euler='90 0 0' mass=".34"/>
+          <body name='mid segment front left' pos='.072 0 0' euler='90 0 0' gravcomp=".37">
+            <geom fluidshape="ellipsoid" type='box' size='.04 0.01 .01' pos='0.04 0 0'/>
 
-          <body name='mid segment front left' pos='.12 0 0' euler='90 0 0' gravcomp=".37">
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 0.04'/>
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 -0.04'/>
-            <joint name="msfl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-            <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.2 0 0' mass=".34"/>
+            <joint name="msfl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+            <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.1 0 0' mass=".34"/>
 
-            <body name='distal segment front left' pos='.2 0 0' gravcomp=".37">
-              <joint name="dsfl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-              <geom fluidshape="ellipsoid" type='box' size='.02 .01 0.09887' pos='0.128 0 0' euler="0 90 0"/>
+            <body name='distal segment front left' pos='.1 0 0' gravcomp=".37">
+              <joint name="dsfl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+              <geom fluidshape="ellipsoid" type='box' size='.01 .005 0.05' pos='0.05 0 0' euler="0 90 0"/>
+              <site name="IK_site_fl" pos='0.1 0 0' euler="0 90 0" size="0.005 0.005 0.005" rgba="0 .5 0 1" type="box"/>
+
             </body>
           </body>
         </body>
 
         <!-- ================= CENTER LEFT ================= -->
-        <body name='proximal segment center left' pos='-.15 0 0' euler='0 180 0' gravcomp=".37">
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 .04'/>
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 -0.04'/>
-          <joint name="pscl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-          <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.12 0 0' euler='90 0 0' mass=".34"/>
+        <body name='proximal segment center left' pos='-.15 0 0.017' euler='0 180 0' gravcomp=".37">
+          <geom fluidshape="ellipsoid" type='box' size='.02 0.01 .01' pos='0.04 0 0'/>
 
-          <body name='mid segment center left' pos='.12 0 0' euler='90 0 0' gravcomp=".37">
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 0.04'/>
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 -0.04'/>
-            <joint name="mscl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-            <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.2 0 0' mass=".34"/>
+          <joint name="pscl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+          <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.072 0 0' euler='90 0 0' mass=".34"/>
 
-            <body name='distal segment center left' pos='.2 0 0' gravcomp=".37">
-              <joint name="dscl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-              <geom fluidshape="ellipsoid" type='box' size='.02 .01 0.09887' pos='0.128 0 0' euler="0 90 0"/>
+          <body name='mid segment center left' pos='.072 0 0' euler='90 0 0' gravcomp=".37">
+            <geom fluidshape="ellipsoid" type='box' size='.04 0.01 .01' pos='0.04 0 0'/>
+            <joint name="mscl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+            <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.1 0 0' mass=".34"/>
+
+            <body name='distal segment center left' pos='.1 0 0' gravcomp=".37">
+              <joint name="dscl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+              <geom fluidshape="ellipsoid" type='box' size='.01 .005 0.05' pos='0.05 0 0' euler="0 90 0"/>
             </body>
           </body>
         </body>
 
         <!-- ================= BACK LEFT ================= -->
-        <body name='proximal segment back left' pos='-.15 -.2 0' euler='0 180 -45' gravcomp=".37">
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 .04'/>
-          <geom fluidshape="ellipsoid" type='box' size='.04 0.02 .01' pos='.07 0 -0.04'/>
-          <joint name="psbl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-          <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.12 0 0' euler='90 0 0' mass=".34"/>
+        <body name='proximal segment back left' pos='-.15 -.2 0.017' euler='0 180 -45' gravcomp=".37">
+          <geom fluidshape="ellipsoid" type='box' size='.02 0.01 .01' pos='0.04 0 0'/>
 
-          <body name='mid segment back left' pos='.12 0 0' euler='90 0 0' gravcomp=".37">
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 0.04'/>
-            <geom fluidshape="ellipsoid" type='box' size='.08 .02 0.01' pos='.1 0 -0.04'/>
-            <joint name="msbl" type="hinge" axis="0 0 -1" pos="0.028 0 0" damping="1"/>
-            <geom fluidshape="ellipsoid" type='box' size='.0465 0.0285 .044' pos='.2 0 0' mass=".34"/>
+          <joint name="psbl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+          <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.072 0 0' euler='90 0 0' mass=".34"/>
 
-            <body name='distal segment back left' pos='.2 0 0' gravcomp="1">
-              <joint name="dsbl" type="hinge" axis="-1 0 0" pos="0.028 0 0" damping="1"/>
-              <geom fluidshape="ellipsoid" type='ellipsoid' size='.07 0.02 0.08' pos='0.15 0 0' euler = "0 90 0" mass="0.34"/>
+          <body name='mid segment back left' pos='.072 0 0' euler='90 0 0' gravcomp=".37">
+            <geom fluidshape="ellipsoid" type='box' size='.025 0.01 .01' pos='0.04 0 0'/>
+
+            <joint name="msbl" type="hinge" axis="0 0 -1" pos="0.01 0 0" damping="1.0"/>
+            <geom fluidshape="ellipsoid" type='box' size='.02325 0.01425 .017' pos='0.055 -0.01 0' euler="0 0 90" mass=".34"/>
+
+            <body name='distal segment back left' pos='0.04 0 0' gravcomp=".37">
+              <joint name="dsbl" type="hinge" axis="1 0 0" pos="0.028 -0.016 0" damping="1.0"/>
+              <geom fluidshape="ellipsoid" type='mesh' mesh='paddle' pos='0.03 -0.00 -0.05' euler = "0 0 -90" mass="0.34"/>
+              <site name="IK_site_bl" pos='0.157 -0.017 0' euler="0 0 0" size="0.005 0.005 0.005" rgba="1 0 0 1" type="box"/>
             </body>
           </body>
         </body>
-
       </body>
 
   </worldbody>
+
+  <!-- <equality>
+      <weld name="freeze"
+            body1="plate"
+            active="false"/>
+  </equality> -->
+
   <sensor>
     <rangefinder name="DVL_rangefinder" camera="DVLcam"  data="dist"/>
     <framepos name="position" objtype="site" objname="IMU"/>
@@ -186,29 +217,31 @@
     <!-- <accelerometer name="accelerometer" site="IMU" /> -->
   </sensor>
   <actuator>
-    <position name="R1_1" joint="psfr"  class="dynamixel"/>
-    <position name="R1_2" joint="msfr"  class="dynamixel"/>
-    <position name="R1_3" joint="dsfr"   class="dynamixel"/>
+    <!-- Per-joint ctrlrange tiers (same across all legs): proximal (peripheral)
+         largest, mid in between, distal smallest. -->
+    <position name="R1_1" joint="psfr"  class="dynamixel" ctrlrange="-1.6 1.6" ctrllimited="true"/>
+    <position name="R1_2" joint="msfr"  class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true"/>
+    <position name="R1_3" joint="dsfr"   class="dynamixel" ctrlrange="-0.5 0.5" ctrllimited="true"/>
 
-    <position name="R2_1" joint="pscr"    class="dynamixel"/>
-    <position name="R2_2" joint="mscr"    class="dynamixel"/>
-    <position name="R2_3" joint="dscr"    class="dynamixel"/>
+    <position name="R2_1" joint="pscr"    class="dynamixel" ctrlrange="-1.6 1.6" ctrllimited="true"/>
+    <position name="R2_2" joint="mscr"    class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true"/>
+    <position name="R2_3" joint="dscr"    class="dynamixel" ctrlrange="-0.5 0.5" ctrllimited="true"/>
 
-    <position name="R3_1" joint="psbr"    class="dynamixel"/>
-    <position name="R3_2" joint="msbr"    class="dynamixel"/>
-    <position name="R3_3" joint="dsbr"    class="dynamixel"/>
+    <position name="R3_1" joint="psbr"    class="dynamixel" ctrlrange="-1.6 1.6" ctrllimited="true"/>
+    <position name="R3_2" joint="msbr"    class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true"/>
+    <position name="R3_3" joint="dsbr"    class="dynamixel" ctrlrange="-0.5 0.5" ctrllimited="true"/>
 
-    <position name="L1_1" joint="psfl"    class="dynamixel"/>
-    <position name="L1_2" joint="msfl"    class="dynamixel"/>
-    <position name="L1_3" joint="dsfl"    class="dynamixel"/>
+    <position name="L1_1" joint="psfl"    class="dynamixel" ctrlrange="-1.6 1.6" ctrllimited="true"/>
+    <position name="L1_2" joint="msfl"    class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true"/>
+    <position name="L1_3" joint="dsfl"    class="dynamixel" ctrlrange="-0.5 0.5" ctrllimited="true"/>
 
-    <position name="L2_1" joint="pscl"    class="dynamixel"/>
-    <position name="L2_2" joint="mscl"    class="dynamixel"/>
-    <position name="L2_3" joint="dscl"    class="dynamixel"/>
+    <position name="L2_1" joint="pscl"    class="dynamixel" ctrlrange="-1.6 1.6" ctrllimited="true"/>
+    <position name="L2_2" joint="mscl"    class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true"/>
+    <position name="L2_3" joint="dscl"    class="dynamixel" ctrlrange="-0.5 0.5" ctrllimited="true"/>
 
-    <position name="L3_1" joint="psbl"    class="dynamixel"/>
-    <position name="L3_2" joint="msbl"    class="dynamixel"/>
-    <position name="L3_3" joint="dsbl"    class="dynamixel"/>
-    
+    <position name="L3_1" joint="psbl"    class="dynamixel" ctrlrange="-1.6 1.6" ctrllimited="true"/>
+    <position name="L3_2" joint="msbl"    class="dynamixel" ctrlrange="-1.0 1.0" ctrllimited="true"/>
+    <position name="L3_3" joint="dsbl"    class="dynamixel" ctrlrange="-0.5 0.5" ctrllimited="true"/>
+
   </actuator>
 </mujoco>

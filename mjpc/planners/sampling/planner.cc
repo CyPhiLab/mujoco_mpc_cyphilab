@@ -170,6 +170,7 @@ int SamplingPlanner::OptimizePolicyCandidates(int ncandidates, int horizon,
 
   // simulate noisy policies
   policy.plan.SetInterpolation(interpolation_);
+  plan_residual = task->Residual();
   this->Rollouts(num_trajectory, horizon, pool);
 
   // sort candidate policies and trajectories by score
@@ -220,6 +221,8 @@ void SamplingPlanner::NominalTrajectory(int horizon, ThreadPool& pool) {
   };
 
   // rollout nominal policy
+  plan_residual = task->Residual();
+  trajectory[0].residual_fn = plan_residual.get();
   trajectory[0].Rollout(nominal_policy, task, model, data_[0].get(),
                         state.data(), time, mocap.data(), userdata.data(),
                         horizon);
@@ -383,6 +386,7 @@ void SamplingPlanner::Rollouts(int num_trajectory, int horizon,
       };
 
       // policy rollout
+      s.trajectory[i].residual_fn = s.plan_residual.get();
       s.trajectory[i].Rollout(
           sample_policy_i, task, model, s.data_[ThreadPool::WorkerId()].get(),
           state.data(), time, mocap.data(), userdata.data(), horizon);

@@ -2,8 +2,7 @@
 
 #include "mjpc/tasks/paddle_crab_swimming/paddle_crab_swimming.h"
 
-#include <algorithm>
-#include <array>
+#include <atomic>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -12,42 +11,54 @@
 #include "mjpc/utilities.h"
 
 namespace mjpc {
-
 namespace {
 
-// Rear-biased control costs: front and center legs remain more expensive than
-// the rear paddles, but not so expensive that the optimizer prefers to stay
-// still. This keeps the task emergent while allowing motion to reappear.
-double ControlRegularizationWeight(int actuator_index) {
-	constexpr std::array<double, 18> kControlWeights = {
-			5.0, 5.0, 5.0,   // R1 (front right)
-			3.0, 3.0, 3.0,   // R2 (center right)
-			0.35, 0.35, 0.20, // R3 (back right, distal paddle cheapest)
-			5.0, 5.0, 5.0,   // L1 (front left)
-			3.0, 3.0, 3.0,   // L2 (center left)
-			0.35, 0.35, 0.20  // L3 (back left, distal paddle cheapest)
-	};
-	if (actuator_index < 0 ||
-			actuator_index >= static_cast<int>(kControlWeights.size())) {
-		return 1.0;
-	}
-	return kControlWeights[actuator_index];
+// Residual parameters, in the order the residual_* numerics appear in task.xml.
+enum ParamIndex {
+	kForwardX = 0,
+	kForwardY,
+	kForwardZ,
+	kLeadPath,
+	kLeadAttitude,
+	kControlSmoothingTau,
+	kStrokeFreq,
+	kPhaseFront,
+	kPhaseCentre,
+	kStrokeAmp,
+	kNumParam,
+};
+
+// The plate's free joint takes the first 7 qpos and 6 qvel entries; the 18 leg
+// joints follow in actuator order (R1 R2 R3 L1 L2 L3, proximal/mid/distal).
+constexpr int kJointQpos = 7;
+constexpr int kJointQvel = 6;
+
+// Sign mapping a right-side joint onto its left-side mirror, i.e. a target
+// phase offset of 0 (+1) or pi (-1). It comes from the model's joint axes: the
+// mid and front/centre distal axes are already mirror images of each other,
+// while the proximal and rear-paddle axes are not.
+double MirrorSign(int row, int joint) {
+	if (joint == 1) return 1.0;
+	if (joint == 2 && row != 2) return 1.0;
+	return -1.0;
 }
 
-double ControlRateRegularizationWeight(int actuator_index) {
-	constexpr std::array<double, 18> kRateWeights = {
-			4.0, 4.0, 4.0,  // R1 (front right)
-			2.5, 2.5, 2.5,  // R2 (center right)
-			0.5, 0.5, 0.5,  // R3 (rear paddles)
-			4.0, 4.0, 4.0,  // L1 (front left)
-			2.5, 2.5, 2.5,  // L2 (center left)
-			0.5, 0.5, 0.5   // L3 (rear paddles)
-	};
-	if (actuator_index < 0 ||
-			actuator_index >= static_cast<int>(kRateWeights.size())) {
-		return 1.0;
-	}
-	return kRateWeights[actuator_index];
+// Smoothing time constant, published for the actuator dynamics callback below.
+// The callback is global and runs on every rollout thread, so it cannot reach
+// into the task.
+std::atomic<double> smoothing_tau{0.08};
+
+// Actuator dynamics for the model's dyntype="user" servos: a first-order lag on
+// the setpoint, so the joint is driven by a filtered command rather than the
+// planner's raw one. MuJoCo integrates this inside every mj_step, which keeps
+// the filter identical in the simulation and in each planner rollout, and keeps
+// its state in mjData where each rollout thread has its own copy.
+mjtNum ControlSmoothingDynamics(const mjModel* model, const mjData* data,
+																		int id) {
+	// MuJoCo integrates act explicitly, so a tau below the timestep would ring.
+	const double tau = mju_max(smoothing_tau.load(std::memory_order_relaxed),
+													 model->opt.timestep);
+	return (data->ctrl[id] - data->act[id]) / tau;
 }
 
 }  // namespace
@@ -58,210 +69,164 @@ std::string PaddleCrabSwimming::XmlPath() const {
 
 std::string PaddleCrabSwimming::Name() const { return "PaddleCrabSwimming"; }
 
-PaddleCrabSwimming::PaddleCrabSwimming()
-		: residual_(this), initialized_(false) {}
+PaddleCrabSwimming::PaddleCrabSwimming() : residual_(this) {
+	cost_log_.open("paddle_crab_swimming_cost_log.csv", std::ios::trunc);
+	cost_log_ << "time,cost\n";
+	pos_log_.open("paddle_crab_swimming_pos_log.csv", std::ios::trunc);
+	pos_log_ << "time,x,y,z\n";
 
-// Residual layout (17 + model->nu = 35 total for 18-control hexapod):
-//   [0-2]   Position error (3)
-//   [3]     Progress / one-sided desired speed floor (1)
-//   [4-6]   Slip velocity perpendicular to target direction (3)
-//   [7-9]   Align: front_point direction from base_cog to front_point (3)
-//   [10-12] Trim: cross(body_up, env_normal) (3)
-//   [13-15] AngVel damping: omega perpendicular to env_normal (3)
-//   [16]    Control effort weighted L2 norm (1)
-//   [17+i]  ControlRate: sqrt(rate_weight[i]) * (ctrl[i] - prev_ctrl[i])
-// Total: 35 residuals (for 18-control hexapod)
-void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
-																							 const mjData* data,
-																							 double* residual) const {
-	// Sensor lookups
-	double* base_cog_pos      = SensorByName(model, data, "base_cog_pos_task");
-	double* base_pos          = SensorByName(model, data, "base_pos_task");
-	double* front_pos         = SensorByName(model, data, "front_pos_task");
-	double* target_pos        = SensorByName(model, data, "target_pos_task");
-	double* base_vel_world    = SensorByName(model, data, "base_vel_world_task");
-	double* base_angvel_world = SensorByName(model, data, "base_angvel_world_task");
+	// Only actuators declared dyntype="user" reach this callback, so installing
+	// it globally is harmless for the other tasks in the binary.
+	mjcb_act_dyn = &ControlSmoothingDynamics;
+}
 
-	// Parameters: [0]=DesiredSpeed [1]=SlowRadius [2-4]=LocAxis [5-7]=UpAxis [8-10]=EnvNormal
-	double desired_speed_param = parameters_[0];
-	double loc_axis_body[3]    = {parameters_[2], parameters_[3], parameters_[4]};
-	double body_up_body[3]     = {parameters_[5], parameters_[6], parameters_[7]};
-	double env_normal_world[3] = {parameters_[8], parameters_[9], parameters_[10]};
-
-	// Safety: clear all residuals if any input is bad
-	auto is_bad = [](double v) { return std::isnan(v) || std::isinf(v); };
-	bool bad = false;
-	for (int i = 0; i < 11; ++i) if (is_bad(parameters_[i])) bad = true;
-	for (int i = 0; i < 3; ++i) {
-		if (base_cog_pos && is_bad(base_cog_pos[i])) bad = true;
-		if (is_bad(base_pos[i]) || is_bad(target_pos[i]) ||
-				is_bad(base_vel_world[i]) || is_bad(base_angvel_world[i])) bad = true;
-		if (front_pos && is_bad(front_pos[i])) bad = true;
-	}
-	if (bad) {
-		int n_residuals = 17 + model->nu;
-		for (int r = 0; r < n_residuals; ++r) residual[r] = 0.0;
-		return;
-	}
-
-	const double eps = 1e-8;
-
-	// Normalize locomotion axis (body frame)
-	double loc_norm = mju_sqrt(loc_axis_body[0]*loc_axis_body[0] +
-														 loc_axis_body[1]*loc_axis_body[1] +
-														 loc_axis_body[2]*loc_axis_body[2] + eps);
-	loc_axis_body[0] /= loc_norm;
-	loc_axis_body[1] /= loc_norm;
-	loc_axis_body[2] /= loc_norm;
-
-	// Normalize body-up axis (body frame)
-	double up_norm = mju_sqrt(body_up_body[0]*body_up_body[0] +
-														body_up_body[1]*body_up_body[1] +
-														body_up_body[2]*body_up_body[2] + eps);
-	body_up_body[0] /= up_norm;
-	body_up_body[1] /= up_norm;
-	body_up_body[2] /= up_norm;
-
-	// Normalize environment normal (world frame)
-	double env_norm = mju_sqrt(env_normal_world[0]*env_normal_world[0] +
-														 env_normal_world[1]*env_normal_world[1] +
-														 env_normal_world[2]*env_normal_world[2] + eps);
-	env_normal_world[0] /= env_norm;
-	env_normal_world[1] /= env_norm;
-	env_normal_world[2] /= env_norm;
-
-	// Get rotation matrix of plate body
-	int base_id = mj_name2id(model, mjOBJ_BODY, "plate");
-	const double* xmat = (base_id >= 0) ? (data->xmat + 9 * base_id) : nullptr;
-
-	// Rotate body-up axis to world frame.
-	double body_up_world[3]  = {0, 0, 0};
-	if (xmat) {
-		mju_mulMatVec(body_up_world,  xmat, body_up_body,  3, 3);
-	}
-
-	// Direction to target
-	double d[3] = {target_pos[0] - base_pos[0],
-								 target_pos[1] - base_pos[1],
-								 target_pos[2] - base_pos[2]};
-	double dist_3d = mju_sqrt(d[0]*d[0] + d[1]*d[1] + d[2]*d[2] + eps);
-	double dir[3]  = {d[0]/dist_3d, d[1]/dist_3d, d[2]/dist_3d};
-
-	// [0-2] Position error
-	residual[0] = d[0];
-	residual[1] = d[1];
-	residual[2] = d[2];
-
-	// [3] Progress: one-sided floor penalizing insufficient forward speed
-	double slow_radius = parameters_[1];
-	if (is_bad(slow_radius) || slow_radius <= 1e-8) slow_radius = 1e-8;
-	double desired_speed = (dist_3d > slow_radius)
-													 ? desired_speed_param
-													 : desired_speed_param * (dist_3d / slow_radius);
-	double v_parallel = base_vel_world[0]*dir[0] +
-										base_vel_world[1]*dir[1] +
-										base_vel_world[2]*dir[2];
-	residual[3] = mju_min(v_parallel - desired_speed, 0.0);
-
-	// [4-6] Slip: velocity component perpendicular to target direction
-	double v_par_vec[3] = {v_parallel*dir[0], v_parallel*dir[1], v_parallel*dir[2]};
-	residual[4] = base_vel_world[0] - v_par_vec[0];
-	residual[5] = base_vel_world[1] - v_par_vec[1];
-	residual[6] = base_vel_world[2] - v_par_vec[2];
-
-	// [7-9] Align: body axis is strictly (body center -> forward point).
-	// If either sensor is missing or the direction is degenerate, Align is zero.
-	double body_forward_world[3] = {0, 0, 0};
-	if (front_pos && base_cog_pos) {
-		double front_delta[3] = {
-				front_pos[0] - base_cog_pos[0],
-				front_pos[1] - base_cog_pos[1],
-				front_pos[2] - base_cog_pos[2]};
-		double front_norm = mju_sqrt(front_delta[0]*front_delta[0] +
-										 front_delta[1]*front_delta[1] +
-										 front_delta[2]*front_delta[2] + eps);
-		if (front_norm > 1e-6) {
-			body_forward_world[0] = front_delta[0] / front_norm;
-			body_forward_world[1] = front_delta[1] / front_norm;
-			body_forward_world[2] = front_delta[2] / front_norm;
-		}
-	}
-	residual[7] = body_forward_world[1]*dir[2] - body_forward_world[2]*dir[1];
-	residual[8] = body_forward_world[2]*dir[0] - body_forward_world[0]*dir[2];
-	residual[9] = body_forward_world[0]*dir[1] - body_forward_world[1]*dir[0];
-
-	// [10-12] Trim: cross(body_up, env_normal) — zero when up aligns with normal
-	residual[10] = body_up_world[1]*env_normal_world[2] - body_up_world[2]*env_normal_world[1];
-	residual[11] = body_up_world[2]*env_normal_world[0] - body_up_world[0]*env_normal_world[2];
-	residual[12] = body_up_world[0]*env_normal_world[1] - body_up_world[1]*env_normal_world[0];
-
-	// [13-15] AngVel damping: angular velocity perpendicular to env_normal
-	double omega_par = base_angvel_world[0]*env_normal_world[0] +
-										 base_angvel_world[1]*env_normal_world[1] +
-										 base_angvel_world[2]*env_normal_world[2];
-	residual[13] = base_angvel_world[0] - omega_par*env_normal_world[0];
-	residual[14] = base_angvel_world[1] - omega_par*env_normal_world[1];
-	residual[15] = base_angvel_world[2] - omega_par*env_normal_world[2];
-
-	// [16] Control effort: morphology-aware weighted L2 norm.
-	double effort_sq = 0.0;
-	for (int i = 0; i < model->nu; ++i) {
-		effort_sq += ControlRegularizationWeight(i) *
-							 data->ctrl[i] * data->ctrl[i];
-	}
-	residual[16] = mju_sqrt(effort_sq);
-
-	// [17+i] ControlRate: morphology-aware weighted control delta.
-	const PaddleCrabSwimming* task =
-			static_cast<const PaddleCrabSwimming*>(task_);
-	if (model->nu == static_cast<int>(task->prev_ctrl_.size())) {
-		for (int i = 0; i < model->nu; ++i) {
-			residual[17 + i] =
-					mju_sqrt(ControlRateRegularizationWeight(i)) *
-					(data->ctrl[i] - task->prev_ctrl_[i]);
-		}
-	} else {
-		for (int i = 0; i < model->nu; ++i) {
-			residual[17 + i] = 0.0;
-		}
+// Publishes the smoothing slider to the actuator dynamics callback.
+void PaddleCrabSwimming::PublishSmoothingTau() {
+	if (kControlSmoothingTau < static_cast<int>(parameters.size())) {
+		smoothing_tau.store(parameters[kControlSmoothingTau],
+											std::memory_order_relaxed);
 	}
 }
 
-void PaddleCrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
-	// Initialize on first call or if model->nu changed
-	if (!initialized_ || filtered_ctrl_.size() != static_cast<size_t>(model->nu)) {
-		filtered_ctrl_.resize(model->nu, 0.0);
-		prev_ctrl_.resize(model->nu, 0.0);
-		for (int i = 0; i < model->nu; ++i) {
-			filtered_ctrl_[i] = data->ctrl[i];
-			prev_ctrl_[i]     = data->ctrl[i];
-		}
-		initialized_ = true;
+void PaddleCrabSwimming::ResetLocked(const mjModel* model) {
+	PublishSmoothingTau();
+}
+
+void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
+																							const mjData* data,
+																							double* residual) const {
+	int counter = 0;
+
+	// Forward axis, and the horizontal axis to its left.
+	double forward[3] = {parameters_[kForwardX], parameters_[kForwardY],
+											 parameters_[kForwardZ]};
+	mju_normalize3(forward);
+	const double up[3] = {0.0, 0.0, 1.0};
+	double lateral[3];
+	mju_cross(lateral, up, forward);
+
+	double* pos = SensorByName(model, data, "base_pos");
+	double* linvel = SensorByName(model, data, "base_linvel");
+	double* angvel = SensorByName(model, data, "base_angvel");
+	double* xaxis = SensorByName(model, data, "base_xaxis");
+	double* zaxis = SensorByName(model, data, "base_zaxis");
+
+	// Steering terms are error + lead * d(error)/dt. The lead makes a slow
+	// correction pay off inside the horizon, but it also prices in the body
+	// rocking that swimming unavoidably causes, so it stays small.
+	const double lead_path = parameters_[kLeadPath];
+	const double lead_attitude = parameters_[kLeadAttitude];
+
+	// ----- Forward ----- //
+	// Null norm, so this is a linear reward on speed rather than a target to
+	// settle on: the gradient never vanishes, which is what lets the planner
+	// find a stroke instead of stalling once it is "fast enough".
+	residual[counter++] = -mju_dot3(linvel, forward);
+
+	// ----- Lateral ----- //
+	residual[counter++] =
+			mju_dot3(lateral, pos) + lead_path * mju_dot3(lateral, linvel);
+
+	// ----- Heading ----- //
+	// The body spawns aligned with the world, so any y-component of its x-axis
+	// is a yaw error.
+	residual[counter++] = xaxis[1] + lead_path * angvel[2];
+
+	// ----- Level ----- //
+	residual[counter++] = zaxis[0] + lead_attitude * angvel[1];
+	residual[counter++] = zaxis[1] - lead_attitude * angvel[0];
+
+	// ----- Depth ----- //
+	residual[counter++] = pos[2] - model->qpos0[2] + lead_attitude * linvel[2];
+
+	// ----- Effort ----- //
+	for (int i = 0; i < model->nu; ++i) {
+		residual[counter++] = data->ctrl[i];
 	}
 
-	int smoothing_enabled_id =
-			mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingEnabled");
-	int smoothing_tau_id =
-			mj_name2id(model, mjOBJ_NUMERIC, "residual_ControlSmoothingTau");
+	// A joint oscillating at omega traces a circle in (qdot/omega, q), so that
+	// pair is a phasor and phase relationships become vector comparisons. That
+	// avoids an angle difference, which would be discontinuous at the wrap and
+	// undefined when a joint is at rest.
+	const double omega = 2.0 * mjPI * mju_max(parameters_[kStrokeFreq], 0.01);
 
-	double smoothing_enabled = (smoothing_enabled_id >= 0)
-			? model->numeric_data[model->numeric_adr[smoothing_enabled_id]] : 1.0;
-	double tau = (smoothing_tau_id >= 0)
-			? model->numeric_data[model->numeric_adr[smoothing_tau_id]] : 0.08;
+	// ----- Symmetry ----- //
+	// Left/right phase lock. The target offset is 0 or pi, so the phasor rotation
+	// collapses to MirrorSign. Comparing whole phasors locks amplitude and phase
+	// together, which comparing joint angles alone would not.
+	//
+	// Deliberately not normalised by amplitude. Dividing through makes a small
+	// exploratory wiggle score a large *relative* asymmetry, which penalises
+	// exactly the tentative motion the planner needs to get started; measured, it
+	// froze at rest for every weight tried. Growing as amplitude squared instead
+	// leaves early exploration almost free.
+	for (int row = 0; row < 3; ++row) {
+		for (int joint = 0; joint < 3; ++joint) {
+			const int right = 3 * row + joint;
+			const int left = 9 + 3 * row + joint;
+			const double sign = MirrorSign(row, joint);
+			residual[counter++] = data->qpos[kJointQpos + left] -
+														 sign * data->qpos[kJointQpos + right];
+			residual[counter++] = (data->qvel[kJointQvel + left] -
+													 sign * data->qvel[kJointQvel + right]) /
+													omega;
+		}
+	}
 
-	if (smoothing_enabled > 0.5) {
-		double dt    = model->opt.timestep;
-		double alpha = dt / (tau + dt);
-		for (int i = 0; i < model->nu; ++i) {
-			prev_ctrl_[i]     = filtered_ctrl_[i];
-			filtered_ctrl_[i] = filtered_ctrl_[i] + alpha * (data->ctrl[i] - filtered_ctrl_[i]);
-		}
-		mju_copy(data->ctrl, filtered_ctrl_.data(), model->nu);
-	} else {
-		for (int i = 0; i < model->nu; ++i) {
-			prev_ctrl_[i]     = filtered_ctrl_[i];
-			filtered_ctrl_[i] = data->ctrl[i];
-		}
+	// ----- RowPhase ----- //
+	// Metachronal timing: hold each front and centre mid joint at a commanded
+	// phase offset from the rear mid joint on the same side.
+	auto phase_lock = [&](int lead_index, int ref_index, double delta) {
+		const double lead[2] = {data->qvel[kJointQvel + lead_index] / omega,
+													data->qpos[kJointQpos + lead_index]};
+		const double ref[2] = {data->qvel[kJointQvel + ref_index] / omega,
+											 data->qpos[kJointQpos + ref_index]};
+		const double c = mju_cos(delta), s = mju_sin(delta);
+		residual[counter++] = lead[0] - (c * ref[0] - s * ref[1]);
+		residual[counter++] = lead[1] - (s * ref[0] + c * ref[1]);
+	};
+	phase_lock(1, 7, parameters_[kPhaseFront]);
+	phase_lock(4, 7, parameters_[kPhaseCentre]);
+	phase_lock(10, 16, parameters_[kPhaseFront]);
+	phase_lock(13, 16, parameters_[kPhaseCentre]);
+
+	// ----- Periodicity ----- //
+	// Hold each mid joint's phasor on a circle of radius StrokeAmp, i.e. keep it
+	// oscillating steadily rather than settling anywhere.
+	//
+	// A q + qddot/omega^2 form is the textbook pointwise test for harmonic motion
+	// but is useless here: joint acceleration is dominated by servo stiffness, not
+	// the gait envelope, so it acts as an acceleration penalty and froze the
+	// planner at weights as low as 0.001. This form needs no acceleration, and
+	// being large at rest it pushes the planner out of the do-nothing minimum
+	// instead of into it.
+	const double stroke_amp = parameters_[kStrokeAmp];
+	for (int leg = 0; leg < 6; ++leg) {
+		const int index = 3 * leg + 1;  // mid joint carries the up/down stroke
+		const double q = data->qpos[kJointQpos + index];
+		const double v = data->qvel[kJointQvel + index] / omega;
+		residual[counter++] = mju_sqrt(q * q + v * v) - stroke_amp;
+	}
+
+	CheckSensorDim(model, counter);
+}
+
+void PaddleCrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
+	PublishSmoothingTau();
+
+	double* base_pos = SensorByName(model, data, "base_pos");
+	if (pos_log_.is_open() && base_pos) {
+		pos_log_ << data->time << "," << base_pos[0] << "," << base_pos[1] << ","
+						 << base_pos[2] << "\n";
+		pos_log_.flush();
+	}
+
+	if (cost_log_.is_open()) {
+		std::vector<double> residual(num_residual, 0.0);
+		residual_.Residual(model, data, residual.data());
+		cost_log_ << data->time << "," << residual_.CostValue(residual.data())
+							<< "\n";
+		cost_log_.flush();
 	}
 }
 

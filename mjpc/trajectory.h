@@ -85,6 +85,11 @@ class Trajectory {
   double total_return;           // (1)
   bool failure;                  // true if last rollout had a warning
 
+  // Lock-free cost function used by UpdateReturn when set, otherwise the
+  // task's mutex-guarded CostValue is used. Scoring runs once per rollout step
+  // on every planner thread, so taking the task lock there serialises them.
+  const ResidualFn* residual_fn = nullptr;
+
  private:
   // calculates total_return and costs
   void UpdateReturn(const Task* task);

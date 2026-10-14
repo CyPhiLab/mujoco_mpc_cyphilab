@@ -19,6 +19,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include <shared_mutex>
 #include <vector>
 
@@ -128,6 +129,10 @@ class SamplingPlanner : public RankedPlanner {
 
   // scratch
   mjpc::spline::TimeSpline plan_scratch;
+
+  // Private residual copy shared by the rollout threads, so scoring does not
+  // serialise on the task lock. Refreshed once per planning iteration.
+  std::unique_ptr<ResidualFn> plan_residual;
 
   // trajectories
   Trajectory trajectory[kMaxTrajectory];

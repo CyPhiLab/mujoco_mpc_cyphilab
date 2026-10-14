@@ -239,6 +239,22 @@ target_compile_options(testspeed PUBLIC ${MJPC_COMPILE_OPTIONS})
 target_link_options(testspeed PRIVATE ${MJPC_LINK_OPTIONS})
 target_compile_definitions(testspeed PRIVATE MJSIMULATE_STATIC)
 
+add_executable(
+  cost_sweep
+  tasks/paddle_crab_swimming/cost_sweep.cc
+)
+target_link_libraries(
+  cost_sweep
+  libmjpc
+  mujoco::mujoco
+  threadpool
+  Threads::Threads
+)
+target_include_directories(cost_sweep PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_compile_options(cost_sweep PUBLIC ${MJPC_COMPILE_OPTIONS})
+target_link_options(cost_sweep PRIVATE ${MJPC_LINK_OPTIONS})
+target_compile_definitions(cost_sweep PRIVATE MJSIMULATE_STATIC)
+
 add_subdirectory(tasks)
 
 if(BUILD_TESTING AND MJPC_BUILD_TESTS)
