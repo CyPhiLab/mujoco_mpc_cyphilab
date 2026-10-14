@@ -1,1 +1,0 @@
-search: 256 seeds at dt 0.002
