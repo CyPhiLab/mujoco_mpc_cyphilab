@@ -1,0 +1,42 @@
+{
+  "speeds": [],
+  "speed_start": 0.1,
+  "speed_growth": 1.25,
+  "speed_max": 1.0,
+  "patience": 8,
+  "min_gain": 0.03,
+  "refine_all": false,
+  "direction": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "dts": [
+    0.002,
+    0.001
+  ],
+  "k": 3,
+  "ctrl_limit": 3.14159,
+  "seed_style": "random",
+  "warm": 4,
+  "warm_steady": 2,
+  "measure": 2,
+  "weights": "tilt=0",
+  "init": "runs/free_pX/step5_v0.1_dt0.002_r3.npz",
+  "seeds": 256,
+  "starts": 4,
+  "search_iters": 8,
+  "es_iters": 10,
+  "pop": 48,
+  "sigma": 0.05,
+  "lm_iters": 12,
+  "refine_iters": 4,
+  "speed_tol": 0.003,
+  "speed_rtol": 0.05,
+  "drift_tol": 0.005,
+  "saturation_tol": 0.2,
+  "processes": 2,
+  "seed": 0,
+  "no_render": false,
+  "out": "runs/free_pX2"
+}
