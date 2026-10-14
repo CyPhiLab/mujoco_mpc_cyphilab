@@ -1,0 +1,4 @@
+setting,seconds,speed,dx,dy,dz,yaw,open_loop
+Gait=crab_side+Heading=20+Lateral=20+Depth=30,20.000,0.07386,1.47549,-0.07103,0.00107,0.17802,0
+Gait=crab_side+Heading=20+Lateral=20+Depth=30,20.000,0.07512,1.50212,-0.03058,0.15715,-0.16469,0
+Gait=crab_side+Heading=20+Lateral=20+Depth=30,20.000,0.07232,1.44633,-0.01750,0.39072,-0.12016,0
