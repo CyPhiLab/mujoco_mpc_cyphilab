@@ -149,6 +149,39 @@ Findings:
 - With these seeds and LM's local reach, −Y beat sideways. The crab-like
   sideways gait is fast, but its heading is not stable open loop.
 
+### Round 2: heading, free posture and design levers
+
+- **crab_side v2** (`crab_heading`). The crab gait was re-polished from rest
+  over a 14 s window, with yaw drift and heading weighted up. It swims
+  0.087 m/s and holds within ±7° of heading for about 15 s from rest (the
+  first version wandered from about 8 s). Beyond that it still drifts: −33°
+  by 27 s, and over 60 s it slides 1.1 m sideways and climbs 1.7 m open loop.
+  The open-loop heading is slowly unstable and needs feedback.
+- **paddles_lead with free posture** (`lead_free`), with ±π commands and
+  steady tilt free, stays at 0.1126 m/s. It is a local optimum.
+- **Design levers** (`design_audit.py`, `crab_model.DESIGN_DEFAULTS`). The
+  audit of `paddles_lead` found:
+  - Thrust: all of it comes from the paddle legs (+0.49 N) and is spent on
+    body drag (−0.50 N).
+  - Walking legs: they do much work (mid joints about 5 J per cycle) for no
+    net force.
+  - Paddle-lift servos: they sit at their torque limit 35–41% of the time.
+  - Setpoint filter: it shrinks strokes by 10–30%.
+  - Plate: the flat plate is most of the body drag in MuJoCo's ellipsoid
+    model. Its slender-drag term scales with the 0.3 × 0.4 m planform even
+    when the plate moves edge-on, which may overstate a real plate.
+
+  Each variant was re-optimized from `paddles_lead` (2 ms, same ladder
+  settings):
+
+  | Variant (actuators fixed) | Speed (m/s) | vs. baseline |
+  |---|---|---|
+  | baseline (unchanged design) | 0.116 | — |
+  | body drag × 0.5 | **0.160** | **+38%** |
+  | paddle area × 1.5 | 0.151 | +30% |
+  | setpoint filter tau 0.04 s | 0.113 | none |
+  | (paddle servo torque × 2, stopped early; actuators fixed for now) | 0.146 | +26% |
+
 ### In MJPC
 
 `export_gaits.py --mjpc ../gait_reference.xml` writes the gait library that
@@ -183,6 +216,20 @@ Closed loop, 20 s from rest (single runs):
 | exploration 0.01 | | **0.111 m/s, 1 cm lateral, yaw −0.03 rad**, but depth +0.33 m | | 0.061, yaw −1.58 rad |
 
 Gait mode wants small exploration (about 0.01–0.03). The task default of 0.3
-is tuned for the emergent stroke. Heading control of `crab_side` is still
-open: it may need a higher Heading weight, or a gait made heading-stable
-offline.
+is tuned for the emergent stroke.
+
+Tuning (`mjpc_tuning/`, 3 repeats of 20–30 s, plus 60 s runs):
+- **The 20 ms planning model mispredicts the stiff servos.** At exploration
+  0.03 it steers `paddles_lead` about 1 rad off heading. With a 5 ms model
+  (`--agent_dt 0.005`) that drops to 0.11 rad.
+- **Steering weights ×4** (Heading, Lateral, Depth) change little.
+- **Over 60 s, closed loop does not reliably beat open loop** for crab_side
+  v2 (3.74 m forward, 1.06 m lateral, +1.69 m depth open loop). With the
+  20 ms planner, one run did better (4.43 m, 0.28 m, +1.13 m) and one failed
+  (+2.97 m depth). With the 5 ms planner it is roughly open loop, and depth
+  is not corrected.
+
+Small random corrections to 18 raw servo commands cannot steer, and large
+ones break the stroke. A low-dimensional steering interface, such as
+left/right paddle amplitude for yaw and paddle mean angle for depth, is the
+likely next step.
