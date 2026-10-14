@@ -21,13 +21,16 @@ namespace mjpc {
 // analysis/export_gaits.py: per actuator a Fourier series in phase,
 //   u_i(phase) = c_i + sum_k a_ik cos(2 pi k phase) + b_ik sin(2 pi k phase)
 // in radians. The numeric "gait_<name>" holds
-//   period, K, speed, c (nu), a (nu x K), b (nu x K).
+//   period, K, speed, direction (3), c (nu), a (nu x K), b (nu x K),
+// where direction is the world swim direction the gait was optimized for
+// (the body keeps its heading; the direction picks which side leads).
 struct PaddleCrabGait {
 	std::string name;
 	double period = 1.0;
 	int nu = 0;
 	int k = 0;
 	double speed = 0.0;
+	double direction[3] = {0.0, -1.0, 0.0};
 	std::vector<double> c, a, b;
 
 	double Command(int i, double phase) const {
@@ -83,19 +86,22 @@ std::shared_ptr<const Gait> LoadGait(const mjModel* model,
 	if (id < 0) return nullptr;
 	const double* data = model->numeric_data + model->numeric_adr[id];
 	const int size = model->numeric_size[id];
-	if (size < 3) return nullptr;
+	constexpr int kHeader = 6;  // period, K, speed, direction (3)
+	if (size < kHeader) return nullptr;
 	auto gait = std::make_shared<Gait>();
 	gait->name = name;
 	gait->period = data[0];
 	gait->k = static_cast<int>(data[1]);
 	gait->speed = data[2];
+	mju_copy3(gait->direction, data + 3);
 	gait->nu = model->nu;
 	const int nu = gait->nu, k = gait->k;
-	if (gait->period <= 0 || k < 0 || size != 3 + nu * (1 + 2 * k)) {
+	if (gait->period <= 0 || k < 0 || size != kHeader + nu * (1 + 2 * k) ||
+			mju_normalize3(gait->direction) < mjMINVAL) {
 		mju_warning("PaddleCrabSwimming: malformed gait_%s", name.c_str());
 		return nullptr;
 	}
-	const double* coef = data + 3;
+	const double* coef = data + kHeader;
 	gait->c.assign(coef, coef + nu);
 	gait->a.assign(coef + nu, coef + nu + nu * k);
 	gait->b.assign(coef + nu + nu * k, coef + nu + 2 * nu * k);
@@ -222,8 +228,11 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	int counter = 0;
 
 	// Forward axis, and the horizontal axis to its left.
+	// A running gait swims in the direction it was optimized for.
+	const Gait* gait_primitive = active_gait.load(std::memory_order_relaxed);
 	double forward[3] = {parameters_[kForwardX], parameters_[kForwardY],
 											 parameters_[kForwardZ]};
+	if (gait_primitive) mju_copy3(forward, gait_primitive->direction);
 	mju_normalize3(forward);
 	const double up[3] = {0.0, 0.0, 1.0};
 	double lateral[3];
@@ -276,7 +285,7 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 
 	// A gait primitive already carries the rhythm (see the header); the emergent
 	// rhythm terms would only pull against it.
-	const bool gait = active_gait.load(std::memory_order_relaxed) != nullptr;
+	const bool gait = gait_primitive != nullptr;
 	const int rhythm_start = counter;
 
 	// ----- Symmetry ----- //

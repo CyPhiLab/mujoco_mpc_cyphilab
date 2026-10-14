@@ -78,14 +78,16 @@ def plot(path, npz):
   pos, t = np.array(pos), np.array(t)
   fig, ax = plt.subplots(2, 2, figsize=(11, 8))
   ax[0, 0].plot(pos[:, 0], pos[:, 1])
-  ax[0, 0].set(xlabel='x (m)', ylabel='y (m)', title='path (forward is -y)')
+  direction = z['direction'] if 'direction' in z else C.FORWARD
+  ax[0, 0].set(xlabel='x (m)', ylabel='y (m)',
+               title=f'path (swim direction {np.round(direction, 2)})')
   ax[0, 0].axis('equal')
   period = float(np.exp(theta[0]))
   w = max(1, int(round(period / C.SIM_DT)))
-  y = -pos[:, 1]
+  y = pos @ direction
   v = (y[w:] - y[:-w]) / (t[w:] - t[:-w])
   ax[0, 1].plot(t[w:], v)
-  ax[0, 1].set(xlabel='t (s)', ylabel='cycle-mean forward speed (m/s)')
+  ax[0, 1].set(xlabel='t (s)', ylabel='cycle-mean speed along direction (m/s)')
   phase = z['phase']
   for i, name in enumerate(C.JOINTS):
     if name.startswith('d') and not name.startswith('dsb'):

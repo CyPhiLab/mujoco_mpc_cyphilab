@@ -54,7 +54,7 @@ S_SAT = 0.05          # fraction of the force / command range
 
 DEFAULT_WEIGHTS = dict(speed=4.0, lateral=1.0, yaw=1.0, depth=0.3,
                        heading=0.3, tilt=0.3, cycle=0.3, effort=1.0,
-                       saturation=3.0)
+                       saturation=1.0)
 
 
 class Layout:
@@ -115,8 +115,13 @@ class Problem:
 
   def __init__(self, dt=0.005, k=K_DEFAULT, warm=3, measure=2,
                speed=0.05, max_speed=False, weights=None, x0=None,
-               tau=C.TAU):
+               tau=C.TAU, direction=tuple(C.FORWARD)):
     self.dt, self.warm, self.measure = dt, warm, measure
+    # Swim direction in the world xy-plane; the body keeps its start heading,
+    # so this picks which side of the robot leads.
+    self.direction = np.array(direction, dtype=float)
+    self.direction /= np.linalg.norm(self.direction)
+    self.lateral = np.cross([0.0, 0.0, 1.0], self.direction)
     self.speed, self.max_speed = speed, max_speed
     self.weights = dict(DEFAULT_WEIGHTS, **(weights or {}))
     self.layout = Layout(k)
@@ -132,7 +137,7 @@ class Problem:
     return dict(dt=self.dt, k=self.layout.k, warm=self.warm,
                 measure=self.measure, speed=self.speed,
                 max_speed=self.max_speed, weights=self.weights,
-                x0=self.x0.tolist())
+                x0=self.x0.tolist(), direction=self.direction.tolist())
 
   def nstep(self, period):
     return int(np.ceil((self.warm + self.measure) * period / self.dt)) + 2
@@ -183,8 +188,8 @@ class Problem:
 
     p0, p1 = at(qpos[:, :3], t0), at(qpos[:, :3], t1)
     disp = p1 - p0
-    speed = float(C.FORWARD @ disp) / duration
-    lateral = float(C.LATERAL @ disp) / duration
+    speed = float(self.direction @ disp) / duration
+    lateral = float(self.lateral @ disp) / duration
     depth = float(disp[2]) / duration
 
     R = C.quat_to_mat(qpos[:, 3:7])

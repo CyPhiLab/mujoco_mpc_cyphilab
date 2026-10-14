@@ -36,7 +36,9 @@ struct PaddleCrabGait;
 // alike. The planner's ctrl is then a correction on top of the primitive, and
 // Effort prices deviating from it. "Off" is the emergent-stroke behaviour.
 // While a gait runs, the emergent-rhythm terms (Symmetry, RowPhase,
-// Periodicity) are switched off: the primitive already carries the rhythm.
+// Periodicity) are switched off, since the primitive already carries the
+// rhythm, and Forward/Lateral use the gait's own swim direction in place of
+// the ForwardAxis sliders.
 //
 // Residual layout (56). Each steering term is error + lead * rate-of-error, and
 // the rhythm terms treat (qdot/omega, q) as a phasor per joint:

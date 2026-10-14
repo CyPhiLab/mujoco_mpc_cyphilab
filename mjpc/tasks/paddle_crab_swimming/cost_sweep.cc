@@ -16,7 +16,8 @@
 //                 optimizer, analysis/gait_chain.py)
 //
 // Writes the per-step cost as "step,cost_<setting>,..." (read by
-// plot_cost.py) and OUT_summary.csv with speed, drift and heading per setting.
+// plot_cost.py) and OUT_summary.csv with horizontal speed, displacement and
+// heading per setting.
 
 #include <cmath>
 #include <cstdio>
@@ -49,7 +50,8 @@ void ResidualSensorCallback(const mjModel* m, mjData* d, int stage) {
 struct Result {
   std::string label;
   std::vector<double> cost;
-  double speed = 0, lateral = 0, depth = 0, yaw = 0, seconds = 0;
+  // speed is horizontal distance over time; dx, dy, dz the displacement.
+  double speed = 0, dx = 0, dy = 0, dz = 0, yaw = 0, seconds = 0;
 };
 
 // Applies one "Name=Value" assignment; false if nothing matched.
@@ -167,15 +169,16 @@ int main(int argc, char** argv) {
     }
     const double* xmat = data->xmat + 9 * plate;
     result.seconds = data->time;
-    result.speed = -(data->xpos[3 * plate + 1] - y0) / data->time;
-    result.lateral = data->xpos[3 * plate] - x0;
-    result.depth = data->xpos[3 * plate + 2] - z0;
+    result.dx = data->xpos[3 * plate] - x0;
+    result.dy = data->xpos[3 * plate + 1] - y0;
+    result.dz = data->xpos[3 * plate + 2] - z0;
+    result.speed = std::hypot(result.dx, result.dy) / data->time;
     result.yaw = std::atan2(xmat[3], xmat[0]);
     std::fprintf(stderr,
-                 "%-28s speed %.4f m/s  lateral %+.3f m  depth %+.3f m  "
+                 "%-28s speed %.4f m/s  dx %+.3f m  dy %+.3f m  dz %+.3f m  "
                  "yaw %+.3f rad\n",
-                 setting.c_str(), result.speed, result.lateral, result.depth,
-                 result.yaw);
+                 setting.c_str(), result.speed, result.dx, result.dy,
+                 result.dz, result.yaw);
     results.push_back(result);
     mj_deleteData(data);
     g_task = nullptr;
@@ -203,10 +206,10 @@ int main(int argc, char** argv) {
                  "_summary.csv";
   FILE* summary = std::fopen(summary_path.c_str(), "w");
   if (summary) {
-    std::fprintf(summary, "setting,seconds,speed,lateral,depth,yaw,open_loop\n");
+    std::fprintf(summary, "setting,seconds,speed,dx,dy,dz,yaw,open_loop\n");
     for (const Result& r : results) {
-      std::fprintf(summary, "%s,%.3f,%.5f,%.5f,%.5f,%.5f,%d\n",
-                   r.label.c_str(), r.seconds, r.speed, r.lateral, r.depth,
+      std::fprintf(summary, "%s,%.3f,%.5f,%.5f,%.5f,%.5f,%.5f,%d\n",
+                   r.label.c_str(), r.seconds, r.speed, r.dx, r.dy, r.dz,
                    r.yaw, open_loop);
     }
     std::fclose(summary);
