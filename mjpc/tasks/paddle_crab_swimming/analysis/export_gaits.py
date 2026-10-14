@@ -271,8 +271,9 @@ def main():
           f'v {step["metrics"]["speed"]:.4f} (steady '
           f'{step["steady"]["speed"]:.4f}) T {step["metrics"]["period"]:.3f}'
           f' clipped {check_unclipped(step["theta"], step["k"]):.3f}')
-  with open(os.path.join(args.run or '.', 'steady.json'), 'w') as f:
-    json.dump({n: s['steady'] for n, s in gaits.items()}, f, indent=2)
+  if args.run:
+    with open(os.path.join(args.run, 'steady.json'), 'w') as f:
+      json.dump({n: s['steady'] for n, s in gaits.items()}, f, indent=2)
   half = C.load_model(ground=False).actuator_ctrlrange[:, 1].copy()
   if args.mjpc:
     write_mjpc(args.mjpc, gaits, half)
