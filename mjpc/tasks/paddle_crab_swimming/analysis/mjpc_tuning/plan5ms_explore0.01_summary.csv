@@ -1,0 +1,7 @@
+setting,seconds,speed,dx,dy,dz,yaw,open_loop
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30,20.000,0.11150,0.01187,-2.23007,0.02275,0.09653,0
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30,20.000,0.11010,0.18844,-2.19388,0.23374,0.24884,0
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30,20.000,0.11138,-0.04675,-2.22715,0.24176,0.02378,0
+Gait=crab_side+Heading=20+Lateral=20+Depth=30,20.000,0.07305,1.44837,-0.19150,0.15134,-0.43123,0
+Gait=crab_side+Heading=20+Lateral=20+Depth=30,20.000,0.07407,1.45536,-0.27673,-0.01067,-0.24867,0
+Gait=crab_side+Heading=20+Lateral=20+Depth=30,20.000,0.07444,1.48596,-0.09148,0.10285,-0.30558,0
