@@ -1,0 +1,63 @@
+Gait=paddles_lead            speed 0.1101 m/s  dx +0.221 m  dy -3.295 m  dz +0.292 m  yaw +0.349 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1115 m/s  dx +0.154 m  dy -3.341 m  dz +0.276 m  yaw +0.236 rad
+Gait=paddles_lead            speed 0.1127 m/s  dx +0.155 m  dy -3.377 m  dz +0.271 m  yaw +0.097 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1081 m/s  dx +0.136 m  dy -3.241 m  dz -0.198 m  yaw +0.067 rad
+Gait=paddles_lead            speed 0.1118 m/s  dx -0.209 m  dy -3.346 m  dz +0.364 m  yaw +0.004 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1112 m/s  dx +0.302 m  dy -3.321 m  dz -0.131 m  yaw +0.142 rad
+Gait=crab_side               speed 0.0441 m/s  dx +1.323 m  dy +0.035 m  dz +1.118 m  yaw -0.773 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0421 m/s  dx +1.263 m  dy +0.043 m  dz +1.252 m  yaw -0.806 rad
+Gait=crab_side               speed 0.0464 m/s  dx +1.370 m  dy -0.245 m  dz +1.277 m  yaw -0.668 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0489 m/s  dx +1.454 m  dy +0.199 m  dz +1.167 m  yaw -0.906 rad
+Gait=crab_side               speed 0.0527 m/s  dx +1.562 m  dy +0.245 m  dz +0.842 m  yaw -0.733 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0495 m/s  dx +1.460 m  dy +0.272 m  dz +1.036 m  yaw -0.664 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/explore0.01.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/explore0.01_summary.csv
+Gait=paddles_lead            speed 0.0773 m/s  dx -0.187 m  dy -2.313 m  dz +1.124 m  yaw -0.270 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.0733 m/s  dx -0.260 m  dy -2.183 m  dz +0.398 m  yaw -0.368 rad
+Gait=paddles_lead            speed 0.0786 m/s  dx +0.175 m  dy -2.351 m  dz +0.838 m  yaw +2.467 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.0875 m/s  dx -0.261 m  dy -2.613 m  dz +0.891 m  yaw -0.014 rad
+Gait=paddles_lead            speed 0.0818 m/s  dx +0.185 m  dy -2.447 m  dz +1.186 m  yaw +0.197 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.0961 m/s  dx +0.467 m  dy -2.844 m  dz +0.303 m  yaw -2.614 rad
+Gait=crab_side               speed 0.0442 m/s  dx +1.165 m  dy +0.633 m  dz +0.579 m  yaw +2.651 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0363 m/s  dx +0.910 m  dy +0.598 m  dz +0.534 m  yaw -2.198 rad
+Gait=crab_side               speed 0.0628 m/s  dx +1.570 m  dy +1.041 m  dz +0.247 m  yaw +3.012 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0266 m/s  dx +0.703 m  dy +0.380 m  dz +0.835 m  yaw -2.616 rad
+Gait=crab_side               speed 0.0494 m/s  dx +1.366 m  dy +0.579 m  dz -0.460 m  yaw +0.450 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0474 m/s  dx +1.377 m  dy +0.352 m  dz +0.285 m  yaw -0.255 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/explore0.03.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/explore0.03_summary.csv
+Gait=Off                     speed 0.0336 m/s  dx +0.013 m  dy -1.007 m  dz +0.046 m  yaw +0.178 rad
+Gait=Off                     speed 0.0440 m/s  dx +0.044 m  dy -1.318 m  dz +0.008 m  yaw +0.120 rad
+Gait=Off                     speed 0.0398 m/s  dx -0.003 m  dy -1.194 m  dz +0.000 m  yaw -0.349 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/off.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/off_summary.csv
+done
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1115 m/s  dx +0.012 m  dy -2.230 m  dz +0.023 m  yaw +0.097 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1101 m/s  dx +0.188 m  dy -2.194 m  dz +0.234 m  yaw +0.249 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1114 m/s  dx -0.047 m  dy -2.227 m  dz +0.242 m  yaw +0.024 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0730 m/s  dx +1.448 m  dy -0.192 m  dz +0.151 m  yaw -0.431 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0741 m/s  dx +1.455 m  dy -0.277 m  dz -0.011 m  yaw -0.249 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0744 m/s  dx +1.486 m  dy -0.091 m  dz +0.103 m  yaw -0.306 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/plan5ms_explore0.01.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/plan5ms_explore0.01_summary.csv
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.0923 m/s  dx +0.041 m  dy -1.846 m  dz +0.250 m  yaw -0.107 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.1009 m/s  dx -0.171 m  dy -2.011 m  dz +0.477 m  yaw -0.130 rad
+Gait=paddles_lead+Heading=20+Lateral=20+Depth=30 speed 0.0989 m/s  dx -0.092 m  dy -1.976 m  dz +0.499 m  yaw +0.106 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0749 m/s  dx +1.348 m  dy -0.654 m  dz -0.381 m  yaw -0.118 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0684 m/s  dx +1.312 m  dy -0.390 m  dz +0.168 m  yaw +0.228 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0715 m/s  dx +1.387 m  dy -0.351 m  dz +0.186 m  yaw +0.546 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/plan5ms_explore0.03.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/plan5ms_explore0.03_summary.csv
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0739 m/s  dx +1.475 m  dy -0.071 m  dz +0.001 m  yaw +0.178 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0751 m/s  dx +1.502 m  dy -0.031 m  dz +0.157 m  yaw -0.165 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0723 m/s  dx +1.446 m  dy -0.018 m  dz +0.391 m  yaw -0.120 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab_v2_plan20ms.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab_v2_plan20ms_summary.csv
+Gait=paddles_lead            speed 0.1078 m/s  dx +0.120 m  dy -2.153 m  dz -0.100 m  yaw +0.107 rad
+Gait=crab_side               speed 0.0735 m/s  dx +1.465 m  dy -0.125 m  dz +0.045 m  yaw -0.204 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/open_loop.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/open_loop_summary.csv
+done2
+Gait=crab_side               speed 0.0648 m/s  dx +3.739 m  dy -1.060 m  dz +1.692 m  yaw +0.129 rad
+Gait=paddles_lead            speed 0.1106 m/s  dx +0.804 m  dy -6.590 m  dz -0.373 m  yaw +0.214 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab60_open.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab60_open_summary.csv
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0358 m/s  dx +2.104 m  dy -0.422 m  dz +2.967 m  yaw +0.732 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0740 m/s  dx +4.431 m  dy +0.280 m  dz +1.133 m  yaw +0.311 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab60_plan20ms.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab60_plan20ms_summary.csv
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0599 m/s  dx +3.474 m  dy -0.933 m  dz +1.752 m  yaw +0.033 rad
+Gait=crab_side+Heading=20+Lateral=20+Depth=30 speed 0.0628 m/s  dx +3.765 m  dy +0.116 m  dz +1.797 m  yaw +0.678 rad
+Wrote /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab60_plan5ms.csv and /home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/mjpc_tuning/crab60_plan5ms_summary.csv
+done3

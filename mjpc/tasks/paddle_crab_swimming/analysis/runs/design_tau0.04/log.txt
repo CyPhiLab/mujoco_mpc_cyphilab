@@ -37,3 +37,7 @@ init from runs/ladder_mY/step10_max_dt0.001.npz
   lm   10 cost    43.1929 mu  1.7e+01 v +0.1092 T 1.171 lat +0.0008 yaw -0.003 cyc 0.090 eff 0.553 sat 0.086
 [step3_v0.125_dt0.002_r2] v 0.1092 T 1.171 lat +0.0008 yaw -0.003 eff 0.553 cot 4.33 cyc 0.090 feasible False
  v 0.125 not met (reached 0.1092), retry 3
+  lm    1 cost    40.5671 mu  3.3e+00 v +0.1098 T 1.171 lat -0.0003 yaw -0.005 cyc 0.033 eff 0.553 sat 0.088
+  lm    2 cost    37.3270 mu  1.1e+00 v +0.1104 T 1.171 lat -0.0016 yaw -0.008 cyc 0.025 eff 0.549 sat 0.083
+  lm    3 cost    36.4468 mu  3.7e+01 v +0.1107 T 1.171 lat -0.0011 yaw -0.007 cyc 0.022 eff 0.549 sat 0.082
+  lm    4 cost    34.8860 mu  1.2e+01 v +0.1112 T 1.171 lat -0.0004 yaw -0.005 cyc 0.024 eff 0.548 sat 0.082
