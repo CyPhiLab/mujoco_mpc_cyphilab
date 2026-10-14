@@ -23,7 +23,7 @@
   "measure": 2,
   "weights": "tilt=0",
   "init": null,
-  "seeds": 384,
+  "seeds": 1536,
   "starts": 3,
   "search_iters": 6,
   "es_iters": 10,
