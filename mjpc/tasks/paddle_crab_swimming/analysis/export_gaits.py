@@ -11,7 +11,7 @@ given one by one as NAME=STEP.npz.
 Writes
   --mjpc      gait_reference.xml for task.xml: residual_list_Gait
               ("Off|<names>") and one numeric gait_<name> per gait
-              (period, K, speed, then the command's Fourier coefficients in
+              (period, K, steady speed, then the command's Fourier coefficients in
               radians; see PaddleCrabGait in paddle_crab_swimming.cc)
   --package   a standalone directory: model.xml (the patched robot with the
               servo filter as built-in dynamics, no MJPC needed), assets,
@@ -57,6 +57,20 @@ def pick_from_run(run, names=None):
   return {n: os.path.join(run, r['file']) for n, r in best.items()}
 
 
+STEADY_WARM = 12   # cycles from rest before the steady-state window
+
+
+def steady_metrics(step):
+  """Metrics on the true limit cycle: STEADY_WARM cycles from rest, then 2.
+
+  The optimizer scores cycles warm+1..warm+measure (4-5 by default), while
+  the body is still speeding up; this is where it ends up.
+  """
+  problem = G.Problem(dt=C.SIM_DT, k=step['k'], warm=STEADY_WARM, measure=2)
+  _, info = problem.evaluate(step['theta'][None])
+  return info[0]
+
+
 def coefficients(theta, k, half):
   """(period, c, a, b) in radians from a normalized theta."""
   layout = G.Layout(k)
@@ -83,7 +97,7 @@ def write_mjpc(path, gaits, half):
            % '|'.join(gaits)]
   for name, step in gaits.items():
     period, c, a, b = coefficients(step['theta'], step['k'], half)
-    data = np.concatenate([[period, step['k'], step['metrics']['speed']],
+    data = np.concatenate([[period, step['k'], step['steady']['speed']],
                            c, a.ravel(), b.ravel()])
     text = ' '.join(f'{x:.9g}' for x in data)
     lines.append(f'    <numeric name="gait_{name}" data="{text}" />')
@@ -197,7 +211,7 @@ def write_package(out, gaits, half, hz):
     n = int(np.ceil(cycles * np.exp(step['theta'][0]) / C.SIM_DT))
     ref_speed = -(states[0, n, L.qpos][1] - states[0, 0, L.qpos][1]) / (
         n * C.SIM_DT)
-    rows.append((name, step['metrics']['speed'], replay_speed, ref_speed))
+    rows.append((name, step['steady']['speed'], replay_speed, ref_speed))
     print(f'  {out_text}  [optimizer model from rest: {ref_speed:.4f}]')
 
   readme = [f'# Paddle crab gait primitives ({os.path.basename(out)})', '',
@@ -213,7 +227,7 @@ def write_package(out, gaits, half, hz):
             '(radians), actuator order R1_1 ... L3_3; loop it. On hardware '
             f'the commands assume a first-order setpoint lag of {C.TAU:g} s.',
             '- `replay.py [NAME] [CYCLES]`: open-loop replay from rest.', '',
-            '| gait | period (s) | limit-cycle speed (m/s) | replay from rest '
+            '| gait | period (s) | steady speed (m/s) | replay from rest '
             '(m/s) |', '|---|---|---|---|']
   for (name, speed, replay, _), period in zip(rows, table['period']):
     readme.append(f'| {name} | {period:.3f} | {speed:.4f} | {replay:.4f} |')
@@ -241,9 +255,13 @@ def main():
     paths[name] = path
   gaits = {n: load_step(path) for n, path in paths.items()}
   for name, step in gaits.items():
+    step['steady'] = steady_metrics(step)
     print(f'{name}: {step["path"]} dt {step["dt"]} '
-          f'v {step["metrics"]["speed"]:.4f} T {step["metrics"]["period"]:.3f}'
+          f'v {step["metrics"]["speed"]:.4f} (steady '
+          f'{step["steady"]["speed"]:.4f}) T {step["metrics"]["period"]:.3f}'
           f' clipped {check_unclipped(step["theta"], step["k"]):.3f}')
+  with open(os.path.join(args.run or '.', 'steady.json'), 'w') as f:
+    json.dump({n: s['steady'] for n, s in gaits.items()}, f, indent=2)
   half = C.load_model(ground=False).actuator_ctrlrange[:, 1].copy()
   if args.mjpc:
     write_mjpc(args.mjpc, gaits, half)

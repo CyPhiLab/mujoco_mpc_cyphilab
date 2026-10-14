@@ -3,7 +3,7 @@
 
 Usage:
   MUJOCO_GL=osmesa render_gait.py STEP.npz [--cycles 6] [--dt 0.001]
-      [--camera main_camera] [--slow 1]
+      [--camera track] [--slow 1]
 
 Writes STEP.mp4 (the gait from rest, camera following the body) and
 STEP_plots.png (xy path, speed, and the joint/command limit cycle).
@@ -31,21 +31,22 @@ def rollout_states(theta, k, dt, cycles, x0=None):
   return m, d, ctrl
 
 
-def render(path, theta, k, dt=C.SIM_DT, cycles=6, camera='main_camera',
+def render(path, theta, k, dt=C.SIM_DT, cycles=6, camera='track',
            fps=30, slow=1.0, width=640, height=480):
   import imageio
   m, d, ctrl = rollout_states(theta, k, dt, cycles)
   renderer = mujoco.Renderer(m, height, width)
-  cam = mujoco.MjvCamera()
-  cam_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_CAMERA, camera)
   plate = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, 'plate')
-  # A free camera at the named camera's offset that follows the body.
+  cam = mujoco.MjvCamera()
+  if camera == 'track':
+    # Three-quarter view from the side, following the body; forward (-y)
+    # runs right to left across the frame.
+    cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+    cam.distance, cam.azimuth, cam.elevation = 1.4, 150.0, -28.0
+  else:
+    cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
+    cam.fixedcamid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_CAMERA, camera)
   mujoco.mj_forward(m, d)
-  offset = d.cam_xpos[cam_id] - d.xpos[plate]
-  cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-  cam.distance = float(np.linalg.norm(offset))
-  cam.azimuth = float(np.degrees(np.arctan2(offset[1], offset[0]))) + 180
-  cam.elevation = -float(np.degrees(np.arcsin(offset[2] / cam.distance)))
   frame_dt = slow / fps
   next_frame = 0.0
   frames = []
@@ -105,7 +106,8 @@ def main():
   p.add_argument('npz')
   p.add_argument('--cycles', type=float, default=6)
   p.add_argument('--dt', type=float, default=C.SIM_DT)
-  p.add_argument('--camera', default='main_camera')
+  p.add_argument('--camera', default='track',
+                 help="'track' (follows the body) or a model camera name")
   p.add_argument('--slow', type=float, default=1.0)
   args = p.parse_args()
   z = np.load(args.npz, allow_pickle=True)

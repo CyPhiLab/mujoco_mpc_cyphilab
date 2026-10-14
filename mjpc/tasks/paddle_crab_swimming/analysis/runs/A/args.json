@@ -1,0 +1,36 @@
+{
+  "speeds": [
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    0.12
+  ],
+  "max_speed": true,
+  "dts": [
+    0.005,
+    0.002,
+    0.001
+  ],
+  "k": 3,
+  "warm": 3,
+  "measure": 2,
+  "weights": "",
+  "max_speed_effort": 0.05,
+  "init": null,
+  "seeds": 256,
+  "starts": 4,
+  "search_iters": 8,
+  "es_iters": 20,
+  "pop": 48,
+  "sigma": 0.05,
+  "lm_iters": 20,
+  "refine_iters": 5,
+  "speed_tol": 0.003,
+  "drift_tol": 0.005,
+  "saturation_tol": 0.05,
+  "processes": null,
+  "seed": 0,
+  "no_render": false,
+  "out": "runs/A"
+}

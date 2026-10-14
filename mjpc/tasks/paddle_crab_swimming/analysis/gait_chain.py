@@ -51,6 +51,9 @@ class Chain:
     os.makedirs(self.out, exist_ok=True)
     self.summary_path = os.path.join(self.out, 'summary.json')
     self.summary = []
+    if os.path.exists(self.summary_path):     # resume: reuse finished steps
+      with open(self.summary_path) as f:
+        self.summary = json.load(f)
     self.step = 0
     self.weights = parse_weights(args.weights)
     with open(os.path.join(self.out, 'args.json'), 'w') as f:
@@ -159,6 +162,21 @@ class Chain:
       history.append(h)
     return problem, best, history, time.time() - t0
 
+  def run_step(self, name, stage, compute):
+    """Runs compute() -> (problem, theta, history, seconds) and saves it as the
+    next step, or, when a previous run of this chain already wrote that step,
+    loads it instead. Returns (theta, summary row)."""
+    tag = f'step{self.step + 1}_{name}'
+    for row in self.summary:
+      if row['file'] == tag + '.npz' and os.path.exists(
+          os.path.join(self.out, row['file'])):
+        self.step += 1
+        theta = np.load(os.path.join(self.out, row['file']))['theta']
+        self.log(f'[{tag}] reused from an earlier run')
+        return theta, row
+    problem, theta, history, seconds = compute()
+    return theta, self.save(name, problem, theta, history, stage, seconds)
+
   def run(self):
     a = self.args
     dt0 = a.dts[0]
@@ -171,50 +189,48 @@ class Chain:
       self.log(f'init from {a.init}')
     else:
       first = speeds[0] if speeds else 0.0
-      problem, theta, history, sec = self.search(first, not speeds)
       name = (f'v{first:g}' if speeds else 'max') + f'_dt{dt0:g}'
-      self.save(name + '_search', problem, theta, history, 'search', sec)
+      theta, _ = self.run_step(name + '_search', 'search',
+                           lambda: self.search(first, not speeds))
+
+    def solver(problem, theta, iters, es_iters=0):
+      return lambda: (problem,) + self.solve(problem, theta, iters, es_iters)
 
     for speed in speeds:
       problem = self.problem(dt0, speed)
-      theta, history, sec = self.solve(problem, theta, a.lm_iters)
-      row = self.save(f'v{speed:g}_dt{dt0:g}', problem, theta, history,
-                      'speed', sec)
+      theta, row = self.run_step(f'v{speed:g}_dt{dt0:g}', 'speed',
+                             solver(problem, theta, a.lm_iters))
       if not row['feasible']:
         self.log(f' v {speed:g} not met, retrying with the ES first')
-        theta2, history, sec = self.solve(problem, theta, a.lm_iters,
-                                          es_iters=a.es_iters)
-        row = self.save(f'v{speed:g}_dt{dt0:g}_es', problem, theta2, history,
-                        'speed', sec)
-        theta = theta2
+        theta, row = self.run_step(f'v{speed:g}_dt{dt0:g}_es', 'speed',
+                               solver(problem, theta, a.lm_iters, a.es_iters))
         if not row['feasible']:
           self.log(f' v {speed:g} infeasible; ending the speed chain')
           break
       finals.append((f'v{speed:g}', theta.copy(), speed, False))
 
     if a.max_speed:
-      if finals:
-        start = max(finals, key=lambda f: f[2])[1]
-      else:
-        start = theta
+      start = max(finals, key=lambda f: f[2])[1] if finals else theta
       problem = self.problem(dt0, 0.0, max_speed=True)
-      theta_max, history, sec = self.solve(problem, start, a.lm_iters,
-                                           es_iters=a.es_iters)
-      self.save(f'max_dt{dt0:g}', problem, theta_max, history, 'max', sec)
+      theta_max, _ = self.run_step(f'max_dt{dt0:g}', 'max',
+                               solver(problem, start, a.lm_iters, a.es_iters))
       finals.append(('max', theta_max, 0.0, True))
 
     for name, theta, speed, max_speed in finals:
+      row = None
       for dt in a.dts[1:]:
         problem = self.problem(dt, speed, max_speed)
-        theta, history, sec = self.solve(problem, theta, a.refine_iters)
-        self.save(f'{name}_dt{dt:g}', problem, theta, history, 'dt', sec)
+        theta, row = self.run_step(f'{name}_dt{dt:g}', 'dt',
+                               solver(problem, theta, a.refine_iters))
+      if row is None or 'plan_dt_check' in row:
+        continue
       check = self.problem(C.PLAN_DT, speed, max_speed)
       _, info = check.evaluate(theta[None])
-      self.summary[-1]['plan_dt_check'] = info[0]
+      row['plan_dt_check'] = info[0]
       with open(self.summary_path, 'w') as f:
         json.dump(self.summary, f, indent=2)
       self.log(f' {name}: at the planner dt {C.PLAN_DT} it swims '
-               f'{info[0]["speed"]:+.4f} m/s (sim {self.summary[-1]["speed"]:.4f})')
+               f'{info[0]["speed"]:+.4f} m/s (sim {row["speed"]:.4f})')
 
 
 def main():
