@@ -302,15 +302,21 @@ def _evaluate(thetas):
 class Evaluator:
   """A pool of processes, each holding its own Problem."""
 
-  def __init__(self, problem, processes=None):
+  def __init__(self, problem, processes=None, max_batch=32):
     self.problem = problem
     self.processes = processes or os.cpu_count()
+    self.max_batch = max_batch
     ctx = mp.get_context('fork')
     self.pool = ctx.Pool(self.processes, _init, (problem.config(),))
 
   def __call__(self, thetas):
     thetas = np.atleast_2d(thetas)
-    chunks = np.array_split(thetas, min(len(thetas), self.processes * 2))
+    # Each task keeps every state of its rollouts in memory (a long-period
+    # gait is ~10^4 steps), so tasks stay small; a worker killed for memory
+    # would hang Pool.map.
+    n = max(1, min(self.max_batch,
+                   int(np.ceil(len(thetas) / (self.processes * 2)))))
+    chunks = [thetas[i:i + n] for i in range(0, len(thetas), n)]
     out = self.pool.map(_evaluate, chunks)
     res = np.concatenate([o[0] for o in out])
     info = [i for o in out for i in o[1]]
