@@ -1,0 +1,3 @@
+setting,seconds,speed,dx,dy,dz,yaw,open_loop
+Gait=crab_side,60.000,0.06478,3.73929,-1.05967,1.69201,0.12889,1
+Gait=paddles_lead,60.000,0.11064,0.80385,-6.58983,-0.37271,0.21383,1
