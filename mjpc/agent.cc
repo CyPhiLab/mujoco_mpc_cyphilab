@@ -426,18 +426,19 @@ int Agent::SetSelectionParamByName(std::string_view name,
   if (absl::StartsWith(name, "selection_")) {
     name = absl::StripPrefix(name, "selection_");
   }
+  // parameters holds every residual_ numeric, selections included, in order.
   int shift = 0;
   for (int i = 0; i < model_->nnumeric; i++) {
     std::string_view numeric_name(model_->names + model_->name_numericadr[i]);
-    if (absl::StartsWith(numeric_name, "residual_select_")) {
-      if (absl::EqualsIgnoreCase(
-              absl::StripPrefix(numeric_name, "residual_select_"), name)) {
-        ActiveTask()->parameters[shift] =
-            ResidualParameterFromSelection(model_, name, value);
-        return i;
-      } else {
-        shift++;
-      }
+    if (absl::StartsWith(numeric_name, "residual_select_") &&
+        absl::EqualsIgnoreCase(
+            absl::StripPrefix(numeric_name, "residual_select_"), name)) {
+      ActiveTask()->parameters[shift] =
+          ResidualParameterFromSelection(model_, name, value);
+      return i;
+    }
+    if (absl::StartsWith(numeric_name, "residual_")) {
+      shift++;
     }
   }
   return -1;

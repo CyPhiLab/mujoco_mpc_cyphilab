@@ -4,13 +4,43 @@
 
 #include <atomic>
 #include <cmath>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
+
+#include <absl/strings/str_cat.h>
+#include <absl/strings/str_split.h>
 
 #include <mujoco/mujoco.h>
 #include "mjpc/utilities.h"
 
 namespace mjpc {
+
+// A periodic servo command from gait_reference.xml, made offline by
+// analysis/export_gaits.py: per actuator a Fourier series in phase,
+//   u_i(phase) = c_i + sum_k a_ik cos(2 pi k phase) + b_ik sin(2 pi k phase)
+// in radians. The numeric "gait_<name>" holds
+//   period, K, speed, c (nu), a (nu x K), b (nu x K).
+struct PaddleCrabGait {
+	std::string name;
+	double period = 1.0;
+	int nu = 0;
+	int k = 0;
+	double speed = 0.0;
+	std::vector<double> c, a, b;
+
+	double Command(int i, double phase) const {
+		double u = c[i];
+		const double w = 2.0 * mjPI * phase;
+		for (int j = 0; j < k; ++j) {
+			u += a[i * k + j] * std::cos((j + 1) * w) +
+					 b[i * k + j] * std::sin((j + 1) * w);
+		}
+		return u;
+	}
+};
+
 namespace {
 
 // Residual parameters, in the order the residual_* numerics appear in task.xml.
@@ -43,6 +73,45 @@ double MirrorSign(int row, int joint) {
 	return -1.0;
 }
 
+using Gait = PaddleCrabGait;
+
+// Parses numeric "gait_<name>"; null if it is missing or malformed.
+std::shared_ptr<const Gait> LoadGait(const mjModel* model,
+																		 const std::string& name) {
+	const int id = mj_name2id(model, mjOBJ_NUMERIC,
+														absl::StrCat("gait_", name).c_str());
+	if (id < 0) return nullptr;
+	const double* data = model->numeric_data + model->numeric_adr[id];
+	const int size = model->numeric_size[id];
+	if (size < 3) return nullptr;
+	auto gait = std::make_shared<Gait>();
+	gait->name = name;
+	gait->period = data[0];
+	gait->k = static_cast<int>(data[1]);
+	gait->speed = data[2];
+	gait->nu = model->nu;
+	const int nu = gait->nu, k = gait->k;
+	if (gait->period <= 0 || k < 0 || size != 3 + nu * (1 + 2 * k)) {
+		mju_warning("PaddleCrabSwimming: malformed gait_%s", name.c_str());
+		return nullptr;
+	}
+	const double* coef = data + 3;
+	gait->c.assign(coef, coef + nu);
+	gait->a.assign(coef + nu, coef + nu + nu * k);
+	gait->b.assign(coef + nu + nu * k, coef + nu + 2 * nu * k);
+	return gait;
+}
+
+// The selected gait, the simulation time its clock started at, and a phase
+// offset in cycles; published for the actuator dynamics callback below. A
+// published gait is never freed (gait_keep_alive), so a rollout thread that
+// loaded the pointer just before a switch can keep using it.
+std::atomic<const Gait*> active_gait{nullptr};
+std::atomic<double> gait_start_time{0.0};
+std::atomic<double> gait_phase{0.0};
+std::mutex gait_keep_alive_mutex;
+std::vector<std::shared_ptr<const Gait>> gait_keep_alive;
+
 // Smoothing time constant, published for the actuator dynamics callback below.
 // The callback is global and runs on every rollout thread, so it cannot reach
 // into the task.
@@ -58,7 +127,20 @@ mjtNum ControlSmoothingDynamics(const mjModel* model, const mjData* data,
 	// MuJoCo integrates act explicitly, so a tau below the timestep would ring.
 	const double tau = mju_max(smoothing_tau.load(std::memory_order_relaxed),
 													 model->opt.timestep);
-	return (data->ctrl[id] - data->act[id]) / tau;
+	double setpoint = data->ctrl[id];
+	const Gait* gait = active_gait.load(std::memory_order_acquire);
+	if (gait && id < gait->nu) {
+		const double phase =
+				(data->time - gait_start_time.load(std::memory_order_relaxed)) /
+						gait->period +
+				gait_phase.load(std::memory_order_relaxed);
+		setpoint += gait->Command(id, phase);
+		if (model->actuator_ctrllimited[id]) {
+			setpoint = mju_clip(setpoint, model->actuator_ctrlrange[2 * id],
+													model->actuator_ctrlrange[2 * id + 1]);
+		}
+	}
+	return (setpoint - data->act[id]) / tau;
 }
 
 }  // namespace
@@ -88,8 +170,50 @@ void PaddleCrabSwimming::PublishSmoothingTau() {
 	}
 }
 
+// Publishes the gait selected in residual_select_Gait, its clock starting at
+// `time`, to the actuator dynamics callback.
+void PaddleCrabSwimming::PublishGait(double time) {
+	active_gait_ = gait_param_ >= 0 &&
+										 gait_param_ < static_cast<int>(parameters.size())
+										 ? ReinterpretAsInt(parameters[gait_param_])
+										 : 0;
+	const Gait* gait = nullptr;
+	if (active_gait_ > 0 &&
+			active_gait_ < static_cast<int>(gait_library_.size())) {
+		gait = gait_library_[active_gait_].get();
+	}
+	gait_start_time.store(time, std::memory_order_relaxed);
+	if (gait_phase_param_ >= 0) {
+		gait_phase.store(parameters[gait_phase_param_], std::memory_order_relaxed);
+	}
+	active_gait.store(gait, std::memory_order_release);
+}
+
 void PaddleCrabSwimming::ResetLocked(const mjModel* model) {
 	PublishSmoothingTau();
+
+	// Gait library, indexed like the residual_list_Gait drop-down ("Off" first).
+	gait_param_ = ParameterIndex(model, "select_Gait");
+	gait_phase_param_ = ParameterIndex(model, "GaitPhase");
+	gait_library_.assign(1, nullptr);
+	const auto lists = ResidualSelectionLists(model);
+	if (auto it = lists.find("Gait"); it != lists.end()) {
+		for (size_t i = 1; i < it->second.size(); ++i) {
+			auto gait = LoadGait(model, it->second[i]);
+			if (!gait) {
+				mju_warning("PaddleCrabSwimming: no gait_%s in gait_reference.xml",
+										it->second[i].c_str());
+			}
+			gait_library_.push_back(gait);
+		}
+	}
+	{
+		std::lock_guard<std::mutex> lock(gait_keep_alive_mutex);
+		for (const auto& gait : gait_library_) {
+			if (gait) gait_keep_alive.push_back(gait);
+		}
+	}
+	PublishGait(0.0);
 }
 
 void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
@@ -150,6 +274,11 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	// undefined when a joint is at rest.
 	const double omega = 2.0 * mjPI * mju_max(parameters_[kStrokeFreq], 0.01);
 
+	// A gait primitive already carries the rhythm (see the header); the emergent
+	// rhythm terms would only pull against it.
+	const bool gait = active_gait.load(std::memory_order_relaxed) != nullptr;
+	const int rhythm_start = counter;
+
 	// ----- Symmetry ----- //
 	// Left/right phase lock. The target offset is 0 or pi, so the phasor rotation
 	// collapses to MirrorSign. Comparing whole phasors locks amplitude and phase
@@ -207,12 +336,26 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 		const double v = data->qvel[kJointQvel + index] / omega;
 		residual[counter++] = mju_sqrt(q * q + v * v) - stroke_amp;
 	}
+	if (gait) {
+		mju_zero(residual + rhythm_start, counter - rhythm_start);
+	}
 
 	CheckSensorDim(model, counter);
 }
 
 void PaddleCrabSwimming::TransitionLocked(mjModel* model, mjData* data) {
 	PublishSmoothingTau();
+
+	// Restart the gait clock whenever the selection changes; follow the phase
+	// slider continuously.
+	const int selected = gait_param_ >= 0
+													 ? ReinterpretAsInt(parameters[gait_param_])
+													 : 0;
+	if (selected != active_gait_) {
+		PublishGait(data->time);
+	} else if (gait_phase_param_ >= 0) {
+		gait_phase.store(parameters[gait_phase_param_], std::memory_order_relaxed);
+	}
 
 	double* base_pos = SensorByName(model, data, "base_pos");
 	if (pos_log_.is_open() && base_pos) {
