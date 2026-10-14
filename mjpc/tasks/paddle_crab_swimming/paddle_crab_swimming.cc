@@ -22,8 +22,11 @@ namespace mjpc {
 //   u_i(phase) = c_i + sum_k a_ik cos(2 pi k phase) + b_ik sin(2 pi k phase)
 // in radians. The numeric "gait_<name>" holds
 //   period, K, speed, direction (3), c (nu), a (nu x K), b (nu x K),
+//   limit (nu),
 // where direction is the world swim direction the gait was optimized for
-// (the body keeps its heading; the direction picks which side leads).
+// (the body keeps its heading; the direction picks which side leads) and
+// limit the per-servo command range it was optimized with (the optimizer may
+// lift the task's ctrlranges).
 struct PaddleCrabGait {
 	std::string name;
 	double period = 1.0;
@@ -31,7 +34,7 @@ struct PaddleCrabGait {
 	int k = 0;
 	double speed = 0.0;
 	double direction[3] = {0.0, -1.0, 0.0};
-	std::vector<double> c, a, b;
+	std::vector<double> c, a, b, limit;
 
 	double Command(int i, double phase) const {
 		double u = c[i];
@@ -96,7 +99,7 @@ std::shared_ptr<const Gait> LoadGait(const mjModel* model,
 	mju_copy3(gait->direction, data + 3);
 	gait->nu = model->nu;
 	const int nu = gait->nu, k = gait->k;
-	if (gait->period <= 0 || k < 0 || size != kHeader + nu * (1 + 2 * k) ||
+	if (gait->period <= 0 || k < 0 || size != kHeader + nu * (2 + 2 * k) ||
 			mju_normalize3(gait->direction) < mjMINVAL) {
 		mju_warning("PaddleCrabSwimming: malformed gait_%s", name.c_str());
 		return nullptr;
@@ -105,6 +108,7 @@ std::shared_ptr<const Gait> LoadGait(const mjModel* model,
 	gait->c.assign(coef, coef + nu);
 	gait->a.assign(coef + nu, coef + nu + nu * k);
 	gait->b.assign(coef + nu + nu * k, coef + nu + 2 * nu * k);
+	gait->limit.assign(coef + nu + 2 * nu * k, coef + 2 * nu + 2 * nu * k);
 	return gait;
 }
 
@@ -140,11 +144,11 @@ mjtNum ControlSmoothingDynamics(const mjModel* model, const mjData* data,
 				(data->time - gait_start_time.load(std::memory_order_relaxed)) /
 						gait->period +
 				gait_phase.load(std::memory_order_relaxed);
-		setpoint += gait->Command(id, phase);
-		if (model->actuator_ctrllimited[id]) {
-			setpoint = mju_clip(setpoint, model->actuator_ctrlrange[2 * id],
-													model->actuator_ctrlrange[2 * id + 1]);
-		}
+		// The setpoint stays within the command range the gait was optimized
+		// with (possibly wider than the actuator's ctrlrange, which then bounds
+		// only the planner's correction).
+		setpoint = mju_clip(setpoint + gait->Command(id, phase),
+												-gait->limit[id], gait->limit[id]);
 	}
 	return (setpoint - data->act[id]) / tau;
 }

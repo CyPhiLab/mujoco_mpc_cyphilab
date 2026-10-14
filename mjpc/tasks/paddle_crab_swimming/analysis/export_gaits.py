@@ -11,8 +11,8 @@ given one by one as NAME=STEP.npz.
 Writes
   --mjpc      gait_reference.xml for task.xml: residual_list_Gait
               ("Off|<names>") and one numeric gait_<name> per gait
-              (period, K, steady speed, swim direction, then the command's
-              Fourier coefficients in
+              (period, K, steady speed, swim direction, the command's
+              Fourier coefficients and its per-servo command limits, in
               radians; see PaddleCrabGait in paddle_crab_swimming.cc)
   --package   a standalone directory: model.xml (the patched robot with the
               servo filter as built-in dynamics, no MJPC needed), assets,
@@ -106,14 +106,16 @@ def write_mjpc(path, gaits, half):
            '     Each gait_<name> holds: period (s), K, speed (m/s), swim',
            '     direction (3, world; the body keeps its heading), then the',
            '     servo command per actuator as a Fourier series in phase, in',
-           '     radians: c (18), a (18 x K), b (18 x K). -->',
+           '     radians: c (18), a (18 x K), b (18 x K), and the command limit',
+           '     per actuator it was optimized with (18). -->',
            '<mujoco>', '  <custom>',
            '    <text name="residual_list_Gait" data="Off|%s" />'
            % '|'.join(gaits)]
   for name, step in gaits.items():
     period, c, a, b = coefficients(step['theta'], step['k'], step['half'])
     data = np.concatenate([[period, step['k'], step['steady']['speed']],
-                           step['direction'], c, a.ravel(), b.ravel()])
+                           step['direction'], c, a.ravel(), b.ravel(),
+                           step['half']])
     text = ' '.join(f'{x:.9g}' for x in data)
     lines.append(f'    <numeric name="gait_{name}" data="{text}" />')
   lines += ['  </custom>', '</mujoco>', '']
@@ -145,7 +147,8 @@ cycles = float(sys.argv[2]) if len(sys.argv) > 2 else 6
 i = names.index(name)
 period, k = float(g['period'][i]), int(g['k'][i])
 c, a, b = g['c'][i], g['a'][i][:, :k], g['b'][i][:, :k]
-lo, hi = m.actuator_ctrlrange.T
+hi = g['half'][i]       # the command limits this gait was optimized with
+lo = -hi
 ks = np.arange(1, k + 1)
 
 
@@ -172,6 +175,9 @@ def write_package(out, gaits, half, hz):
                     '<compiler meshdir="assets" />')
   xml = xml.replace('dyntype="user"',
                     f'dyntype="filter" dynprm="{C.TAU:g}"')
+  # Gaits carry their own command limits (gaits.npz 'half'); the model
+  # allows the servo class's full range.
+  xml = re.sub(r'ctrlrange="[^"]*"', 'ctrlrange="-3.14159 3.14159"', xml)
   with open(os.path.join(out, 'model.xml'), 'w') as f:
     f.write(xml)
   os.makedirs(os.path.join(out, 'assets'), exist_ok=True)
@@ -180,7 +186,7 @@ def write_package(out, gaits, half, hz):
 
   kmax = max(s['k'] for s in gaits.values())
   table = dict(names=np.array(list(gaits)), period=[], k=[], speed=[],
-               direction=[],
+               direction=[], half=[],
                c=[], a=[], b=[], table_time=[], table_ctrl=[],
                joint_phase=[], joint_qpos=[])
   for name, step in gaits.items():
@@ -194,6 +200,7 @@ def write_package(out, gaits, half, hz):
     table['k'].append(step['k'])
     table['speed'].append(step['steady']['speed'])
     table['direction'].append(step['direction'])
+    table['half'].append(step['half'])
     table['c'].append(c)
     table['a'].append(pad(a))
     table['b'].append(pad(b))
