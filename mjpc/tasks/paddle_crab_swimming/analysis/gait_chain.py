@@ -25,7 +25,9 @@ not (LM's damping climbs and progress stalls), hence the ladder.
 
 The search starts from rest and scores cycles warm+1..warm+measure. Every
 later step starts from the previous gait's steady limit-cycle state, so
---warm_steady cycles suffice and the scored speed is the steady-state speed.
+--warm_steady cycles suffice and the scored speed is the steady-state speed
+(--from_rest starts every step from rest instead: slower, but it catches
+gaits that settle into a different, e.g. turning, cycle from rest).
 
 Every step writes stepK_<name>.npz (theta, metrics, limit cycle samples),
 stepK_<name>_controls.npy (one cycle of servo commands at the step's dt) and,
@@ -214,11 +216,13 @@ class Chain:
         self.step += 1
         theta = np.load(os.path.join(self.out, row['file']))['theta']
         self.log(f'[{tag}] reused from an earlier run')
-        self.x0 = self.steady_state(os.path.join(self.out, row['file']))
+        if not self.args.from_rest:
+          self.x0 = self.steady_state(os.path.join(self.out, row['file']))
         return theta, row
     problem, theta, history, seconds = compute()
     row = self.save(name, problem, theta, history, stage, seconds)
-    self.x0 = self.steady_state(os.path.join(self.out, row['file']))
+    if not self.args.from_rest:
+      self.x0 = self.steady_state(os.path.join(self.out, row['file']))
     return theta, row
 
   def ladder(self):
@@ -244,7 +248,8 @@ class Chain:
     if a.init:
       z = np.load(a.init, allow_pickle=True)
       theta = G.Layout(int(z['k'])).with_k(z['theta'], a.k)
-      self.x0 = self.steady_state(a.init)
+      if not a.from_rest:
+        self.x0 = self.steady_state(a.init)
       self.log(f'init from {a.init}')
     else:
       theta, _ = self.run_step(f'v{speeds[0]:g}_dt{dt0:g}_search', 'search',
@@ -334,6 +339,11 @@ def main():
                  help='cycles before scoring, from rest (the search)')
   p.add_argument('--warm_steady', type=int, default=2,
                  help='cycles before scoring, from a steady state')
+  p.add_argument('--from_rest', action='store_true',
+                 help='start every rollout from rest (as the MJPC task '
+                      'does), not from the previous gait\'s steady state; a '
+                      'gait with a free steady tilt can settle differently '
+                      'from rest')
   p.add_argument('--measure', type=int, default=2)
   p.add_argument('--weights', default='',
                  help='residual weight overrides, e.g. effort=0.5,lateral=3')
