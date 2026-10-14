@@ -18,9 +18,10 @@ import crab_model as C
 import gait_opt as G
 
 
-def rollout_states(theta, k, dt, cycles, x0=None, half=None):
+def rollout_states(theta, k, dt, cycles, x0=None, half=None, design=None,
+                   tau=C.TAU):
   layout = G.Layout(k)
-  m = C.load_model(dt=dt)
+  m = C.load_model(dt=dt, design=design, tau=tau)
   if half is not None:     # the command ranges the gait was optimized with
     m.actuator_ctrlrange[:] = np.stack([-half, half], axis=1)
   d = mujoco.MjData(m)
@@ -33,10 +34,19 @@ def rollout_states(theta, k, dt, cycles, x0=None, half=None):
   return m, d, ctrl
 
 
+def design_of(z):
+  """The design variant and servo filter a saved step was optimized with."""
+  import json
+  return dict(design=json.loads(str(z['design'])) if 'design' in z else None,
+              tau=float(z['tau']) if 'tau' in z else C.TAU)
+
+
 def render(path, theta, k, dt=C.SIM_DT, cycles=6, camera='track',
-           fps=30, slow=1.0, width=640, height=480, half=None):
+           fps=30, slow=1.0, width=640, height=480, half=None, design=None,
+           tau=C.TAU):
   import imageio
-  m, d, ctrl = rollout_states(theta, k, dt, cycles, half=half)
+  m, d, ctrl = rollout_states(theta, k, dt, cycles, half=half, design=design,
+                              tau=tau)
   renderer = mujoco.Renderer(m, height, width)
   plate = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, 'plate')
   cam = mujoco.MjvCamera()
@@ -71,7 +81,8 @@ def plot(path, npz):
   z = np.load(npz, allow_pickle=True)
   theta, k, dt = z['theta'], int(z['k']), float(z['dt'])
   m, d, ctrl = rollout_states(theta, k, C.SIM_DT, 8,
-                              half=z['half'] if 'half' in z else None)
+                              half=z['half'] if 'half' in z else None,
+                              **design_of(z))
   pos, t = [], []
   for u in ctrl:
     d.ctrl[:] = u
@@ -118,7 +129,8 @@ def main():
   z = np.load(args.npz, allow_pickle=True)
   base = os.path.splitext(args.npz)[0]
   render(base + '.mp4', z['theta'], int(z['k']), args.dt, args.cycles,
-         args.camera, slow=args.slow, half=z['half'] if 'half' in z else None)
+         args.camera, slow=args.slow, half=z['half'] if 'half' in z else None,
+         **design_of(z))
   plot(base + '_plots.png', args.npz)
   print('wrote', base + '.mp4', base + '_plots.png')
 

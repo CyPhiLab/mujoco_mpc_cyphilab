@@ -117,7 +117,8 @@ class Problem:
 
   def __init__(self, dt=0.005, k=K_DEFAULT, warm=3, measure=2,
                speed=0.05, max_speed=False, weights=None, x0=None,
-               tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None):
+               tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
+               design=None):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world xy-plane; the body keeps its start heading,
     # so this picks which side of the robot leads.
@@ -128,7 +129,10 @@ class Problem:
     self.weights = dict(DEFAULT_WEIGHTS, **(weights or {}))
     self.layout = Layout(k)
     self.ctrl_limit = ctrl_limit
-    self.m = C.load_model(dt=dt, tau=tau, ground=False, ctrl_limit=ctrl_limit)
+    self.design = dict(design or {})
+    self.tau = tau
+    self.m = C.load_model(dt=dt, tau=tau, ground=False, ctrl_limit=ctrl_limit,
+                          design=self.design)
     C.check_layout(self.m)
     self.d = mujoco.MjData(self.m)
     self.state_layout = C.StateLayout(self.m)
@@ -141,7 +145,7 @@ class Problem:
                 measure=self.measure, speed=self.speed,
                 max_speed=self.max_speed, weights=self.weights,
                 x0=self.x0.tolist(), direction=self.direction.tolist(),
-                ctrl_limit=self.ctrl_limit)
+                ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau)
 
   def nstep(self, period):
     return int(np.ceil((self.warm + self.measure) * period / self.dt)) + 2
@@ -223,9 +227,10 @@ class Problem:
     q, a, qd = qpos[window, 7:], act[window], qvel[window, 6:]
     force = C.actuator_force(self.m, q, a)
     effort = float(np.sqrt(np.mean((force / C.FORCE_LIMIT) ** 2)))
-    servo = C.KP * (a - q)
-    force_excess = np.maximum(np.abs(servo) - C.FORCE_LIMIT, 0) / C.FORCE_LIMIT
-    saturated = float(np.mean(np.abs(servo) > C.FORCE_LIMIT))
+    servo = C.servo_command_force(self.m, q, a)
+    limit = self.m.actuator_forcerange[:, 1]
+    force_excess = np.maximum(np.abs(servo) - limit, 0) / limit
+    saturated = float(np.mean(np.abs(servo) > limit))
     power = force * qd
     work = float(np.sum(np.maximum(power, 0)) * dt)      # positive work
     distance = max(abs(speed) * duration, 1e-9)

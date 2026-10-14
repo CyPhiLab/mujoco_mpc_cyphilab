@@ -76,21 +76,47 @@ def _compile(xml):
     os.remove(path)
 
 
-def load_model(dt=SIM_DT, tau=TAU, ground=True, ctrl_limit=None):
+# Design variants for "what limits speed" studies (all 1.0 is the robot):
+#   torque         every servo's torque limit, x
+#   paddle_torque  the rear (paddle) legs' servo torque limits, x
+#   kp             every servo's position gain, x
+#   body_drag      drag coefficients (not added mass) of the body's geoms:
+#                  plate, servo housings, cylinder, x
+#   paddle_area    paddle mesh area, x (scaled uniformly by its square root)
+DESIGN_DEFAULTS = dict(torque=1.0, paddle_torque=1.0, kp=1.0, body_drag=1.0,
+                       paddle_area=1.0)
+PADDLE_ACTUATORS = [i for i, a in enumerate(ACTUATORS) if a[:2] in ('R3', 'L3')]
+
+
+def load_model(dt=SIM_DT, tau=TAU, ground=True, ctrl_limit=None, design=None):
   """The patched crab with filter servos (the MJPC callback's law).
 
   ground=False drops the (visual only, contacts are off) heightfield floor.
   ctrl_limit replaces every servo's command range with +-ctrl_limit.
+  design: a dict of DESIGN_DEFAULTS overrides.
   """
+  design = dict(DESIGN_DEFAULTS, **(design or {}))
   xml = patched_xml()
   if not ground:
     # hfield_ground.xml also sets the mesh directory.
     xml = xml.replace('<include file="hfield_ground.xml" />',
                       '<compiler meshdir="asset" />')
+  if design['paddle_area'] != 1.0:
+    scale = 0.001 * np.sqrt(design['paddle_area'])
+    xml = xml.replace('scale=".001 .001 .001"', f'scale="{scale} {scale} {scale}"')
   m = _compile(xml)
   set_timestep(m, dt, tau)
   if ctrl_limit is not None:
     m.actuator_ctrlrange[:] = [-ctrl_limit, ctrl_limit]
+  m.actuator_forcerange[:] *= design['torque']
+  m.actuator_forcerange[PADDLE_ACTUATORS] *= design['paddle_torque']
+  m.actuator_gainprm[:, 0] *= design['kp']
+  m.actuator_biasprm[:, 1] *= design['kp']
+  if design['body_drag'] != 1.0:
+    for g in range(m.ngeom):
+      name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[g])
+      if name and 'segment' not in name and m.geom_fluid[g, 0] > 0:
+        m.geom_fluid[g, 1:6] *= design['body_drag']
   return m
 
 
@@ -164,9 +190,15 @@ def yaw_of(R):
   return np.arctan2(R[..., 1, 0], R[..., 0, 0])
 
 
+def servo_command_force(m, q_joint, act):
+  """kp * (act - q) before the force limit: the patched servo law."""
+  return m.actuator_gainprm[:, 0] * (act - q_joint)
+
+
 def actuator_force(m, q_joint, act):
-  """kp * (act - q), clipped to the force range: the patched servo law."""
-  return np.clip(KP * (act - q_joint), -FORCE_LIMIT, FORCE_LIMIT)
+  """The servo force: kp * (act - q), clipped to the force range."""
+  limit = m.actuator_forcerange[:, 1]
+  return np.clip(servo_command_force(m, q_joint, act), -limit, limit)
 
 
 def total_mass(m):

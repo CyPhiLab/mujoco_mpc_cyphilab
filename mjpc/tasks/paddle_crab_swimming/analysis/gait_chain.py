@@ -73,10 +73,12 @@ class Chain:
         self.summary = json.load(f)
     self.step = 0
     self.x0 = None          # None: start from rest; else a steady state
-    model = C.load_model(ground=False, ctrl_limit=args.ctrl_limit)
+    model = C.load_model(ground=False, ctrl_limit=args.ctrl_limit,
+                         design=parse_weights(args.design))
     self.state_layout = C.StateLayout(model)
     self.rest = C.initial_state(model)
     self.weights = parse_weights(args.weights)
+    self.design = parse_weights(args.design)
     with open(os.path.join(self.out, 'args.json'), 'w') as f:
       json.dump(vars(args), f, indent=2)
 
@@ -89,7 +91,8 @@ class Chain:
     a = self.args
     return G.Problem(dt=dt, k=a.k, warm=a.warm if x0 is None else a.warm_steady,
                      measure=a.measure, speed=speed, weights=self.weights,
-                     direction=a.direction, x0=x0, ctrl_limit=a.ctrl_limit)
+                     direction=a.direction, x0=x0, ctrl_limit=a.ctrl_limit,
+                     design=self.design, tau=a.tau)
 
   def straight(self, metrics):
     a = self.args
@@ -122,6 +125,7 @@ class Chain:
     np.savez(path, theta=theta, k=problem.layout.k, dt=problem.dt,
              speed_target=problem.speed, max_speed=problem.max_speed,
              direction=problem.direction, x0=problem.x0, half=problem.half,
+             design=json.dumps(problem.design), tau=problem.tau,
              warm=problem.warm, measure=problem.measure,
              metrics=json.dumps(metrics), joints=np.array(C.JOINTS),
              actuators=np.array(C.ACTUATORS), residual=res[0],
@@ -149,7 +153,8 @@ class Chain:
       try:
         render_gait.render(os.path.join(self.out, tag + '.mp4'), theta,
                            problem.layout.k, C.SIM_DT, cycles=6,
-                           half=problem.half)
+                           half=problem.half, design=problem.design,
+                           tau=problem.tau)
         render_gait.plot(os.path.join(self.out, tag + '_plots.png'), path)
       except Exception as e:  # rendering is a convenience, not the result
         self.log(f'  render failed: {e}')
@@ -326,6 +331,11 @@ def main():
                       'refined at the rest (5 ms is too coarse for the kp 50 '
                       'servos: the same stroke moves ~20%% differently)')
   p.add_argument('--k', type=int, default=G.K_DEFAULT)
+  p.add_argument('--design', default='',
+                 help='design variant, e.g. paddle_torque=2,body_drag=0.5 '
+                      '(crab_model.DESIGN_DEFAULTS)')
+  p.add_argument('--tau', type=float, default=C.TAU,
+                 help='servo setpoint filter time constant (s)')
   p.add_argument('--ctrl_limit', type=float, default=None,
                  help='servo command range +-this (rad), in place of the '
                       'task ctrlranges')
