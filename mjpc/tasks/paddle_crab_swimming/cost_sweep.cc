@@ -7,10 +7,13 @@
 // Usage:
 //   cost_sweep [--out cost_sweep.csv] [--seconds 20] [--replan 0.2]
 //              [--plan_iters 1] [--agent_dt 0.02] [--threads 4] [--open_loop]
+//              [--numeric NAME=VALUE ...]
 //              SETTING [SETTING ...]
 //
 //   --replan      seconds of simulation between planner iterations; the GUI
 //                 manages about 5 replans/s with physics in real time
+//   --numeric NAME=VALUE  override a model numeric before the agent is made
+//                 (e.g. sampling_exploration=0.05); repeatable
 //   --open_loop   no planner: ctrl stays 0, so with a gait selected the robot
 //                 runs the gait primitive alone (a check against the offline
 //                 optimizer, analysis/gait_chain.py)
@@ -89,7 +92,7 @@ int main(int argc, char** argv) {
   double seconds = 20, replan = 0.2, agent_dt = -1;
   int plan_iters = 1, threads = 4;
   bool open_loop = false;
-  std::vector<std::string> settings;
+  std::vector<std::string> settings, numerics;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     auto next = [&]() { return std::string(i + 1 < argc ? argv[++i] : ""); };
@@ -100,6 +103,7 @@ int main(int argc, char** argv) {
     else if (arg == "--agent_dt") agent_dt = std::atof(next().c_str());
     else if (arg == "--threads") threads = std::atoi(next().c_str());
     else if (arg == "--open_loop") open_loop = true;
+    else if (arg == "--numeric") numerics.push_back(next());
     else settings.push_back(arg);
   }
   if (settings.empty()) settings.push_back("Gait=Off");
@@ -113,8 +117,19 @@ int main(int argc, char** argv) {
     return 1;
   }
   if (agent_dt > 0) {
-    const int id = mj_name2id(sim_model, mjOBJ_NUMERIC, "agent_timestep");
-    if (id >= 0) sim_model->numeric_data[sim_model->numeric_adr[id]] = agent_dt;
+    numerics.push_back("agent_timestep=" + std::to_string(agent_dt));
+  }
+  for (const std::string& item : numerics) {
+    std::vector<std::string> kv = absl::StrSplit(item, '=');
+    const int id = kv.size() == 2
+                       ? mj_name2id(sim_model, mjOBJ_NUMERIC, kv[0].c_str())
+                       : -1;
+    if (id < 0) {
+      std::fprintf(stderr, "unknown numeric '%s'\n", item.c_str());
+      return 1;
+    }
+    sim_model->numeric_data[sim_model->numeric_adr[id]] =
+        std::atof(kv[1].c_str());
   }
   mjcb_sensor = ResidualSensorCallback;
   mjpc::ThreadPool pool(threads);
