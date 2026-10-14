@@ -1,1 +1,10 @@
 init from runs/ladder_mY/step10_max_dt0.001.npz
+  lm    1 cost   475.3828 mu  3.3e-03 v +0.1200 T 1.104 lat +0.0008 yaw +0.004 cyc 0.083 eff 0.651 sat 0.253
+  lm    2 cost   467.6806 mu  1.1e-02 v +0.0879 T 1.110 lat +0.0107 yaw +0.012 cyc 0.436 eff 0.652 sat 0.231
+  lm    3 cost   442.7753 mu  3.7e-03 v +0.0891 T 1.112 lat +0.0101 yaw +0.015 cyc 0.403 eff 0.642 sat 0.221
+  lm    4 cost   382.2621 mu  1.2e-02 v +0.0923 T 1.120 lat +0.0068 yaw +0.026 cyc 0.450 eff 0.630 sat 0.202
+  lm    5 cost   294.1481 mu  4.1e-02 v +0.0853 T 1.128 lat +0.0001 yaw +0.008 cyc 0.226 eff 0.619 sat 0.183
+  lm    6 cost   236.8815 mu  1.4e-02 v +0.0905 T 1.135 lat +0.0002 yaw +0.008 cyc 0.213 eff 0.602 sat 0.163
+  lm    7 cost   225.8077 mu  4.6e-03 v +0.0911 T 1.136 lat +0.0001 yaw +0.007 cyc 0.200 eff 0.602 sat 0.159
+  lm    8 cost   216.5904 mu  1.5e-03 v +0.0919 T 1.135 lat +0.0000 yaw +0.007 cyc 0.193 eff 0.595 sat 0.158
+  lm    9 cost   212.3728 mu  5.1e+01 v +0.0931 T 1.136 lat +0.0003 yaw +0.006 cyc 0.165 eff 0.596 sat 0.152
