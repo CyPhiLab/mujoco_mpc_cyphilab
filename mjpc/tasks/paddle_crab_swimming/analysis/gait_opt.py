@@ -338,6 +338,14 @@ class Evaluator:
     self.close()
 
 
+def rescale_theta(layout, theta, half_from, half_to):
+  """theta for command half-ranges half_to giving the same commands in
+  radians as theta did for half_from."""
+  log_t, c, a, b = layout.split(theta)
+  r = np.asarray(half_from) / np.asarray(half_to)
+  return layout.join(np.exp(log_t), c * r, a * r[:, None], b * r[:, None])
+
+
 def clip_theta(layout, theta):
   theta = np.array(theta, dtype=float)
   theta[..., 0] = np.clip(theta[..., 0], np.log(T_MIN), np.log(T_MAX))

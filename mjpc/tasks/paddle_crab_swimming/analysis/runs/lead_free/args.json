@@ -16,6 +16,8 @@
     0.001
   ],
   "k": 3,
+  "design": "",
+  "tau": 0.08,
   "ctrl_limit": 3.14159,
   "seed_style": "random",
   "warm": 4,

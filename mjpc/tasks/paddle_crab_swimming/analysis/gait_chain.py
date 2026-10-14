@@ -253,6 +253,12 @@ class Chain:
     if a.init:
       z = np.load(a.init, allow_pickle=True)
       theta = G.Layout(int(z['k'])).with_k(z['theta'], a.k)
+      # Commands are stored normalized by the command half-ranges they were
+      # optimized with; re-express them for this run's ranges.
+      old = z['half'] if 'half' in z else \
+          C.load_model(ground=False).actuator_ctrlrange[:, 1]
+      new = self.problem(dt0, speeds[0]).half
+      theta = G.rescale_theta(G.Layout(a.k), theta, old, new)
       if not a.from_rest:
         self.x0 = self.steady_state(a.init)
       self.log(f'init from {a.init}')
