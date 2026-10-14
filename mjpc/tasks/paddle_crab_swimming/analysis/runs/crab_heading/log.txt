@@ -1,0 +1,22 @@
+init from runs/free_pX3/step3_v0.09_dt0.001.npz
+  lm    1 cost    34.0333 mu  3.3e-01 v +0.0854 T 1.190 lat -0.0019 yaw -0.019 cyc 0.698 eff 0.547 sat 0.043
+  lm    2 cost    23.8025 mu  1.1e+00 v +0.0854 T 1.196 lat -0.0016 yaw -0.008 cyc 0.636 eff 0.539 sat 0.037
+  lm    3 cost    21.7414 mu  3.7e+00 v +0.0859 T 1.199 lat -0.0017 yaw -0.007 cyc 0.634 eff 0.537 sat 0.039
+  lm    4 cost    21.4997 mu  1.2e+00 v +0.0838 T 1.203 lat -0.0015 yaw -0.008 cyc 0.666 eff 0.526 sat 0.027
+  lm    5 cost    19.2849 mu  4.1e+00 v +0.0855 T 1.202 lat -0.0022 yaw -0.006 cyc 0.630 eff 0.527 sat 0.032
+  lm    6 cost    18.8439 mu  1.4e+00 v +0.0851 T 1.203 lat -0.0017 yaw -0.006 cyc 0.648 eff 0.527 sat 0.035
+  lm    7 cost    17.7900 mu  4.6e+00 v +0.0864 T 1.203 lat -0.0021 yaw -0.005 cyc 0.631 eff 0.526 sat 0.036
+  lm    8 cost    17.6041 mu  1.5e+01 v +0.0866 T 1.204 lat -0.0017 yaw -0.005 cyc 0.635 eff 0.525 sat 0.036
+  lm    9 cost    17.3888 mu  5.1e+00 v +0.0868 T 1.205 lat -0.0016 yaw -0.006 cyc 0.638 eff 0.526 sat 0.035
+  lm   10 cost    17.3206 mu  1.7e+01 v +0.0868 T 1.205 lat -0.0016 yaw -0.005 cyc 0.637 eff 0.525 sat 0.035
+  lm   11 cost    17.1690 mu  5.6e+00 v +0.0870 T 1.205 lat -0.0015 yaw -0.005 cyc 0.638 eff 0.525 sat 0.035
+  lm   12 cost    17.1503 mu  1.9e+00 v +0.0866 T 1.205 lat -0.0015 yaw -0.005 cyc 0.646 eff 0.524 sat 0.035
+[step1_v0.09_dt0.002] v 0.0866 T 1.205 lat -0.0015 yaw -0.005 eff 0.524 cot 4.89 cyc 0.646 feasible True
+  render failed: load_model() got an unexpected keyword argument 'design'
+  lm    1 cost    16.9784 mu  3.3e+00 v +0.0864 T 1.206 lat -0.0012 yaw -0.006 cyc 0.652 eff 0.520 sat 0.029
+  lm    2 cost    16.6482 mu  1.1e+01 v +0.0869 T 1.206 lat -0.0016 yaw -0.005 cyc 0.642 eff 0.520 sat 0.030
+  lm    3 cost    16.5979 mu  3.7e+00 v +0.0869 T 1.206 lat -0.0015 yaw -0.005 cyc 0.645 eff 0.520 sat 0.031
+  lm    4 cost    16.4201 mu  1.2e+01 v +0.0872 T 1.206 lat -0.0014 yaw -0.005 cyc 0.645 eff 0.520 sat 0.031
+[step2_v0.09_dt0.001] v 0.0872 T 1.206 lat -0.0014 yaw -0.005 eff 0.520 cot 4.78 cyc 0.645 feasible True
+  render failed: load_model() got an unexpected keyword argument 'design'
+ v0.09: at the planner dt 0.02 it swims +0.0854 m/s (sim 0.0872)
