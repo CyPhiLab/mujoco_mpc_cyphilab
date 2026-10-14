@@ -63,3 +63,21 @@ search: 256 seeds at dt 0.005
   lm    1 cost     2.4446 mu  3.3e+02 v +0.0399 T 1.197 lat -0.0001 yaw -0.000 cyc 0.097 eff 0.219 sat 0.000
   lm    2 cost     2.4396 mu  1.1e+02 v +0.0399 T 1.197 lat -0.0001 yaw -0.000 cyc 0.097 eff 0.219 sat 0.000
   lm    3 cost     2.4289 mu  3.7e+01 v +0.0399 T 1.197 lat -0.0001 yaw -0.000 cyc 0.097 eff 0.219 sat 0.000
+  lm    4 cost     2.4218 mu  1.2e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.098 eff 0.218 sat 0.000
+  lm    5 cost     2.4170 mu  4.1e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.098 eff 0.218 sat 0.000
+  lm    6 cost     2.4082 mu  1.4e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.097 eff 0.218 sat 0.000
+  lm    7 cost     2.3963 mu  4.6e+01 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.098 eff 0.217 sat 0.000
+  lm    8 cost     2.3915 mu  1.5e+02 v +0.0399 T 1.197 lat -0.0001 yaw -0.000 cyc 0.099 eff 0.217 sat 0.000
+  lm    9 cost     2.3851 mu  5.1e+01 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.098 eff 0.217 sat 0.000
+  lm   10 cost     2.3702 mu  1.7e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.099 eff 0.216 sat 0.000
+  lm   11 cost     2.3687 mu  5.6e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.099 eff 0.216 sat 0.000
+  lm   12 cost     2.3654 mu  1.9e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.099 eff 0.216 sat 0.000
+  lm   13 cost     2.3559 mu  6.3e+01 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.215 sat 0.000
+  lm   14 cost     2.3473 mu  2.1e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.099 eff 0.215 sat 0.000
+  lm   15 cost     2.3413 mu  7.0e+01 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.215 sat 0.000
+  lm   16 cost     2.3365 mu  2.3e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.214 sat 0.000
+  lm   17 cost     2.3318 mu  7.7e+01 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.214 sat 0.000
+  lm   18 cost     2.3291 mu  2.6e+02 v +0.0399 T 1.196 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.214 sat 0.000
+  lm   19 cost     2.3245 mu  8.6e+01 v +0.0399 T 1.197 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.214 sat 0.000
+  lm   20 cost     2.3223 mu  2.9e+02 v +0.0399 T 1.197 lat -0.0001 yaw -0.000 cyc 0.100 eff 0.214 sat 0.000
+[step2_v0.04_dt0.005] v 0.0399 T 1.197 lat -0.0001 yaw -0.000 eff 0.214 cot 1.79 cyc 0.100 feasible True
