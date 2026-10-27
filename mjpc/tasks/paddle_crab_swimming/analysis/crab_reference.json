@@ -5,11 +5,12 @@
     "Swim direction +X (sideways, right legs leading). Paddles are the rear legs: R3 leading, L3 trailing (a mirror of R3).",
     "v2: in the tank view the camera looks along the crab's head-tail axis, so a paddle that looks broad faces the camera (edge-on to its sideways sweep) and one that looks thin is broadside to it. Power stroke: broadside sweep over the back toward the trailing side (phase 0-0.2); recovery: feathered, rising back upright and leaning to the leading side. Both paddles tilt the same way in space; the trailing one ~0.5 rad further toward the trailing side.",
     "v3: sweep timing matched to the footage (furthest over the back at ~0.36); trailing paddle keyed on its own, held ~45 deg toward the trailing side and moving less; leading hanging leg (R2) folds up during the sweep and hangs straight down in the recovery.",
+    "v5: per the lab, 000106 is filmed from the crab's front, slightly below (paddles at the back, away from the camera), and the crab swims toward its own left; the clip is flipped to compare with the robot swimming toward its right (+X).",
     "v4: one reference for both clips. 000106 is filmed from behind and slightly below; 000094 from the front and above, flipped left-right so travel matches the robot's +X as seen from its front."
   ],
   "period": 1.0,
   "footage": {
-    "000106": {"fps": 200, "frames": [150, 540], "phase0_frame": 286, "period": 0.3, "camera": {"azimuth_offset": 90, "elevation": 12}},
+    "000106": {"fps": 200, "frames": [150, 540], "phase0_frame": 286, "period": 0.3, "camera": {"azimuth_offset": -90, "elevation": -10, "distance": 0.85}, "flip": true},
     "000094": {"fps": 200, "frames": [200, 330], "phase0_frame": 236, "period": 0.3, "camera": {"azimuth_offset": -90, "elevation": -35}, "base": {"lead_up_deg": -15}, "flip": true, "crop": [1000, 750]}
   },
   "base": {"direction": [1, 0, 0], "speed": 0.07, "lead_up_deg": 15, "roll_deg": 0, "heave": [[0.0, 0.0], [0.5, 0.005]]},
