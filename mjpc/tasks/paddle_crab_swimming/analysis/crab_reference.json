@@ -5,6 +5,7 @@
     "A paddle that looks broad to a camera faces it, so it is edge-on to a sweep across the image; one that looks thin is broadside to it.",
     "sideways (000106, front view slightly below, the crab swims toward its own left; the robot is mirrored for it, never the footage): the leading paddle strokes, the trailing one is held ~45 deg outward and moves less; the leading hanging leg folds up during the sweep.",
     "paddles_first (000094, side view, anterior on screen left, the crab swims toward its own back, to screen right): both paddles point back and use the same stroke, alternating (the far paddle ~0.6 of a stroke behind the near one); claws held forward, centre legs hanging down and back.",
+    "Clips pair up by mode: 000106 (front, slightly below) and 000014 (behind and below) show sideways swimming; 000094 (side) and 000054 (above) show paddles-first swimming.",
     "History: v1 inverted broad/thin; v2 fixed it; v3 matched sweep timing; v4/v5 compared both clips through mirrored footage and misread 000094's orientation; v6 has no mirrored footage, a shared stroke and the paddles_first mode."
   ],
   "period": 1.0,
@@ -63,6 +64,8 @@
   },
   "footage": {
     "000106": {"describe": "front view, slightly below", "mode": "sideways", "mirror": true, "fps": 200, "frames": [150, 540], "phase0_frame": 286, "period": 0.3, "camera": {"azimuth": -90, "elevation": 10, "distance": 0.85}},
+    "000014": {"describe": "from behind and below, swims toward its right", "mode": "sideways", "fps": 200, "frames": [200, 460], "phase0_frame": 248, "period": 0.32, "camera": {"azimuth": 90, "elevation": 45, "distance": 0.9}, "crop": [1400, 1050]},
+    "000054": {"describe": "from above, swims toward its back", "mode": "paddles_first", "fps": 200, "frames": [380, 600], "phase0_frame": 413, "period": 0.26, "camera": {"azimuth": 0, "elevation": -89, "distance": 0.9}},
     "000094": {"describe": "side view, swims toward its back", "mode": "paddles_first", "fps": 200, "frames": [200, 330], "phase0_frame": 226, "period": 0.3, "camera": {"azimuth": 0, "elevation": -20, "distance": 0.85}, "crop": [1000, 750]}
   }
 }

@@ -239,11 +239,15 @@ likely next step.
 This is a pure kinematic animation keyframed by eye against two blue crab
 clips. One paddle stroke is shared by two swimming modes:
 
-- **`sideways`:** clip 000106, front view. The crab swims toward its own
-  left. The leading paddle strokes and the trailing one is held outward.
-- **`paddles_first`:** clip 000094, side view. The crab swims toward its own
-  back, like the optimized `paddles_lead` gait. Both paddles point back and
-  run the same stroke, the far one about 0.6 of a stroke behind the near one.
+- **`sideways`:** two clips, 000106 (front, slightly below) and 000014
+  (behind and below). The leading paddle strokes and the trailing one is
+  held outward.
+- **`paddles_first`:** two clips, 000094 (side) and 000054 (above). The crab
+  swims toward its own back, like the optimized `paddles_lead` gait. Both
+  paddles point back and run the same stroke, the far one about 0.6 of a
+  stroke behind the near one.
+
+Each mode is therefore checked from two viewpoints.
 
 A mode only changes the paddle's sweep heading (the proximal offset), the
 phase of the second paddle and the walking-leg posture.
@@ -252,8 +256,9 @@ Footage is never mirrored. When the crab swims toward its left, the robot is
 mirrored instead.
 
 ```
-python kinematic_ref.py crab_reference.json --out kinematic/v6 \
-    --video 000106=PATH_000106.mp4 --video 000094=PATH_000094.mp4
+python kinematic_ref.py crab_reference.json --out kinematic/v7 \
+    --video 000106=PATH_000106.mp4 --video 000014=PATH_000014.mp4 \
+    --video 000094=PATH_000094.mp4 --video 000054=PATH_000054.mp4
 ```
 
 The command writes the following to the output directory:
@@ -262,6 +267,8 @@ The command writes the following to the output directory:
 - **`compare_<clip>.mp4`:** raw footage, then the robot from the clip's
   camera, then the robot from above and behind, synced by stroke phase.
 - **`sheet_<clip>.png`:** a single stroke shown at 8 phases.
+- **`mode_<mode>.png`:** every clip of a mode, each over the robot seen from
+  that clip's camera, at the same 8 stroke phases.
 - **`reference.npz`:** qpos for each mode over one stroke.
 
 In the renders, orange legs are the robot's right side and blue legs its

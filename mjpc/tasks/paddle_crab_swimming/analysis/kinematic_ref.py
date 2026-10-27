@@ -31,7 +31,7 @@ Joint conventions (checked with forward kinematics):
   front legs: proximal +0.79 (right) / -0.79 (left) points them forward (+Y)
 
 Footage ("footage": {NAME: {fps, frames, phase0_frame, period, mode,
-mirror, camera, base, crop}}) is never flipped. When the crab swims toward
+mirror, camera, base, crop, track_offset}}) is never flipped. When the crab swims toward
 its left, "mirror": true mirrors the robot instead (left and right legs
 swapped, travel along -X). "camera" is {"azimuth": world deg (the camera
 looks along (cos, sin); -90 looks along -Y, at the robot's front),
@@ -47,6 +47,8 @@ Writes to DIR:
                       footage | the robot from the clip's camera | the robot
                       from above-behind (fixed overview)
   sheet_NAME.png      one stroke at 8 phases, the same three rows
+  mode_MODE.png       every clip of a mode (footage above the robot from
+                      that clip's view) at the same 8 stroke phases
   reference.npz       one stroke of each mode sampled at 200 phases: qpos
 """
 import argparse
@@ -274,9 +276,11 @@ def screen_direction(direction, camera):
   return 'swims away from camera' if f > 0 else 'swims toward camera'
 
 
-def crab_frames(video, first, last, width=480, height=360, crop=(1100, 825)):
+def crab_frames(video, first, last, width=480, height=360, crop=(1100, 825),
+                offset=(0, 0)):
   """Raw footage frames first..last-1 (never mirrored), cropped around the
-  (dark) crab, whose centre is tracked and smoothed."""
+  (dark) crab, whose centre is tracked and smoothed; offset (pixels) shifts
+  the crop off the tracked centre, e.g. away from a dark tool."""
   import imageio.v3 as iio
   import PIL.Image
   raw, centres = [], []
@@ -299,7 +303,7 @@ def crab_frames(video, first, last, width=480, height=360, crop=(1100, 825)):
                      for i in range(len(c))])
   out = []
   cw, ch = crop                             # same aspect as the render
-  for frame, (cx, cy) in zip(raw, smooth):
+  for frame, (cx, cy) in zip(raw, smooth + np.asarray(offset, float)):
     x0 = int(np.clip(cx - 0.5 * cw, 0, frame.shape[1] - cw))
     y0 = int(np.clip(cy - 0.5 * ch, 0, frame.shape[0] - ch))
     tile = frame[y0:y0 + ch, x0:x0 + cw]
@@ -309,15 +313,16 @@ def crab_frames(video, first, last, width=480, height=360, crop=(1100, 825)):
 
 def compare_clip(ref, name, video, out, fps, slow):
   """compare_NAME.mp4 (footage | robot, clip view | robot, overview; synced
-  by stroke phase) and sheet_NAME.png (one stroke at 8 phases)."""
+  by stroke phase) and sheet_NAME.png (one stroke at 8 phases). Returns the
+  sheet's footage and robot rows for the mode sheet."""
   import imageio
-  import PIL.Image
   clip = ref['footage'][name]
   fps_crab = clip['fps']
   first, last = clip['frames']
   period = clip['period']
   footage = crab_frames(video, first, last,
-                        crop=tuple(clip.get('crop', (1100, 825))))
+                        crop=tuple(clip.get('crop', (1100, 825))),
+                        offset=clip.get('track_offset', (0, 0)))
   pose = pose_spec(ref, clip['mode'], clip)
   camera = dict(SIDE, **clip.get('camera', {}))
   where = screen_direction(swim_direction(pose), camera)
@@ -357,14 +362,25 @@ def compare_clip(ref, name, video, out, fps, slow):
            for r, p in zip(render_frames(pose, phases * period, period,
                                          OVERVIEW), phases)]]
   rows = [np.concatenate(r, axis=1) for r in rows]
-  head = np.full((44, rows[0].shape[1], 3), 255, np.uint8)
-  head = label(head, [f'{name}: rows = raw footage | robot, same view '
-                      f'({where}){mirrored} | robot from above-behind '
-                      f'(orange right, blue left, dark = paddles)'])
-  sheet = np.concatenate([head] + rows, axis=0)
-  img = PIL.Image.fromarray(sheet)
-  img.resize((sheet.shape[1] * 2 // 3, sheet.shape[0] * 2 // 3)).save(
-      os.path.join(out, f'sheet_{name}.png'))
+  head = banner(rows[0].shape[1],
+                f'{name}: rows = raw footage | robot, same view '
+                f'({where}){mirrored} | robot from above-behind '
+                f'(orange right, blue left, dark = paddles)')
+  save_sheet([head] + rows, os.path.join(out, f'sheet_{name}.png'))
+  return [banner(rows[0].shape[1], f'{name} ({clip.get("describe", "")}): '
+                 f'raw footage, then the robot from the same view '
+                 f'({where}){mirrored}')] + rows[:2], rows[2]
+
+
+def banner(width, text):
+  return label(np.full((36, width, 3), 255, np.uint8), [text])
+
+
+def save_sheet(rows, path):
+  import PIL.Image
+  sheet = np.concatenate(rows, axis=0)
+  PIL.Image.fromarray(sheet).resize(
+      (sheet.shape[1] * 2 // 3, sheet.shape[0] * 2 // 3)).save(path)
 
 
 def main():
@@ -410,9 +426,24 @@ def main():
            period=period, joints=np.array(C.JOINTS),
            reference=json.dumps(ref),
            **{f'qpos_{mode}': q for mode, q in table.items()})
+  by_mode = {}
   for item in args.video:
     name, path = item.split('=', 1)
-    compare_clip(ref, name, path, args.out, args.fps, args.slow)
+    rows, overview = compare_clip(ref, name, path, args.out, args.fps,
+                                  args.slow)
+    by_mode.setdefault(ref['footage'][name]['mode'], []).append(
+        (rows, overview))
+  # One sheet per mode: every clip of it, each with the robot from the
+  # clip's view, all at the same 8 stroke phases, then the overview.
+  for mode, clips in by_mode.items():
+    width = clips[0][1].shape[1]
+    rows = [banner(width, f'mode "{mode}": one stroke at phases 0, 1/8, ...'
+                   f' 7/8 seen from {len(clips)} viewpoints')]
+    for clip_rows, _ in clips:
+      rows += clip_rows
+    rows += [banner(width, 'robot from above-behind (orange right, blue '
+                    'left, dark = paddles)'), clips[0][1]]
+    save_sheet(rows, os.path.join(args.out, f'mode_{mode}.png'))
   print('wrote', args.out)
 
 
