@@ -233,3 +233,36 @@ Small random corrections to 18 raw servo commands cannot steer, and large
 ones break the stroke. A low-dimensional steering interface, such as
 left/right paddle amplitude for yaw and paddle mean angle for depth, is the
 likely next step.
+
+## Kinematic swimming reference (`kinematic_ref.py`, `crab_reference.json`)
+
+This is a pure kinematic animation keyframed by eye against two blue crab
+clips. One paddle stroke is shared by two swimming modes:
+
+- **`sideways`:** clip 000106, front view. The crab swims toward its own
+  left. The leading paddle strokes and the trailing one is held outward.
+- **`paddles_first`:** clip 000094, side view. The crab swims toward its own
+  back, like the optimized `paddles_lead` gait. Both paddles point back and
+  run the same stroke, the far one about 0.6 of a stroke behind the near one.
+
+A mode only changes the paddle's sweep heading (the proximal offset), the
+phase of the second paddle and the walking-leg posture.
+
+Footage is never mirrored. When the crab swims toward its left, the robot is
+mirrored instead.
+
+```
+python kinematic_ref.py crab_reference.json --out kinematic/v6 \
+    --video 000106=PATH_000106.mp4 --video 000094=PATH_000094.mp4
+```
+
+The command writes the following to the output directory:
+
+- **`robot_<mode>.mp4`:** one per mode.
+- **`compare_<clip>.mp4`:** raw footage, then the robot from the clip's
+  camera, then the robot from above and behind, synced by stroke phase.
+- **`sheet_<clip>.png`:** a single stroke shown at 8 phases.
+- **`reference.npz`:** qpos for each mode over one stroke.
+
+In the renders, orange legs are the robot's right side and blue legs its
+left; the darker shade marks the paddles.
