@@ -29,6 +29,15 @@ later step starts from the previous gait's steady limit-cycle state, so
 (--from_rest starts every step from rest instead: slower, but it catches
 gaits that settle into a different, e.g. turning, cycle from rest).
 
+With --reference REF.json --mode MODE (a kinematic_ref.py reference) the
+chain tracks that gait's stroke instead of searching: the swim direction is
+the mode's, the start is a Fourier fit of the reference angles as commands
+(--period, led by the servo lag), and an "imitate" step first solves for
+tracking alone (no speed term), which shows how fast the reference swims
+with real physics; the ladder then starts above that speed and keeps the
+tracking term (--weights track=W, default 1) as a regulariser on the
+stroke's shape.
+
 Every step writes stepK_<name>.npz (theta, metrics, limit cycle samples),
 stepK_<name>_controls.npy (one cycle of servo commands at the step's dt) and,
 with MUJOCO_GL set, a video and plots; the run writes args.json and
@@ -38,6 +47,8 @@ Usage:
   gait_chain.py --direction 0 -1 0 --out runs/max_mY        # speed ladder
   gait_chain.py --speeds 0.04 0.06 0.08 --refine_all --out runs/family
   gait_chain.py --init runs/X/step3_v0.1_dt0.002.npz --speeds 0.12 ...
+  gait_chain.py --reference crab_reference.json --mode paddles_first --k 5 \
+      --ctrl_limit 3.1416 --out runs/ref_paddles_first
 
 Rerunning a command resumes it: finished steps are reloaded, not redone.
 """
@@ -79,6 +90,10 @@ class Chain:
     self.rest = C.initial_state(model)
     self.weights = parse_weights(args.weights)
     self.design = parse_weights(args.design)
+    self.reference = None
+    if args.reference:
+      self.reference = load_reference(args.reference, args.mode)
+      args.direction = self.reference['direction']
     with open(os.path.join(self.out, 'args.json'), 'w') as f:
       json.dump(vars(args), f, indent=2)
 
@@ -87,12 +102,15 @@ class Chain:
     with open(os.path.join(self.out, 'log.txt'), 'a') as f:
       f.write(text + '\n')
 
-  def problem(self, dt, speed, x0=None):
+  def problem(self, dt, speed, x0=None, weights=None):
     a = self.args
     return G.Problem(dt=dt, k=a.k, warm=a.warm if x0 is None else a.warm_steady,
-                     measure=a.measure, speed=speed, weights=self.weights,
+                     measure=a.measure, speed=speed,
+                     weights=dict(self.weights, **(weights or {})),
                      direction=a.direction, x0=x0, ctrl_limit=a.ctrl_limit,
-                     design=self.design, tau=a.tau)
+                     design=self.design, tau=a.tau,
+                     reference=None if self.reference is None
+                     else self.reference['angles'])
 
   def straight(self, metrics):
     a = self.args
@@ -250,7 +268,23 @@ class Chain:
     def solver(problem, theta, iters, es_iters=0):
       return lambda: (problem,) + self.solve(problem, theta, iters, es_iters)
 
-    if a.init:
+    if self.reference is not None and not a.init:
+      layout = G.Layout(a.k)
+      half = self.problem(dt0, speeds[0]).half
+      theta = G.fit_reference(layout, self.reference['angles'], a.period,
+                              half, lead=a.tau + a.lead)
+      problem = self.problem(dt0, 0.0, weights=dict(speed=0.0))
+      theta, row = self.run_step(f'imitate_dt{dt0:g}', 'imitate',
+                                 solver(problem, theta, a.imitate_iters))
+      self.log(f'imitating {a.mode}: v {row["speed"]:.4f} T '
+               f'{row["period"]:.3f} track rms {row["track_rms"]:.3f} rad')
+      if not a.speeds:
+        v = max(row['speed'], 0.01) * a.speed_growth
+        speeds = []
+        while v <= a.speed_max + 1e-9:
+          speeds.append(round(v, 4))
+          v *= a.speed_growth
+    elif a.init:
       z = np.load(a.init, allow_pickle=True)
       theta = G.Layout(int(z['k'])).with_k(z['theta'], a.k)
       # Commands are stored normalized by the command half-ranges they were
@@ -316,6 +350,18 @@ class Chain:
                f'{info[0]["speed"]:+.4f} m/s (sim {row["speed"]:.4f})')
 
 
+def load_reference(path, mode, nphase=200):
+  """A kinematic_ref.py gait: joint angles over one stroke and the swim
+  direction (unmirrored)."""
+  import kinematic_ref
+  with open(path) as f:
+    ref = json.load(f)
+  pose = kinematic_ref.pose_spec(ref, mode)
+  phase = np.arange(nphase) / nphase
+  return dict(angles=kinematic_ref.joint_angles(pose, phase),
+              direction=kinematic_ref.swim_direction(pose).tolist())
+
+
 def main():
   p = argparse.ArgumentParser(description=__doc__,
                               formatter_class=argparse.RawTextHelpFormatter)
@@ -364,6 +410,15 @@ def main():
   p.add_argument('--weights', default='',
                  help='residual weight overrides, e.g. effort=0.5,lateral=3')
   p.add_argument('--init', help='warm start from a step npz (skips search)')
+  p.add_argument('--reference',
+                 help='kinematic reference JSON (kinematic_ref.py) to track')
+  p.add_argument('--mode', help='the reference gait (mode) to track')
+  p.add_argument('--period', type=float, default=1.0,
+                 help='start stroke period with --reference (s)')
+  p.add_argument('--lead', type=float, default=0.03,
+                 help='command lead over the reference beyond --tau (s)')
+  p.add_argument('--imitate_iters', type=int, default=25,
+                 help='LM iterations of the tracking-only step')
   p.add_argument('--seeds', type=int, default=256)
   p.add_argument('--starts', type=int, default=4)
   p.add_argument('--search_iters', type=int, default=8,

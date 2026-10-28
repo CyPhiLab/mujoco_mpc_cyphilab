@@ -22,6 +22,8 @@ window counts. Its residual vector (least squares, everything scaled so 1 is
               zero on a limit cycle
   effort      RMS servo torque (fraction of the 3.1 N m limit)
   saturation  servo torque beyond its limit, command beyond its range
+  track       (with a reference) joint angles over the last cycle minus a
+              reference stroke's (e.g. kinematic_ref.py's) at the same phase
 
 There are no contacts (the patch disables them all) and the fluid forces are
 smooth, so after a sampling stage (es) the residuals are polished with
@@ -52,11 +54,13 @@ S_CYCLE_Q = 0.02      # rad joint / filter state mismatch over one cycle
 S_CYCLE_V = 0.01      # m/s body velocity mismatch
 S_CYCLE_W = 0.05      # rad/s body angular velocity mismatch
 S_SAT = 0.05          # fraction of the force / command range
+S_TRACK = 0.1         # rad joint angle off the reference
+TRACK_SAMPLES = 40    # reference phases compared per cycle
 
 DEFAULT_WEIGHTS = dict(speed=4.0, lateral=1.0, yaw=1.0, depth=0.3,
                        heading=0.3, tilt=0.3, wobble=0.3, cycle=0.3,
                        effort=1.0,
-                       saturation=1.0)
+                       saturation=1.0, track=1.0)
 
 
 class Layout:
@@ -118,7 +122,7 @@ class Problem:
   def __init__(self, dt=0.005, k=K_DEFAULT, warm=3, measure=2,
                speed=0.05, max_speed=False, weights=None, x0=None,
                tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
-               design=None):
+               design=None, reference=None):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world xy-plane; the body keeps its start heading,
     # so this picks which side of the robot leads.
@@ -139,13 +143,18 @@ class Problem:
     self.half = self.m.actuator_ctrlrange[:, 1].copy()
     self.mass = C.total_mass(self.m)
     self.x0 = C.initial_state(self.m) if x0 is None else np.asarray(x0)
+    # A reference stroke: joint angles (nphase, nu) at uniform phases.
+    self.reference = None if reference is None else np.asarray(reference,
+                                                               float)
 
   def config(self):
     return dict(dt=self.dt, k=self.layout.k, warm=self.warm,
                 measure=self.measure, speed=self.speed,
                 max_speed=self.max_speed, weights=self.weights,
                 x0=self.x0.tolist(), direction=self.direction.tolist(),
-                ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau)
+                ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau,
+                reference=None if self.reference is None
+                else self.reference.tolist())
 
   def nstep(self, period):
     return int(np.ceil((self.warm + self.measure) * period / self.dt)) + 2
@@ -236,6 +245,15 @@ class Problem:
     distance = max(abs(speed) * duration, 1e-9)
     cot = work / (self.mass * 9.81 * distance)
 
+    track = np.zeros(0)
+    track_rms = None
+    if self.reference is not None:
+      phase = np.arange(TRACK_SAMPLES) / TRACK_SAMPLES
+      sim = np.array([at(qpos[:, 7:], tl + ph * period) for ph in phase])
+      ref = reference_at(self.reference, phase)
+      track = (sim - ref).ravel()
+      track_rms = float(np.sqrt(np.mean(track ** 2)))
+
     w = self.weights
     if self.max_speed:
       r_speed = (1.0 - speed) / S_SPEED * 0.05     # constant pull to faster
@@ -255,6 +273,7 @@ class Problem:
             np.mean(force_excess ** 2, axis=0)) / S_SAT,
         np.sqrt(w['saturation']) * np.sqrt(
             np.mean(excess[window] ** 2, axis=0)) / S_SAT,
+        np.sqrt(w['track'] / max(track.size, 1)) * track / S_TRACK,
     ])
     metrics = dict(
         period=period, speed=speed, lateral_rate=lateral, yaw_rate=yaw_rate,
@@ -262,7 +281,7 @@ class Problem:
         tilt_rms=tilt_rms, cycle_error=float(np.sqrt(np.mean(cycle ** 2))),
         effort=effort, saturated=saturated,
         command_clipped=float(np.mean(excess[window] > 0)),
-        work_per_cycle=work / self.measure, cot=cot,
+        work_per_cycle=work / self.measure, cot=cot, track_rms=track_rms,
         cost=float(0.5 * r @ r))
     return r, metrics
 
@@ -288,6 +307,32 @@ class Problem:
            * self.half[:, None]).T
     return dict(phase=phase, time=times, qpos=x[:, L.qpos], qvel=x[:, L.qvel],
                 act=x[:, L.act], ctrl=cmd, state=x[0])
+
+
+def reference_at(reference, phase):
+  """Rows of a reference stroke (uniform phases) at the given phases,
+  periodic linear interpolation."""
+  n = len(reference)
+  ext = np.vstack([reference, reference[:1]])
+  grid = np.arange(n + 1) / n
+  phase = np.asarray(phase, float) % 1.0
+  return np.stack([np.interp(phase, grid, ext[:, j])
+                   for j in range(reference.shape[1])], axis=1)
+
+
+def fit_reference(layout, reference, period, half, lead=0.0):
+  """theta whose commands are the reference stroke (Fourier least squares
+  with layout.k harmonics), shifted earlier by lead seconds to make up for
+  the servo lag."""
+  n = len(reference)
+  phase = np.arange(n) / n
+  target = reference_at(reference, phase + lead / period) / half
+  ks = np.arange(1, layout.k + 1)
+  basis = np.hstack([np.ones((n, 1)), np.cos(2 * np.pi * np.outer(phase, ks)),
+                     np.sin(2 * np.pi * np.outer(phase, ks))])
+  coef, *_ = np.linalg.lstsq(basis, target, rcond=None)
+  c, a, b = coef[0], coef[1:1 + layout.k].T, coef[1 + layout.k:].T
+  return clip_theta(layout, layout.join(period, c, a, b))
 
 
 # ----- Parallel evaluation ----- #
