@@ -3,15 +3,15 @@
     "Kinematic swimming reference for the paddle crab, keyframed by eye from blue crab footage (FASTEC clips 000106 and 000094). See kinematic_ref.py for the format and joint conventions.",
     "One paddle stroke is shared by every mode; phase 0 is the paddle upright at the start of its power stroke. Power: broadside (feather 0) sweep up and over the back toward the trailing side. Recovery: feathered edge-on, back to upright and past it toward the leading side.",
     "A paddle that looks broad to a camera faces it, so it is edge-on to a sweep across the image; one that looks thin is broadside to it.",
-    "sideways (000106, front view slightly below, the crab swims toward its own left; the robot is mirrored for it, never the footage): the leading paddle strokes, the trailing one is held ~45 deg outward and moves less; the leading hanging leg folds up during the sweep.",
+    "sideways (000106, front view slightly below, the crab swims toward its own left; the robot is mirrored for it, never the footage): the leading paddle strokes up and over the back; the trailing one is held up and out at ~45 deg and strokes out of phase: while the leading paddle recovers (phase ~0.42-0.72) it turns broadside and sweeps out and down to ~20 deg above horizontal, then feathers and rises back. 000106 shows that stroke ~0.15 earlier than 000014; the keys split the difference. The leading hanging leg folds up during the sweep.",
     "paddles_first (000094, side view, anterior on screen left, the crab swims toward its own back, to screen right): both paddles point back and use the same stroke, alternating (the far paddle ~0.6 of a stroke behind the near one); claws held forward, centre legs hanging down and back.",
     "Clips pair up by mode: 000106 (front, slightly below) and 000014 (behind and below) show sideways swimming; 000094 (side) and 000054 (above) show paddles-first swimming.",
-    "History: v1 inverted broad/thin; v2 fixed it; v3 matched sweep timing; v4/v5 compared both clips through mirrored footage and misread 000094's orientation; v6 has no mirrored footage, a shared stroke and the paddles_first mode."
+    "History: v1 inverted broad/thin; v2 fixed it; v3 matched sweep timing; v4/v5 compared both clips through mirrored footage and misread 000094's orientation; v6 has no mirrored footage, a shared stroke and the paddles_first mode; v7 adds 000014 and 000054 as second views; v8 makes the sideways trailing paddle stroke out of phase (it was keyed hanging and feathering with the leading one) and trims the power-stroke lean to ~50 deg past vertical, as all three clips show."
   ],
   "period": 1.0,
   "stroke": {
     "prox": [[0.0, 0.0], [0.25, 0.15], [0.5, 0.0], [0.75, -0.15]],
-    "mid": [[0.0, 1.45], [0.12, 1.6], [0.25, 2.2], [0.36, 2.6], [0.45, 1.9], [0.55, 1.45], [0.8, 1.35]],
+    "mid": [[0.0, 1.45], [0.12, 1.6], [0.25, 2.15], [0.36, 2.45], [0.45, 1.9], [0.55, 1.45], [0.8, 1.35]],
     "feather": [[0.0, 0.0], [0.3, 0.0], [0.4, 1.4], [0.92, 1.4]]
   },
   "modes": {
@@ -22,8 +22,8 @@
         "msbr": {"stroke": "mid"},
         "dsbr": {"stroke": "feather"},
         "psbl": {"stroke": "prox", "sign": -1, "offset": -0.79},
-        "msbl": {"keys": [[0.0, 0.85], [0.15, 0.75], [0.36, 0.45], [0.5, 0.8], [0.8, 0.9]]},
-        "dsbl": {"stroke": "feather", "sign": -1},
+        "msbl": {"keys": [[0.0, 0.95], [0.3, 1.05], [0.42, 0.9], [0.55, 0.5], [0.68, 0.3], [0.8, 0.55], [0.92, 0.85]]},
+        "dsbl": {"stroke": "feather", "sign": -1, "phase_shift": 0.42},
         "psfr": {"keys": [[0.0, -0.79]]},
         "msfr": {"keys": [[0.0, 0.1]]},
         "dsfr": {"keys": [[0.0, 0.0]]},
@@ -63,8 +63,8 @@
     }
   },
   "footage": {
-    "000106": {"describe": "front view, slightly below", "mode": "sideways", "mirror": true, "fps": 200, "frames": [150, 540], "phase0_frame": 286, "period": 0.3, "camera": {"azimuth": -90, "elevation": 10, "distance": 0.85}},
-    "000014": {"describe": "from behind and below, swims toward its right", "mode": "sideways", "fps": 200, "frames": [200, 460], "phase0_frame": 248, "period": 0.32, "camera": {"azimuth": 90, "elevation": 45, "distance": 0.9}, "crop": [1400, 1050]},
+    "000106": {"describe": "front view, slightly below (robot camera slightly above: the plate would hide its paddles)", "mode": "sideways", "mirror": true, "fps": 200, "frames": [150, 540], "phase0_frame": 286, "period": 0.3, "camera": {"azimuth": -90, "elevation": -12, "distance": 0.85}},
+    "000014": {"describe": "from behind and below, swims toward its right", "mode": "sideways", "fps": 200, "frames": [200, 460], "phase0_frame": 248, "period": 0.32, "camera": {"azimuth": 90, "elevation": 20, "distance": 0.9}, "crop": [1400, 1050]},
     "000054": {"describe": "from above, swims toward its back", "mode": "paddles_first", "fps": 200, "frames": [380, 600], "phase0_frame": 413, "period": 0.26, "camera": {"azimuth": 0, "elevation": -89, "distance": 0.9}},
     "000094": {"describe": "side view, swims toward its back", "mode": "paddles_first", "fps": 200, "frames": [200, 330], "phase0_frame": 226, "period": 0.3, "camera": {"azimuth": 0, "elevation": -20, "distance": 0.85}, "crop": [1000, 750]}
   }
