@@ -286,3 +286,61 @@ The command writes the following to the output directory:
 
 In the renders, orange legs are the robot's right side and blue legs its
 left; the darker shade marks the paddles.
+
+## Trajopt against the kinematic references
+
+`gait_chain.py --reference crab_reference.json --mode MODE` tracks a gait
+from `kinematic_ref.py`. It adds a residual for the joint angles over the
+last cycle minus the reference's at the same phase (`--weights track=W`) and
+starts from a Fourier fit of the reference, led by the servo lag. An
+imitate step first solves for tracking only, then the speed step pulls
+toward a target speed with tracking kept. `--fix_period T` holds the stroke
+period.
+
+With the period free, tracking-only solves drift to 2-3 s strokes, because
+slow strokes are the ones the servos can follow. So the runs below hold the
+period fixed.
+
+| gait, actuators | T (s) | imitate v (m/s) | tracking + speed v (m/s) | joint RMS from reference (rad) |
+|---|---|---|---|---|
+| paddles_first, XW430 | 0.4 / 0.6 / 0.8 / 1.0 / 1.2 | 0.040 / 0.050 / 0.051 / 0.044 / 0.044 | 0.087 / 0.085 / 0.081 / 0.073 / 0.070 | 0.30 / 0.27 / 0.23 / 0.20 / 0.18 |
+| sideways, XW430 | 0.4 / 0.6 / 0.8 / 1.0 / 1.2 | 0.005 / 0.005 / 0.002 / 0.007 / 0.004 | 0.038 / 0.048 / 0.056 / 0.056 / 0.051 | 0.21 / 0.18 / 0.17 / 0.15 / 0.14 |
+| paddles_first, paddle actuators 2x torque, 12x speed | 0.4 / 0.5 / 0.6 | 0.120 / 0.070 / 0.055 | **0.184** / 0.176 / 0.176 | 0.06 / 0.06 / 0.06 |
+| sideways, same | 0.4 / 0.5 / 0.6 | 0.007 / -0.018 / 0.007 | 0.159 / 0.156 / 0.150 | 0.08 / 0.08 / 0.08 |
+
+(`runs/sweep_*`, `runs/design05_*`, `runs/sweep_summary.png`,
+`runs/design05_summary.png`.) For comparison, the best gait found without
+a reference is `paddles_lead` at 0.1125 m/s with a 1.1 s stroke.
+
+**Why the robot can't stroke like the crab.** `stroke_dynamics.py` runs
+inverse dynamics on the reference stroke, and the result is that the robot
+is speed and power limited, not inertia limited.
+
+- **The servo's speed limit dominates.** The robots use DYNAMIXEL
+  XW430-T333-R servos: 3.1 N m stall and 3.25 rad/s no load at 12 V. That
+  torque-speed line is exactly the model's 1 N m s/rad joint damping, and it
+  makes up about 90% of the torque needed at every stroke period.
+- **The crab-rate stroke needs far more power.** At 0.3 s each paddle joint
+  needs 10-80 W mean and 11-63 rad/s. The servo's peak output is about
+  2.5 W.
+- **Lighter paddle legs hardly help.** A 4x lighter leg changes the load by
+  under 1%.
+- **Added mass is not modelled.** MuJoCo's fluid model has none; a paddle
+  blade's added mass in water, about 1 kg, would add more inertia than the
+  motors do.
+
+**What a 0.5 s stroke takes.** Paddle actuators of 6.2 N m stall and about
+370 rpm no load (a roughly 60 W, small brushless class) leave the 0.5 s
+reference stroke short of torque only 2% of the time (`paddle_torque=2,
+paddle_damping=0.1667`).
+
+**With those actuators:**
+
+- **Paddles first tracks the reference to about 2 deg** and swims
+  0.07-0.12 m/s on imitation alone.
+- **The speed step reaches 0.18 m/s** while staying about 3.6 deg from the
+  reference.
+- **The sideways reference swims backward when tracked closely.** Most of
+  the fix is in the leading paddle's raise (`runs/design05_changes.png`): its
+  power stroke peaks at phase about 0.25, not the reference's 0.36. That
+  matches clip 000014.
