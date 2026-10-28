@@ -13,7 +13,12 @@ needs, split into
              3.1 N m stall torque, damping 1 N m s/rad caps it at 3.1 rad/s)
   fluid      the fluid model's drag and lift on the moving legs (MuJoCo's
              ellipsoid model has no added mass)
-and compared with the 3.1 N m servo limit. The same is done for design
+and compared with the 3.1 N m servo limit. The servos are DYNAMIXEL
+XW430-T333-R: 3.1 N m stall, 31 rpm (3.25 rad/s) no load at 12 V, so the
+1 N m s/rad joint damping is their torque-speed line and their peak
+mechanical output is about 3.1 x 3.25 / 4 = 2.5 W. The mechanical power the
+load itself takes (torque without the damping, times joint speed) is
+reported per joint as the motor power a crab-rate stroke would need. The same is done for design
 variants of the paddle legs (crab_model design: paddle_mass, paddle_damping,
 paddle_area) to see which ones bring a crab-rate stroke within reach.
 
@@ -87,14 +92,23 @@ def summarize(torques, speeds):
   idx = [C.JOINTS.index(j) for j in PADDLE_JOINTS]
   rows = {}
   for j, i in zip(PADDLE_JOINTS, idx):
+    # the load the motor drives, without the servo's own damping
+    load = torques['total'][:, i] - torques['damping'][:, i]
+    power = load * speeds[:, i]
     rows[j] = dict(
         peak=float(np.abs(torques['total'][:, i]).max()),
         rms=float(np.sqrt(np.mean(torques['total'][:, i] ** 2))),
         peak_speed=float(np.abs(speeds[:, i]).max()),
+        load_peak=float(np.abs(load).max()),
+        power_peak=float(np.max(power)),
+        power_mean=float(np.mean(np.maximum(power, 0))),
         **{f'rms_{p}': float(np.sqrt(np.mean(torques[p][:, i] ** 2)))
            for p in PARTS})
   worst = max(rows.values(), key=lambda r: r['peak'])
   return dict(joints=rows, worst_peak=worst['peak'],
+              power_peak=max(r['power_peak'] for r in rows.values()),
+              power_mean=max(r['power_mean'] for r in rows.values()),
+              speed_peak=max(r['peak_speed'] for r in rows.values()),
               worst_rms=max(r['rms'] for r in rows.values()),
               over_limit=float(np.mean(np.abs(torques['total'][:, idx])
                                        > C.FORCE_LIMIT)))
@@ -126,7 +140,9 @@ def main():
                  for q in PARTS}
         print(f'{mode:14s} {name:18s} T {period:4.2f}  peak {s["worst_peak"]:6.2f}'
               f' rms {s["worst_rms"]:6.2f} N m  over limit '
-              f'{100 * s["over_limit"]:5.1f}%  worst-joint rms by part: '
+              f'{100 * s["over_limit"]:5.1f}%  load power peak '
+              f'{s["power_peak"]:6.1f} W mean {s["power_mean"]:5.1f} W, speed '
+              f'peak {s["speed_peak"]:5.1f} rad/s  worst-joint rms by part: '
               + ' '.join(f'{q} {v:5.2f}' for q, v in parts.items()),
               flush=True)
       result['modes'][mode][name] = dict(description=text, periods=rows)
