@@ -122,7 +122,7 @@ class Problem:
   def __init__(self, dt=0.005, k=K_DEFAULT, warm=3, measure=2,
                speed=0.05, max_speed=False, weights=None, x0=None,
                tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
-               design=None, reference=None):
+               design=None, reference=None, fixed_period=None):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world xy-plane; the body keeps its start heading,
     # so this picks which side of the robot leads.
@@ -143,6 +143,8 @@ class Problem:
     self.half = self.m.actuator_ctrlrange[:, 1].copy()
     self.mass = C.total_mass(self.m)
     self.x0 = C.initial_state(self.m) if x0 is None else np.asarray(x0)
+    # A fixed stroke period overrides theta's (its log T is then ignored).
+    self.fixed_period = fixed_period
     # A reference stroke: joint angles (nphase, nu) at uniform phases.
     self.reference = None if reference is None else np.asarray(reference,
                                                                float)
@@ -154,14 +156,21 @@ class Problem:
                 x0=self.x0.tolist(), direction=self.direction.tolist(),
                 ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau,
                 reference=None if self.reference is None
-                else self.reference.tolist())
+                else self.reference.tolist(), fixed_period=self.fixed_period)
+
+  def fix(self, thetas):
+    """thetas with the fixed period, if there is one."""
+    thetas = np.array(thetas, dtype=float)
+    if self.fixed_period:
+      thetas[..., 0] = np.log(self.fixed_period)
+    return thetas
 
   def nstep(self, period):
     return int(np.ceil((self.warm + self.measure) * period / self.dt)) + 2
 
   def rollout(self, thetas):
     """States (n, nstep, nstate) and clip excess for a batch of thetas."""
-    thetas = np.atleast_2d(thetas)
+    thetas = self.fix(np.atleast_2d(thetas))
     nstep = max(self.nstep(self.layout.period(t)) for t in thetas)
     ctrl = np.empty((len(thetas), nstep, C.NU))
     excess = np.empty((len(thetas), nstep, C.NU))
@@ -178,7 +187,7 @@ class Problem:
     """(residuals (n, nres), metrics list) for a batch of thetas."""
     states, ctrl, excess = self.rollout(thetas)
     res, info = [], []
-    for i, theta in enumerate(np.atleast_2d(thetas)):
+    for i, theta in enumerate(self.fix(np.atleast_2d(thetas))):
       r, metrics = self.residual_from(theta, states[i], excess[i])
       res.append(r)
       info.append(metrics)
@@ -291,6 +300,7 @@ class Problem:
     Returns dict with phase, time, qpos, qvel, act, ctrl arrays (nphase rows,
     phase 0 at the start of the last cycle) and the state there.
     """
+    theta = self.fix(theta)
     states, ctrl, _ = self.rollout(theta[None])
     states, ctrl = states[0], ctrl[0]
     L, dt = self.state_layout, self.dt

@@ -83,8 +83,14 @@ def _compile(xml):
 #   body_drag      drag coefficients (not added mass) of the body's geoms:
 #                  plate, servo housings, cylinder, x
 #   paddle_area    paddle mesh area, x (scaled uniformly by its square root)
+#   damping        every joint's damping, x (1 N m s/rad on every joint
+#                  caps a 3.1 N m servo at 3.1 rad/s: the servo speed limit)
+#   paddle_damping the rear (paddle) legs' joint damping, x
+#   paddle_mass    mass and inertia of the paddle legs' mid and distal
+#                  segments (the outer two servos and the blade), x
 DESIGN_DEFAULTS = dict(torque=1.0, paddle_torque=1.0, kp=1.0, body_drag=1.0,
-                       paddle_area=1.0)
+                       paddle_area=1.0, damping=1.0, paddle_damping=1.0,
+                       paddle_mass=1.0)
 PADDLE_ACTUATORS = [i for i, a in enumerate(ACTUATORS) if a[:2] in ('R3', 'L3')]
 
 
@@ -112,6 +118,16 @@ def load_model(dt=SIM_DT, tau=TAU, ground=True, ctrl_limit=None, design=None):
   m.actuator_forcerange[PADDLE_ACTUATORS] *= design['paddle_torque']
   m.actuator_gainprm[:, 0] *= design['kp']
   m.actuator_biasprm[:, 1] *= design['kp']
+  m.dof_damping[6:] *= design['damping']
+  for i in PADDLE_ACTUATORS:
+    m.dof_damping[m.jnt_dofadr[m.actuator_trnid[i, 0]]] *= design[
+        'paddle_damping']
+  if design['paddle_mass'] != 1.0:
+    for b in range(m.nbody):
+      name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, b) or ''
+      if name.startswith(('mid segment back', 'distal segment back')):
+        m.body_mass[b] *= design['paddle_mass']
+        m.body_inertia[b] *= design['paddle_mass']
   if design['body_drag'] != 1.0:
     for g in range(m.ngeom):
       name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[g])

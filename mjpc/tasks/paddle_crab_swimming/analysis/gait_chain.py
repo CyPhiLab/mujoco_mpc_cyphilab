@@ -110,7 +110,8 @@ class Chain:
                      direction=a.direction, x0=x0, ctrl_limit=a.ctrl_limit,
                      design=self.design, tau=a.tau,
                      reference=None if self.reference is None
-                     else self.reference['angles'])
+                     else self.reference['angles'],
+                     fixed_period=a.fix_period)
 
   def straight(self, metrics):
     a = self.args
@@ -189,7 +190,7 @@ class Chain:
         history += h
       theta, _, h = G.lm(ev, problem.layout, theta, iters=iters, log=self.log)
       history += h
-    return theta, history, time.time() - t0
+    return problem.fix(theta), history, time.time() - t0
 
   def search(self, speed):
     a = self.args
@@ -271,7 +272,8 @@ class Chain:
     if self.reference is not None and not a.init:
       layout = G.Layout(a.k)
       half = self.problem(dt0, speeds[0]).half
-      theta = G.fit_reference(layout, self.reference['angles'], a.period,
+      theta = G.fit_reference(layout, self.reference['angles'],
+                              a.fix_period or a.period,
                               half, lead=a.tau + a.lead)
       problem = self.problem(dt0, 0.0, weights=dict(speed=0.0))
       theta, row = self.run_step(f'imitate_dt{dt0:g}', 'imitate',
@@ -415,6 +417,8 @@ def main():
   p.add_argument('--mode', help='the reference gait (mode) to track')
   p.add_argument('--period', type=float, default=1.0,
                  help='start stroke period with --reference (s)')
+  p.add_argument('--fix_period', type=float, default=None,
+                 help='hold the stroke period fixed at this (s)')
   p.add_argument('--lead', type=float, default=0.03,
                  help='command lead over the reference beyond --tau (s)')
   p.add_argument('--imitate_iters', type=int, default=25,
