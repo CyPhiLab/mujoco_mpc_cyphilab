@@ -4,19 +4,27 @@ eye against swimming-crab footage.
 
   kinematic_ref.py REF.json --out DIR [--video NAME=PATH ...] [--cycles 4]
 
-The reference (JSON) has one paddle "stroke" shared by every swimming mode
-and the "modes" that use it (e.g. sideways, paddles_first). A stroke channel
-is periodic keyframes over one stroke, [[phase, angle_rad], ...] with phase
-in [0, 1), interpolated by a periodic cubic (Catmull-Rom) spline; phase 0 is
-the paddle upright at the start of its power stroke. A mode has a "base"
-and a "joints" table, each joint one of:
+The reference (JSON) has swimming "modes" (gaits, e.g. sideways and
+paddles_first), each with its own paddle "stroke", a "base" and a "joints"
+table. A stroke channel is periodic keyframes over one stroke,
+[[phase, angle_rad], ...] with phase in [0, 1), interpolated by a periodic
+cubic (Catmull-Rom) spline; phase 0 is the leading paddle upright at the
+start of its power stroke. Each joint is one of:
   {"keys": [[phase, angle], ...]}         its own keyframes (one key: held)
   {"stroke": "mid", "sign": 1, "offset": 0, "phase_shift": 0}
-                                          a shared stroke channel
+                                          a channel of the mode's stroke
   {"mirror_of": "psbr", "sign": -1, "offset": 0, "phase_shift": 0}
                                           another joint of the same mode
-The paddle's sweep plane is set by the proximal "offset" (its heading), so
-one stroke drives a sideways and a paddles-first sweep alike. The base moves
+  {"slice": [[phase, deg], ...], "phase_shift": 0}
+                                          (distal joints) the blade angle to
+                                          its own motion through the water:
+                                          0 broadside, 90 slicing edge-first;
+                                          the feather is the smoothest
+                                          periodic path that holds it,
+                                          weighted by the blade's speed
+A paddle's base (proximal) swing timed against its raise (mid) makes its
+tip carve a loop rather than flap in one plane. The proximal "offset" sets
+the paddle's heading (out to the side or straight back). The base moves
 at a constant speed along "direction", tilted leading edge up by
 "lead_up_deg" and rolled by "roll_deg" about the swim direction, with an
 optional periodic "heave" (keys in metres).
@@ -49,6 +57,8 @@ Writes to DIR:
   sheet_NAME.png      one stroke at 8 phases, the same three rows
   mode_MODE.png       every clip of a mode (footage above the robot from
                       that clip's view) at the same 8 stroke phases
+  paddle_paths.png    each mode's paddle paths in the body frame (top, side,
+                      back) and the blade's angle to its own motion
   reference.npz       one stroke of each mode sampled at 200 phases: qpos
 """
 import argparse
@@ -92,11 +102,11 @@ def periodic_spline(keys, phase):
 
 
 def pose_spec(ref, mode, clip=None):
-  """Everything the animation of one mode needs: the shared stroke, the
-  mode's joints and base (with a clip's base overrides) and the mirror."""
+  """Everything the animation of one mode needs: its stroke, joints and base
+  (with a clip's base overrides) and the mirror."""
   clip = clip or {}
   spec = ref['modes'][mode]
-  return dict(stroke=ref['stroke'], joints=spec['joints'],
+  return dict(stroke=spec.get('stroke', {}), joints=spec['joints'],
               base=dict(spec.get('base', {}), **clip.get('base', {})),
               mirror=clip.get('mirror', False), mode=mode)
 
@@ -106,6 +116,8 @@ def joint_value(pose, name, phase, depth=0):
   entry = pose['joints'].get(name, {'keys': [[0, 0.0]]})
   if 'keys' in entry:
     return periodic_spline(entry['keys'], phase)
+  if 'slice' in entry:
+    return slice_angles(pose, name, phase)
   shifted = phase - entry.get('phase_shift', 0.0)
   if 'stroke' in entry:
     value = periodic_spline(pose['stroke'][entry['stroke']], shifted)
@@ -121,6 +133,103 @@ def joint_angles(pose, phase):
   if pose['mirror']:
     q = C.MIRROR_SIGN * q[:, C.MIRROR_INDEX]
   return q
+
+
+@functools.lru_cache(maxsize=1)
+def fk_model():
+  return C.load_model(ground=False, ctrl_limit=np.pi)
+
+
+def blade_geom(m, distal):
+  """The paddle blade (mesh) on a distal joint's body; its local x axis is
+  the blade normal and its local z axis runs along the leg."""
+  body = m.jnt_bodyid[mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, distal)]
+  return next(g for g in range(m.ngeom) if m.geom_bodyid[g] == body
+              and m.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH)
+
+
+SLICE_GRID = 360
+_slice_cache = {}
+
+
+def smooth_periodic_angle(broad, target, weight, smooth=0.5, step_max=12,
+                          span=1.5 * np.pi, bins=541, start_every=6):
+  """The smoothest periodic angle path f over a grid whose blade line (period
+  pi) makes the target angle with the line at "broad": Viterbi over binned
+  angles from every start bin (subsampled) back to the same bin."""
+  values = np.linspace(-span, span, bins)
+  n = len(broad)
+  rel = (values[None, :] - broad[:, None]) % np.pi
+  line = np.minimum(rel, np.pi - rel)                 # 0 broadside .. pi/2
+  track = weight[:, None] * np.degrees(line - target[:, None]) ** 2
+  shifts = np.arange(-step_max, step_max + 1)
+  move = smooth * (shifts * np.degrees(values[1] - values[0])) ** 2
+  starts = np.arange(0, bins, start_every)
+  cost = np.full((len(starts), bins), np.inf)
+  cost[np.arange(len(starts)), starts] = track[0, starts]
+  back = np.zeros((n + 1, len(starts), bins), dtype=np.int16)
+  for k in range(1, n + 1):
+    best = np.full_like(cost, np.inf)
+    arg = np.zeros(cost.shape, dtype=np.int16)
+    for sh, mv in zip(shifts, move):
+      lo, hi = max(sh, 0), bins + min(sh, 0)
+      c = np.full_like(cost, np.inf)
+      c[:, lo:hi] = cost[:, lo - sh:hi - sh] + mv
+      better = c < best
+      best[better] = c[better]
+      arg[better] = (np.arange(bins)[None, :] - sh).repeat(len(starts), 0)[better]
+    cost = best + (track[k] if k < n else 0.0)
+    back[k] = arg
+  closed = cost[np.arange(len(starts)), starts]
+  i = int(np.argmin(closed))
+  path = np.zeros(n + 1, dtype=np.int64)
+  path[n] = starts[i]
+  for k in range(n, 0, -1):
+    path[k - 1] = back[k][i, path[k]]
+  f = values[path[:n]]
+  return f - np.pi * np.round(f.mean() / np.pi)   # same blade line, near 0
+
+
+def slice_angles(pose, name, phase):
+  """Feather angles of a "slice" joint at the given phases: the smoothest
+  periodic feather that holds the blade at the slice angle to its own
+  motion (in the body frame), weighted by the blade's speed, so it can turn
+  through a reversal like an oar rather than spin. Solved on a phase grid
+  with forward kinematics and cached."""
+  entry = pose['joints'][name]
+  key = (json.dumps(pose['joints'], sort_keys=True),
+         json.dumps(pose['stroke'], sort_keys=True), name)
+  if key not in _slice_cache:
+    grid = np.arange(SLICE_GRID) / SLICE_GRID
+    q = np.stack([np.zeros_like(grid) if 'slice' in pose['joints'].get(n, {})
+                  else joint_value(pose, n, grid) for n in C.JOINTS], axis=1)
+    m = fk_model()
+    d = mujoco.MjData(m)
+    g = blade_geom(m, name)
+    i = 7 + JOINT_INDEX[name]
+    pos, n0, n90 = [], [], []
+    for qk in q:
+      d.qpos[:] = m.qpos0
+      d.qpos[7:] = qk
+      for f, out in ((0.0, n0), (np.pi / 2, n90)):
+        d.qpos[i] = f
+        mujoco.mj_kinematics(m, d)
+        out.append(d.geom_xmat[g].reshape(3, 3)[:, 0].copy())
+      pos.append(d.geom_xpos[g].copy())
+    pos, n0, n90 = map(np.array, (pos, n0, n90))
+    vel = np.roll(pos, -1, axis=0) - np.roll(pos, 1, axis=0)
+    # the normal n(f) = cos f n0 + sin f n90 is parallel to the velocity
+    # (broadside) at f = broad
+    broad = np.arctan2((n90 * vel).sum(1), (n0 * vel).sum(1))
+    speed = np.hypot((n90 * vel).sum(1), (n0 * vel).sum(1))
+    target = np.radians(np.clip(periodic_spline(
+        entry['slice'], grid - entry.get('phase_shift', 0.0)), 0, 90))
+    weight = np.maximum(speed / speed.max(), 0.05) ** 2
+    _slice_cache[key] = smooth_periodic_angle(broad, target, weight)
+  feather = _slice_cache[key]
+  ext = np.concatenate([feather, feather[:1]])
+  return np.interp(np.asarray(phase, float) % 1.0,
+                   np.arange(SLICE_GRID + 1) / SLICE_GRID, ext)
 
 
 def swim_direction(pose):
@@ -383,6 +492,58 @@ def save_sheet(rows, path):
       (sheet.shape[1] * 2 // 3, sheet.shape[0] * 2 // 3)).save(path)
 
 
+def plot_paddle_paths(ref, path):
+  """Each mode's paddle-blade centre paths in the body frame (top, side and
+  back views, phases marked) and the blade's angle to its own motion."""
+  import matplotlib
+  matplotlib.use('Agg')
+  import matplotlib.pyplot as plt
+  m = fk_model()
+  d = mujoco.MjData(m)
+  plate = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, 'plate')
+  phase = np.arange(240) / 240
+  modes = list(ref['modes'])
+  fig, axes = plt.subplots(len(modes), 4, figsize=(17, 4 * len(modes)),
+                           squeeze=False)
+  views = [(0, 1, 'top view: x right, y forward'),
+           (1, 2, 'side view: y forward, z up'),
+           (0, 2, 'back view: x right, z up')]
+  for row, mode in enumerate(modes):
+    q = joint_angles(pose_spec(ref, mode), phase)
+    for name, colour in (('dsbr', '#d9822b'), ('dsbl', '#2b5fd9')):
+      g = blade_geom(m, name)
+      pos, normal = [], []
+      for qk in q:
+        d.qpos[:] = m.qpos0
+        d.qpos[7:] = qk
+        mujoco.mj_kinematics(m, d)
+        pos.append(d.geom_xpos[g] - d.xpos[plate])
+        normal.append(d.geom_xmat[g].reshape(3, 3)[:, 0].copy())
+      pos, normal = np.array(pos), np.array(normal)
+      vel = np.roll(pos, -1, 0) - np.roll(pos, 1, 0)
+      cos = np.abs((normal * vel).sum(1)) / (np.linalg.norm(vel, axis=1)
+                                              + 1e-12)
+      side = 'right' if name.endswith('r') else 'left'
+      for ax, (a, b, title) in zip(axes[row][:3], views):
+        ax.plot(pos[:, a], pos[:, b], color=colour, label=f'{side} paddle')
+        ax.plot(pos[0, a], pos[0, b], 'o', color=colour)
+        for k in range(0, len(phase), 30):
+          ax.annotate(f'{phase[k]:.2f}', pos[k, [a, b]], fontsize=7,
+                      color=colour)
+        ax.set_title(f'{mode}: {title}', fontsize=9)
+        ax.set_aspect('equal')
+      axes[row][3].plot(phase, np.degrees(np.arccos(np.clip(cos, 0, 1))),
+                        color=colour, label=f'{side}: blade to motion')
+    axes[row][3].set_title(f'{mode}: blade to motion, 0 broadside, '
+                           '90 slicing (deg)', fontsize=9)
+    axes[row][3].set_xlabel('stroke phase')
+    axes[row][0].legend(fontsize=7)
+    axes[row][3].legend(fontsize=7)
+  fig.tight_layout()
+  fig.savefig(path, dpi=80)
+  plt.close(fig)
+
+
 def main():
   p = argparse.ArgumentParser(description=__doc__,
                               formatter_class=argparse.RawTextHelpFormatter)
@@ -422,6 +583,7 @@ def main():
                          label(b, ['from above-behind',
                                    'orange = right, blue = left'])], axis=1)
          for a, b in zip(side, over)], fps=args.fps, macro_block_size=1)
+  plot_paddle_paths(ref, os.path.join(args.out, 'paddle_paths.png'))
   np.savez(os.path.join(args.out, 'reference.npz'), phase=phase,
            period=period, joints=np.array(C.JOINTS),
            reference=json.dumps(ref),

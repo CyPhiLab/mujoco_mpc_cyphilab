@@ -236,27 +236,38 @@ likely next step.
 
 ## Kinematic swimming reference (`kinematic_ref.py`, `crab_reference.json`)
 
-This is a pure kinematic animation keyframed by eye against two blue crab
-clips. One paddle stroke is shared by two swimming modes:
+This is a pure kinematic animation keyframed by eye against blue crab
+footage. There are two gaits, each with its own paddle stroke:
 
 - **`sideways`:** two clips, 000106 (front, slightly below) and 000014
-  (behind and below). The leading paddle strokes and the trailing one is
-  held outward.
+  (behind and below). The leading paddle strokes up and over the back, and
+  the trailing one, held up and out, strokes out of phase with it.
 - **`paddles_first`:** two clips, 000094 (side) and 000054 (above). The crab
   swims toward its own back, like the optimized `paddles_lead` gait. Both
   paddles point back and run the same stroke, the far one about 0.6 of a
   stroke behind the near one.
 
-Each mode is therefore checked from two viewpoints.
+Each gait is therefore checked from two viewpoints.
 
-A mode only changes the paddle's sweep heading (the proximal offset), the
-phase of the second paddle and the walking-leg posture.
+The paddles slice through the water continuously rather than flapping in
+one plane:
+
+- **Tip loop:** the base (proximal) swing is timed against the raise (mid),
+  so each tip carves a loop. In paddles first the power stroke sweeps over
+  the back and in toward the midline, and the return sweeps out to the side
+  and down.
+- **Blade angle:** the blade angle is given relative to the tip's own motion
+  (`slice`: 0 broadside, 90 edge-first). The feather joint is solved as the
+  smoothest periodic path that holds that angle, weighted by blade speed.
+  Through a reversal the blade turns like an oar instead of spinning.
+
+`paddle_paths.png` plots the loops and the blade angles.
 
 Footage is never mirrored. When the crab swims toward its left, the robot is
 mirrored instead.
 
 ```
-python kinematic_ref.py crab_reference.json --out kinematic/v7 \
+python kinematic_ref.py crab_reference.json --out kinematic/v9 \
     --video 000106=PATH_000106.mp4 --video 000014=PATH_000014.mp4 \
     --video 000094=PATH_000094.mp4 --video 000054=PATH_000054.mp4
 ```
@@ -269,6 +280,8 @@ The command writes the following to the output directory:
 - **`sheet_<clip>.png`:** a single stroke shown at 8 phases.
 - **`mode_<mode>.png`:** every clip of a mode, each over the robot seen from
   that clip's camera, at the same 8 stroke phases.
+- **`paddle_paths.png`:** each gait's paddle paths in the body frame, and
+  the blade's angle to its own motion.
 - **`reference.npz`:** qpos for each mode over one stroke.
 
 In the renders, orange legs are the robot's right side and blue legs its

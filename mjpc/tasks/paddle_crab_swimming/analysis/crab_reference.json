@@ -1,29 +1,30 @@
 {
   "notes": [
-    "Kinematic swimming reference for the paddle crab, keyframed by eye from blue crab footage (FASTEC clips 000106 and 000094). See kinematic_ref.py for the format and joint conventions.",
-    "One paddle stroke is shared by every mode; phase 0 is the paddle upright at the start of its power stroke. Power: broadside (feather 0) sweep up and over the back toward the trailing side. Recovery: feathered edge-on, back to upright and past it toward the leading side.",
-    "A paddle that looks broad to a camera faces it, so it is edge-on to a sweep across the image; one that looks thin is broadside to it.",
-    "sideways (000106, front view slightly below, the crab swims toward its own left; the robot is mirrored for it, never the footage): the leading paddle strokes up and over the back; the trailing one is held up and out at ~45 deg and strokes out of phase: while the leading paddle recovers (phase ~0.42-0.72) it turns broadside and sweeps out and down to ~20 deg above horizontal, then feathers and rises back. 000106 shows that stroke ~0.15 earlier than 000014; the keys split the difference. The leading hanging leg folds up during the sweep.",
-    "paddles_first (000094, side view, anterior on screen left, the crab swims toward its own back, to screen right): both paddles point back and use the same stroke, alternating (the far paddle ~0.6 of a stroke behind the near one); claws held forward, centre legs hanging down and back.",
-    "Clips pair up by mode: 000106 (front, slightly below) and 000014 (behind and below) show sideways swimming; 000094 (side) and 000054 (above) show paddles-first swimming.",
-    "History: v1 inverted broad/thin; v2 fixed it; v3 matched sweep timing; v4/v5 compared both clips through mirrored footage and misread 000094's orientation; v6 has no mirrored footage, a shared stroke and the paddles_first mode; v7 adds 000014 and 000054 as second views; v8 makes the sideways trailing paddle stroke out of phase (it was keyed hanging and feathering with the leading one) and trims the power-stroke lean to ~50 deg past vertical, as all three clips show."
+    "Kinematic swimming reference for the paddle crab, keyframed by eye from blue crab footage. See kinematic_ref.py for the format and joint conventions.",
+    "Two gaits, each with its own paddle stroke. Clips pair up by gait: 000106 (front, slightly below) and 000014 (behind and below) show sideways swimming; 000094 (side) and 000054 (above) show paddles-first swimming.",
+    "The paddles slice continuously: each tip carves a loop (the base swing timed against the raise), and the blade angle is given relative to the tip's own motion (slice: 0 broadside, 90 edge-first), turning gradually rather than flipping.",
+    "A paddle that looks broad to a camera faces it; one that looks thin is edge-on to it.",
+    "paddles_first (both paddles point back, the far one ~0.6 of a stroke behind the near one; claws forward, centre legs down and back): power is broadside up over the back toward the head and in toward the midline (~50 deg past vertical at phase ~0.3); the blade twists edge-first as it comes back, the paddle swings out to the side and down beside the body (phase ~0.7-0.8), sweeps in behind and rises.",
+    "sideways (the robot is mirrored for 000106, whose crab swims toward its left; footage is never mirrored): the leading paddle strokes broadside up and over the back toward the trailing side, then slices back and circles near upright through the second half; the trailing paddle is held up and out ~45 deg and strokes out of phase (broadside, out and down to ~20 deg above horizontal while the leading paddle recovers, phase ~0.42-0.72), then slices back up. 000106 shows the trailing stroke ~0.15 earlier than 000014; the keys split the difference. The leading hanging leg folds up during the sweep.",
+    "History: v1 inverted broad/thin; v2 fixed it; v3 matched sweep timing; v4/v5 compared clips through mirrored footage and misread 000094; v6 unmirrored footage and added paddles_first; v7 second views (000014, 000054); v8 trailing paddle out of phase; v9 separate strokes per gait, looping tip paths and slicing blades."
   ],
   "period": 1.0,
-  "stroke": {
-    "prox": [[0.0, 0.0], [0.25, 0.15], [0.5, 0.0], [0.75, -0.15]],
-    "mid": [[0.0, 1.45], [0.12, 1.6], [0.25, 2.15], [0.36, 2.45], [0.45, 1.9], [0.55, 1.45], [0.8, 1.35]],
-    "feather": [[0.0, 0.0], [0.3, 0.0], [0.4, 1.4], [0.92, 1.4]]
-  },
   "modes": {
     "sideways": {
       "base": {"direction": [1, 0, 0], "speed": 0.07, "lead_up_deg": 15, "roll_deg": 0, "heave": [[0.0, 0.0], [0.5, 0.005]]},
+      "stroke": {
+        "prox": [[0.0, 0.0], [0.2, 0.2], [0.36, 0.3], [0.5, 0.1], [0.65, -0.3], [0.8, -0.45], [0.92, -0.25]],
+        "mid": [[0.0, 1.45], [0.12, 1.65], [0.25, 2.15], [0.36, 2.45], [0.45, 2.1], [0.55, 1.6], [0.68, 1.3], [0.8, 1.2], [0.92, 1.3]],
+        "trail_prox": [[0.0, 0.0], [0.3, 0.2], [0.55, 0.0], [0.7, -0.3], [0.85, -0.1]],
+        "trail_mid": [[0.0, 0.95], [0.3, 1.05], [0.42, 0.9], [0.55, 0.5], [0.68, 0.3], [0.8, 0.55], [0.92, 0.85]]
+      },
       "joints": {
         "psbr": {"stroke": "prox", "offset": 0.79},
         "msbr": {"stroke": "mid"},
-        "dsbr": {"stroke": "feather"},
-        "psbl": {"stroke": "prox", "sign": -1, "offset": -0.79},
-        "msbl": {"keys": [[0.0, 0.95], [0.3, 1.05], [0.42, 0.9], [0.55, 0.5], [0.68, 0.3], [0.8, 0.55], [0.92, 0.85]]},
-        "dsbl": {"stroke": "feather", "sign": -1, "phase_shift": 0.42},
+        "dsbr": {"slice": [[0.0, 30], [0.06, 0], [0.3, 0], [0.4, 60], [0.48, 85], [0.88, 85], [0.96, 60]]},
+        "psbl": {"stroke": "trail_prox", "sign": -1, "offset": -0.79},
+        "msbl": {"stroke": "trail_mid"},
+        "dsbl": {"slice": [[0.0, 85], [0.36, 80], [0.45, 20], [0.5, 0], [0.68, 0], [0.76, 40], [0.84, 80]]},
         "psfr": {"keys": [[0.0, -0.79]]},
         "msfr": {"keys": [[0.0, 0.1]]},
         "dsfr": {"keys": [[0.0, 0.0]]},
@@ -40,13 +41,17 @@
     },
     "paddles_first": {
       "base": {"direction": [0, -1, 0], "speed": 0.07, "lead_up_deg": 10, "roll_deg": 0, "heave": [[0.0, 0.0], [0.5, 0.005]]},
+      "stroke": {
+        "prox": [[0.0, 0.05], [0.15, 0.2], [0.3, 0.4], [0.45, 0.45], [0.6, 0.55], [0.72, 0.65], [0.85, 0.3], [0.95, 0.05]],
+        "mid": [[0.0, 1.4], [0.1, 1.75], [0.2, 2.15], [0.3, 2.4], [0.4, 2.2], [0.5, 1.75], [0.6, 1.35], [0.7, 0.85], [0.8, 0.6], [0.9, 0.8]]
+      },
       "joints": {
         "psbl": {"stroke": "prox", "sign": -1, "offset": 0.79},
         "msbl": {"stroke": "mid"},
-        "dsbl": {"stroke": "feather", "sign": -1},
+        "dsbl": {"slice": [[0.0, 45], [0.08, 0], [0.3, 0], [0.38, 45], [0.45, 85], [0.85, 85], [0.95, 70]]},
         "psbr": {"stroke": "prox", "offset": -0.79, "phase_shift": 0.6},
         "msbr": {"stroke": "mid", "phase_shift": 0.6},
-        "dsbr": {"stroke": "feather", "phase_shift": 0.6},
+        "dsbr": {"slice": [[0.0, 45], [0.08, 0], [0.3, 0], [0.38, 45], [0.45, 85], [0.85, 85], [0.95, 70]], "phase_shift": 0.6},
         "psfr": {"keys": [[0.0, 0.79]]},
         "msfr": {"keys": [[0.0, 0.1]]},
         "dsfr": {"keys": [[0.0, 0.0]]},
