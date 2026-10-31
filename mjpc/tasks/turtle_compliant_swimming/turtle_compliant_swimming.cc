@@ -35,6 +35,18 @@ constexpr int kParamCadence = 2;
 constexpr int kParamPhase = 3;
 }  // namespace
 
+double ShaftPower(const mjModel* model, const mjData* data, int actuator) {
+  double velocity = data->actuator_velocity[actuator];
+  double torque = data->actuator_force[actuator];
+  if (model->actuator_trntype[actuator] == mjTRN_JOINT) {
+    // joint damping on an actuated joint models the motor's back-EMF, so it is
+    // a loss inside the motor, not output
+    int dof = model->jnt_dofadr[model->actuator_trnid[2 * actuator]];
+    torque -= model->dof_damping[dof] * velocity;
+  }
+  return torque * velocity;
+}
+
 std::string TurtleCompliantSwimming::XmlPath() const {
   return GetModelPath("turtle_compliant_swimming/task.xml");
 }
@@ -136,7 +148,7 @@ void TurtleCompliantSwimming::ResidualFn::Residual(const mjModel* model,
   // ---------- Power ----------
   double power = 0.0;
   for (int i = 0; i < model->nu; i++) {
-    power += mju_max(data->actuator_force[i] * data->actuator_velocity[i], 0.0);
+    power += mju_max(ShaftPower(model, data, i), 0.0);
   }
   residual[counter++] = std::sqrt(power);
 

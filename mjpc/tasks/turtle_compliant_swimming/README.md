@@ -18,6 +18,8 @@ tracking) is left untouched.
 | `reference_gait.xml` | the reference gait table and `home` keyframe, **generated** by `make_reference_gait.py` |
 | `turtle_trajopt.cc` | headless runner (`bin/turtle_trajopt`): closed-loop MPC or reference playback, CSV log, summary |
 | `analyze_runs.py` | compares runs (table + plots) and extracts a phase-averaged gait from a run |
+| `gait_study.py` | fast open-loop study / CMA-ES search over stroke rate and amplitudes, optionally with the shell's attitude locked; exports gaits for `--gait_csv` |
+| `render_run.py` | renders one or more runs side by side to MP4 |
 
 ## Updating the model from turtle_simulator
 
@@ -88,6 +90,10 @@ python ../../mjpc/tasks/turtle_compliant_swimming/analyze_runs.py \
 ./turtle_trajopt --mode=reference --gait_csv=figs/gait_mpc.csv --duration=20   # open loop
 ./turtle_trajopt --mode=mpc --gait_csv=figs/gait_mpc.csv ...                   # next starting point
 ```
+
+Motors: `--motor=12V|14.8V` replaces the placeholder servo limits with the Dynamixel
+XW540-T260 torque-speed line at that supply voltage (force limit = stall torque, joint
+damping = stall torque / no-load speed). `--kp` sets the servo's position gain.
 
 Runner flags: `--weight=Name=value,...`, `--param=Name=value,...`,
 `--numeric=agent_planner=2,agent_horizon=1.5,...` (any `task.xml` numeric), `--replan` (sim

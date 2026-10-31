@@ -2,7 +2,7 @@
 """Compare turtle_trajopt runs and extract an optimized gait.
 
   python analyze_runs.py ref=reference.csv mpc=mpc.csv --out-dir figs \
-      [--extract mpc --extract-strokes 4]
+      [--extract mpc --extract-strokes 4] [--cadence mpc=2.1]
 
 Writes to --out-dir:
   summary.md        stroke-averaged metrics per run (skips the first two strokes)
@@ -93,6 +93,9 @@ def main():
   ap.add_argument("--harmonics", type=int, default=12)
   ap.add_argument("--samples", type=int, default=128)
   ap.add_argument("--mass", type=float, default=8.994, help="robot mass [kg] for CoT")
+  ap.add_argument("--cadence", action="append", default=[],
+                  help="label=value: the run's Cadence parameter (default 1), so its stroke "
+                       "period is the reference period / cadence")
   args = ap.parse_args()
 
   import matplotlib
@@ -105,11 +108,14 @@ def main():
                        "font.size": 9, "legend.frameon": False, "lines.linewidth": 2})
 
   args.out_dir.mkdir(parents=True, exist_ok=True)
-  period = gait_period()
+  base_period = gait_period()
+  cadence = dict((c.rsplit("=", 1)[0], float(c.rsplit("=", 1)[1])) for c in args.cadence)
+  periods = {}
   runs = []
   for item in args.runs:
-    label, path = item.split("=", 1)
+    label, path = item.rsplit("=", 1)
     runs.append((label, load(path)))
+    periods[label] = base_period / cadence.get(label, 1.0)
   if len(runs) > len(COLORS):
     raise SystemExit(f"at most {len(COLORS)} runs per figure")
   color = {label: COLORS[i] for i, (label, _) in enumerate(runs)}
@@ -119,7 +125,7 @@ def main():
           "| climb rate [m/s] | max tilt [deg] | mean +power [W] | energy [J/m] | CoT |",
           "|---|---|---|---|---|---|---|---|---|---|"]
   for label, d in runs:
-    m = metrics(d, period, args.mass)
+    m = metrics(d, periods[label], args.mass)
     rows.append(f"| {label} | {m['strokes']} | {m['speed']:.4f} | {m['net']:.4f} | {m['drift']:.4f} "
                 f"| {m['climb']:+.4f} | {m['tilt']:.1f} | {m['power']:.2f} | {m['jpm']:.1f} | {m['cot']:.3f} |")
   (args.out_dir / "summary.md").write_text("\n".join(rows) + "\n")
@@ -129,6 +135,7 @@ def main():
   fig, ax = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
   for label, d in runs:
     c = color[label]
+    period = periods[label]
     fwd = -d["com_y"]
     ax[0, 0].plot(fwd, d["com_z"], color=c, label=label)
     ax[0, 1].plot(fwd, d["com_x"], color=c, label=label)
@@ -152,6 +159,7 @@ def main():
   names = actuators(runs[0][1])
   phase = np.arange(args.samples) / args.samples
   for label, d in runs:
+    period = periods[label]
     i0, i1, n = window(d, period, last=args.extract_strokes)
     t = d["time"][i0:i1]
     fig, ax = plt.subplots(2, 5, figsize=(14, 5.5), sharex=True, constrained_layout=True)
@@ -161,7 +169,7 @@ def main():
       ref = phase_fit(t, d["ref_" + name][i0:i1], period, args.harmonics, args.samples)
       cmd = phase_fit(t, d["ctrl_" + name][i0:i1], period, args.harmonics, args.samples)
       fitted[name] = cmd
-      a.plot(phase, np.degrees(ref), color="#8a897f", linewidth=1.5, linestyle="--", label="reference gait")
+      a.plot(phase, np.degrees(ref), color="#8a897f", linewidth=1.5, linestyle="--", label="gait the planner started from")
       a.plot(phase, np.degrees(cmd), color=color[label], label=f"{label}, last {n} strokes")
       a.set_title(name)
       lo, hi = a.get_ylim()
@@ -181,7 +189,8 @@ def main():
       table = np.stack([fitted[nm] for nm in names], 1)
       out = args.out_dir / f"gait_{label}.csv"
       np.savetxt(out, table, delimiter=",", header=",".join(names), comments="", fmt="%.6f")
-      print(f"wrote {out} ({args.samples} samples, phase 0 = t mod {period:.4f} s = 0)")
+      print(f"wrote {out} ({args.samples} samples, phase 0 = t mod {period:.4f} s = 0; "
+            f"run it with --param=Cadence={cadence.get(label, 1.0):g})")
 
 
 if __name__ == "__main__":

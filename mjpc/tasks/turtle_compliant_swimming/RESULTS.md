@@ -73,3 +73,88 @@ almost all of it vertical, i.e. climbing).
   `cad_exports/README.md`), so absolute speeds carry that uncertainty too.
 * MJPC builds MuJoCo 3.2.3; turtle_simulator was checked with 3.3.7. The reference playback
   matches across the two.
+
+# Swimming faster (Oct 2026, second round)
+
+Goal: get closer to real sea-turtle speeds. For reference, wild loggerhead and green turtles
+cruise at 0.27–0.50 m/s, and inter-nesting green turtles at 0.52–0.60 carapace lengths per
+second. This robot is about 0.65 m long (shell plus head), so 0.5 BL/s ≈ 0.33 m/s.
+
+## Motor model
+
+The first round's servos (±10 N m, no speed limit) are optimistic. Per the turtle_3dswimming task, the
+motors are Dynamixel XW540-T260; the model applies that to all 10 joints (ROBOTIS e-manual: 40 rpm no-load and 9.5 N m stall at 12 V, 48 rpm and
+11.2 N m at 14.8 V). The reference gait already asks for 4.8 rad/s on shoulder 2, above the
+12 V no-load speed. `turtle_trajopt --motor=12V|14.8V` and `gait_study.py --motor` add the DC
+motor's torque-speed line: force limit = stall torque, plus joint damping = stall torque /
+no-load speed (back-EMF). The Power cost and energy figures now count shaft power, i.e. that
+damping is a loss inside the motor, not output. All runs below use `--kp=100` (a stiffer
+position loop; at kp 20 the servo lags the targets).
+
+## Where the speed comes from (`gait_study.py`, attitude locked, open loop)
+
+With the shell's rotation locked (translation only), each gait's thrust-limited speed can be
+measured without the pitch-stability problem:
+
+* Stroke rate alone: with the placeholder servos, speed rises from 0.093 m/s (reference) to
+  0.19 m/s at 3× the stroke rate. With the real motors it saturates at about 0.09 (12 V) to
+  0.115 m/s (14.8 V), because the motors can't follow a faster version of the same stroke.
+* CMA-ES over stroke rate, yaw/roll/twist amplitude and twist timing (200 evaluations):
+
+| motor | best stroke rate | yaw | roll | twist | speed, attitude locked |
+|---|---|---|---|---|---|
+| XW540-T260 12 V | 1.56× (1.23 s stroke) | 0.03 | 1.19 | 1.38 | 0.175 m/s |
+| XW540-T260 14.8 V | 2.10× (0.91 s stroke) | 0.00 | 1.20 | 1.17 | 0.203 m/s |
+| no speed limit (±10 N m) | 2.97× (0.64 s stroke) | 0.03 | 1.20 | 1.21 | 0.385 m/s, needs joint speeds ~30 rad/s |
+
+  Amplitudes are relative to the biological data (the reference gait uses yaw 0.5, roll 0.83,
+  twist 0.33). In every case the optimizer drops the fore-aft sweep, uses the full main stroke
+  (the 1.2 search bound), and uses about 3.5× more flipper twist than the reference. Open loop,
+  these fast gaits tumble on the free body (larger pitching moment), so they need the MPC.
+
+## MPC on the free robot
+
+Starting gait from the search, motor model in the rollouts, desired speed 0.4 m/s, otherwise
+as above:
+
+| run | speed along heading | max tilt | mean shaft power | energy | CoT |
+|---|---|---|---|---|---|
+| earlier result (placeholder servos, desired 0.15 m/s, Gait 0.1) | 0.078 m/s | 14° | 2.6 W | 33 J/m | 0.38 |
+| reference gait start, 14.8 V, Gait 0.1 | 0.163 m/s | 15° | 16.2 W | 100 J/m | 1.13 |
+| **fast gait start, 14.8 V, Gait 0.1** | **0.194 m/s** | **11°** | 18.3 W | 94 J/m | 1.07 |
+| fast gait start, 14.8 V, Gait 1 | 0.192 m/s | 15° | 19.5 W | 102 J/m | 1.15 |
+| fast gait start, 12 V, Gait 1 | 0.170 m/s | 16° | 13.0 W | 76 J/m | 0.87 |
+| MPC-optimized fast gait, **open loop**, 14.8 V | 0.192 m/s | 38° | 17.5 W | — | — |
+
+![fast runs](results/fast_paths.png)
+
+* **0.19 m/s straight and level, 2.5× the earlier result,** within the XW540-T260's 14.8 V
+  torque-speed limits. That's 0.30 BL/s: roughly half of a cruising sea turtle's size-normalized
+  speed, and below the low end of their absolute cruising speeds.
+* Most of the gain comes from stroke rate and the stiffer servo loop (the reference gait under
+  MPC already reaches 0.16 m/s). The searched gait adds another 20 %.
+* It costs about 3× more energy per metre than the slow gait (94 vs 33 J/m) and ~7× the power.
+  The motors run at their torque-speed envelope through much of the stroke. Stall torque is
+  not a continuous rating, so heating and battery draw need checking before trying this on the
+  robot.
+* The gait extracted from the fastest MPC run (`results/fast_gait_mpc_14V8.csv`, play with
+  `--param=Cadence=2.095`) keeps the speed open loop, but tilts up to 38° and yaws 17° without
+  feedback.
+* **Reaching real-turtle speed in this model needs faster actuators, not a better gait.** With
+  the speed limit removed, the search reaches 0.385 m/s (≈ 0.6 BL/s), but at joint speeds around
+  30 rad/s, about 6× the XW540-T260's no-load speed. Also note MuJoCo's ellipsoid fluid model
+  is the main uncertainty in absolute speed (see the caveats above).
+
+Files: `results/fast_gait_search_14V8.csv`, `results/fast_gait_search_12V.csv` (search
+results; cadence 2.095 and 1.558), `results/fast_gait_mpc_14V8.csv` (extracted from the MPC run).
+
+Reproduce:
+
+```bash
+python gait_study.py --turtle-sim ../../../../turtle_simulator --motor 14.8V --kp 100 \
+    search --budget 200 --vmax 99 --fmax 99 --max-cadence 2.5
+python gait_study.py --turtle-sim ... export --cadence 2.095 --yaw 0 --roll 1.198 \
+    --twist 1.167 --twist-shift 0.034 --out fast_gait.csv
+./turtle_trajopt --mode=mpc --duration=20 --kp=100 --motor=14.8V --gait_csv=fast_gait.csv \
+    --param=Cadence=2.095,Speed=0.4 --weight=Gait=0.1 --out=fast.csv
+```

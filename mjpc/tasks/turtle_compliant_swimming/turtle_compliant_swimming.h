@@ -24,6 +24,10 @@
 
 namespace mjpc {
 
+// Mechanical power at the output shaft of an actuator [W]: actuator torque
+// minus joint damping (back-EMF when the motor model is on), times velocity.
+double ShaftPower(const mjModel* model, const mjData* data, int actuator);
+
 // Straight, level swimming for the sea-turtle robot with compliant front
 // flippers (turtle_simulator's turtle_compliant.xml, default blade stiffness).
 //
@@ -42,8 +46,9 @@ namespace mjpc {
 //   [7-9]        Upright  cross(shell up axis, world z)
 //   [10-12]      AngVel   shell angular velocity (world frame)
 //   [13, 13+nu)  Gait     ctrl - reference gait target at the current phase
-//   [13+nu]      Power    sqrt(sum of positive actuator power); with the
-//                         quadratic norm the cost is 0.5 * weight * power [W]
+//   [13+nu]      Power    sqrt(sum of positive shaft power, see ShaftPower);
+//                         with the quadratic norm the cost is
+//                         0.5 * weight * power [W]
 //
 // Parameters (residual_* numerics in task.xml, in this order):
 //   Speed    desired forward speed [m/s]

@@ -74,6 +74,12 @@ ABSL_FLAG(std::string, gait_csv, "",
           "(uniform in time over one stroke), one column per actuator, "
           "header row with actuator names; same sample count as "
           "reference_gait.xml (e.g. a gait extracted by analyze_runs.py)");
+ABSL_FLAG(std::string, motor, "",
+          "motor torque-speed limit: empty = task.xml servos (placeholder "
+          "+-10 N m, no speed limit); 12V or 14.8V = Dynamixel XW540-T260 "
+          "stall torque as the force limit plus back-EMF joint damping "
+          "stall torque / no-load speed");
+ABSL_FLAG(double, kp, 0, "servo position gain override [N m/rad] (0: keep)");
 ABSL_FLAG(std::string, out, "", "CSV log path (empty: no log)");
 ABSL_FLAG(double, log_dt, 0.01, "CSV log interval [s]");
 
@@ -200,6 +206,35 @@ int main(int argc, char** argv) {
     model->numeric_data[model->numeric_adr[id]] = value;
   }
 
+  // actuator overrides go into the model before the agent copies it
+  const double kp = absl::GetFlag(FLAGS_kp);
+  if (kp > 0) {
+    for (int i = 0; i < model->nu; i++) {
+      model->actuator_gainprm[i * mjNGAIN] = kp;
+      model->actuator_biasprm[i * mjNBIAS + 1] = -kp;
+    }
+  }
+  const std::string motor = absl::GetFlag(FLAGS_motor);
+  if (!motor.empty()) {
+    // XW540-T260, ROBOTIS e-manual: no-load speed, stall torque
+    double rpm = 0, stall = 0;
+    if (motor == "12V") {
+      rpm = 40, stall = 9.5;
+    } else if (motor == "14.8V") {
+      rpm = 48, stall = 11.2;
+    } else {
+      mju_error("--motor must be 12V or 14.8V");
+    }
+    double w0 = rpm * 2 * M_PI / 60;
+    for (int i = 0; i < model->nu; i++) {
+      model->actuator_forcerange[2 * i] = -stall;
+      model->actuator_forcerange[2 * i + 1] = stall;
+      model->actuator_forcelimited[i] = 1;
+      int joint = model->actuator_trnid[2 * i];
+      model->dof_damping[model->jnt_dofadr[joint]] += stall / w0;
+    }
+  }
+
   const std::string gait_csv = absl::GetFlag(FLAGS_gait_csv);
   if (!gait_csv.empty()) LoadGaitCsv(gait_csv, model);
 
@@ -239,6 +274,12 @@ int main(int argc, char** argv) {
               << " (0 sampling, 2 iLQG, 6 sample-gradient), horizon " << agent.Horizon() << " s, threads "
               << absl::GetFlag(FLAGS_threads)
               << (seed ? ", nominal seeded from reference gait" : "") << "\n";
+  }
+  if (!motor.empty() || kp > 0) {
+    std::cout << "actuators: kp " << model->actuator_gainprm[0] << ", force limit "
+              << model->actuator_forcerange[1]
+              << (motor.empty() ? "" : ", motor " + motor + " back-EMF damping")
+              << "\n";
   }
   std::cout << "weights:";
   for (int i = 0; i < task->num_term; i++) {
@@ -331,7 +372,7 @@ int main(int argc, char** argv) {
     x.up_z = xmat[8];
     x.power = 0.0;
     for (int i = 0; i < model->nu; i++) {
-      x.power += mju_max(data->actuator_force[i] * data->actuator_velocity[i], 0.0);
+      x.power += mju_max(mjpc::ShaftPower(model, data, i), 0.0);
     }
     x.cost = task->CostValue(residual.data());
     samples.push_back(x);
