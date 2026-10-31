@@ -38,6 +38,8 @@ add_library(
   tasks/tasks.h
   tasks/turtle_3dswimming/turtle_3dswimming.cc
   tasks/turtle_3dswimming/turtle_3dswimming.h
+  tasks/turtle_compliant_swimming/turtle_compliant_swimming.cc
+  tasks/turtle_compliant_swimming/turtle_compliant_swimming.h
   tasks/crab_swimming/crab_swimming.cc
   tasks/crab_swimming/crab_swimming.h
   tasks/paddle_crab_swimming/paddle_crab_swimming.cc
@@ -238,6 +240,25 @@ target_include_directories(testspeed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_options(testspeed PUBLIC ${MJPC_COMPILE_OPTIONS})
 target_link_options(testspeed PRIVATE ${MJPC_LINK_OPTIONS})
 target_compile_definitions(testspeed PRIVATE MJSIMULATE_STATIC)
+
+# Headless trajectory optimization for the TurtleCompliantSwimming task.
+add_executable(
+  turtle_trajopt
+  tasks/turtle_compliant_swimming/turtle_trajopt.cc
+)
+target_link_libraries(
+  turtle_trajopt
+  absl::flags
+  absl::flags_parse
+  absl::strings
+  libmjpc
+  mujoco::mujoco
+  threadpool
+  Threads::Threads
+)
+target_include_directories(turtle_trajopt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_compile_options(turtle_trajopt PUBLIC ${MJPC_COMPILE_OPTIONS})
+target_link_options(turtle_trajopt PRIVATE ${MJPC_LINK_OPTIONS})
 
 add_subdirectory(tasks)
 

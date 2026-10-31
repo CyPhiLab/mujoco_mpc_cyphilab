@@ -1,0 +1,53 @@
+<mujoco model="Turtle Compliant Swimming">
+  <!-- Sea-turtle robot with compliant front flippers (turtle_simulator turtle_compliant.xml,
+       default blade stiffness), servo actuators, starting from the turtle_simulator gait.
+       Regenerate the two included model files with prepare_model.py / make_reference_gait.py. -->
+  <include file="../common.xml"/>
+  <include file="turtle_compliant_mjpc.xml"/>
+  <include file="reference_gait.xml"/>
+
+  <size memory="64M"/>
+
+  <custom>
+    <!-- agent -->
+    <numeric name="agent_planner" data="0"/>
+    <numeric name="agent_horizon" data="1.0"/>
+    <numeric name="agent_timestep" data="0.01"/>
+    <numeric name="sampling_trajectories" data="32"/>
+    <numeric name="sampling_spline_points" data="10"/>
+    <numeric name="sampling_exploration" data="0.05"/>
+    <numeric name="gradient_spline_points" data="10"/>
+    <numeric name="estimator" data="0"/>
+
+    <!-- residual parameters: default, GUI slider lower, upper -->
+    <numeric name="residual_Speed" data="0.15 0 0.5"/>
+    <numeric name="residual_Heading" data="0 -3.14159 3.14159"/>
+    <numeric name="residual_Cadence" data="1 0.5 2"/>
+    <numeric name="residual_Phase" data="0 0 1"/>
+  </custom>
+
+  <worldbody>
+    <light name="sun" pos="0 0 4" dir="0 0 -1" directional="true"/>
+    <!-- seabed for visual reference only (contacts are disabled) -->
+    <geom name="seabed" type="plane" size="0 0 0.1" pos="0 0 -1.5" material="blue_grid"
+          contype="0" conaffinity="0"/>
+  </worldbody>
+
+  <sensor>
+    <!-- cost terms: user="norm weight weight_min weight_max" (norm 0 = quadratic) -->
+    <user name="Speed" dim="1" user="0 20 0 100"/>
+    <user name="Slip" dim="3" user="0 10 0 100"/>
+    <user name="Heading" dim="3" user="0 2 0 20"/>
+    <user name="Upright" dim="3" user="0 2 0 20"/>
+    <user name="AngVel" dim="3" user="0 0.2 0 5"/>
+    <user name="Gait" dim="10" user="0 1 0 20"/>
+    <user name="Power" dim="1" user="0 0.01 0 1"/>
+
+    <!-- read by the residual -->
+    <subtreelinvel name="com_linvel" body="fr13_s105k"/>
+    <frameangvel name="shell_angvel" objtype="body" objname="fr13_s105k"/>
+
+    <!-- trace drawn by the GUI -->
+    <framepos name="trace0" objtype="site" objname="head"/>
+  </sensor>
+</mujoco>
