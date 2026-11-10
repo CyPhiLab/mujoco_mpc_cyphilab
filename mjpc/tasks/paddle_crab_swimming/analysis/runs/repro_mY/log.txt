@@ -1,9 +1,0 @@
-search: 256 seeds at dt 0.002
- start 0: seed 90 cost 94.35 v +0.0582 T 1.127
-  lm    1 cost    81.2452 mu  3.3e-03 v +0.0599 T 1.128 lat +0.0001 yaw -0.000 cyc 0.542 eff 0.394 sat 0.047
-  lm    2 cost    75.8940 mu  1.1e+02 v +0.0609 T 1.129 lat +0.0000 yaw -0.000 cyc 0.525 eff 0.388 sat 0.047
-  lm    3 cost    65.2081 mu  3.7e+01 v +0.0632 T 1.129 lat +0.0001 yaw -0.000 cyc 0.480 eff 0.383 sat 0.046
-  lm    4 cost    61.9166 mu  1.2e+02 v +0.0639 T 1.130 lat +0.0000 yaw -0.000 cyc 0.463 eff 0.382 sat 0.046
-  lm    5 cost    53.9702 mu  4.1e+01 v +0.0657 T 1.130 lat +0.0001 yaw +0.000 cyc 0.420 eff 0.381 sat 0.046
-  lm    6 cost    38.9307 mu  1.4e+01 v +0.0692 T 1.131 lat +0.0001 yaw +0.000 cyc 0.280 eff 0.392 sat 0.045
- start 1: seed 104 cost 100.02 v +0.0457 T 1.173
