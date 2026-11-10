@@ -1,0 +1,2 @@
+search: 176 seeds at dt 0.002
+ start 0: seed 59 cost 113.82 v +0.0297 T 1.787
