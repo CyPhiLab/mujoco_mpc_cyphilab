@@ -38,7 +38,10 @@ struct PaddleCrabGait;
 // While a gait runs, the emergent-rhythm terms (Symmetry, RowPhase,
 // Periodicity) are switched off, since the primitive already carries the
 // rhythm, and Forward/Lateral use the gait's own swim direction in place of
-// the ForwardAxis sliders.
+// the ForwardAxis sliders. A turning primitive (nonzero yaw rate) moves the
+// Heading target at its yaw rate, and one that turns on the spot drops the
+// Forward reward; a vertical primitive (up/down) makes Lateral and Depth hold
+// the horizontal position instead.
 //
 // Residual layout (56). Each steering term is error + lead * rate-of-error, and
 // the rhythm terms treat (qdot/omega, q) as a phasor per joint:

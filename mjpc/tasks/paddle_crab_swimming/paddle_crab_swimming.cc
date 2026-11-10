@@ -21,12 +21,14 @@ namespace mjpc {
 // analysis/export_gaits.py: per actuator a Fourier series in phase,
 //   u_i(phase) = c_i + sum_k a_ik cos(2 pi k phase) + b_ik sin(2 pi k phase)
 // in radians. The numeric "gait_<name>" holds
-//   period, K, speed, direction (3), c (nu), a (nu x K), b (nu x K),
-//   limit (nu),
+//   period, K, speed, direction (3), yaw rate, c (nu), a (nu x K),
+//   b (nu x K), limit (nu),
 // where direction is the world swim direction the gait was optimized for
-// (the body keeps its heading; the direction picks which side leads) and
-// limit the per-servo command range it was optimized with (the optimizer may
-// lift the task's ctrlranges).
+// (the body keeps its heading; the direction picks which side leads, and may
+// point up or down), yaw rate the turn rate of a turning primitive (rad/s,
+// counterclockwise from above; 0 for a straight one) and limit the per-servo
+// command range it was optimized with (the optimizer may lift the task's
+// ctrlranges). The older layout without the yaw rate is still read.
 struct PaddleCrabGait {
 	std::string name;
 	double period = 1.0;
@@ -34,6 +36,7 @@ struct PaddleCrabGait {
 	int k = 0;
 	double speed = 0.0;
 	double direction[3] = {0.0, -1.0, 0.0};
+	double yaw_rate = 0.0;
 	std::vector<double> c, a, b, limit;
 
 	double Command(int i, double phase) const {
@@ -89,8 +92,9 @@ std::shared_ptr<const Gait> LoadGait(const mjModel* model,
 	if (id < 0) return nullptr;
 	const double* data = model->numeric_data + model->numeric_adr[id];
 	const int size = model->numeric_size[id];
-	constexpr int kHeader = 6;  // period, K, speed, direction (3)
-	if (size < kHeader) return nullptr;
+	// period, K, speed, direction (3)[, yaw rate]
+	constexpr int kLegacyHeader = 6;
+	if (size < kLegacyHeader) return nullptr;
 	auto gait = std::make_shared<Gait>();
 	gait->name = name;
 	gait->period = data[0];
@@ -99,12 +103,17 @@ std::shared_ptr<const Gait> LoadGait(const mjModel* model,
 	mju_copy3(gait->direction, data + 3);
 	gait->nu = model->nu;
 	const int nu = gait->nu, k = gait->k;
-	if (gait->period <= 0 || k < 0 || size != kHeader + nu * (2 + 2 * k) ||
+	const int body = nu * (2 + 2 * k);
+	int header = -1;
+	if (size == kLegacyHeader + body) header = kLegacyHeader;
+	if (size == kLegacyHeader + 1 + body) header = kLegacyHeader + 1;
+	if (gait->period <= 0 || k < 0 || header < 0 ||
 			mju_normalize3(gait->direction) < mjMINVAL) {
 		mju_warning("PaddleCrabSwimming: malformed gait_%s", name.c_str());
 		return nullptr;
 	}
-	const double* coef = data + kHeader;
+	if (header > kLegacyHeader) gait->yaw_rate = data[kLegacyHeader];
+	const double* coef = data + header;
 	gait->c.assign(coef, coef + nu);
 	gait->a.assign(coef + nu, coef + nu + nu * k);
 	gait->b.assign(coef + nu + nu * k, coef + nu + 2 * nu * k);
@@ -231,7 +240,10 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 																							double* residual) const {
 	int counter = 0;
 
-	// Forward axis, and the horizontal axis to its left.
+	// Forward axis, the horizontal axis to its left, and the axis completing
+	// the frame (world up for a horizontal forward axis). For a vertical axis
+	// (an up/down primitive) lateral is world +X and "vertical" world +-Y, so
+	// Lateral and Depth then hold the horizontal position.
 	// A running gait swims in the direction it was optimized for.
 	const Gait* gait_primitive = active_gait.load(std::memory_order_relaxed);
 	double forward[3] = {parameters_[kForwardX], parameters_[kForwardY],
@@ -241,6 +253,23 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	const double up[3] = {0.0, 0.0, 1.0};
 	double lateral[3];
 	mju_cross(lateral, up, forward);
+	if (mju_normalize3(lateral) < mjMINVAL) {
+		lateral[0] = 1.0;
+		lateral[1] = lateral[2] = 0.0;
+	}
+	double vertical[3] = {0.0, 0.0, 1.0};
+	if (forward[2] != 0.0) {
+		mju_cross(vertical, forward, lateral);
+		mju_normalize3(vertical);
+	}
+	// A turning primitive turns at its yaw rate from when its clock started,
+	// and one that turns on the spot has no forward speed to reward.
+	const double yaw_rate = gait_primitive ? gait_primitive->yaw_rate : 0.0;
+	const double turned =
+			yaw_rate *
+			(data->time - gait_start_time.load(std::memory_order_relaxed));
+	const bool on_the_spot =
+			gait_primitive && mju_abs(gait_primitive->speed) < 1e-3;
 
 	double* pos = SensorByName(model, data, "base_pos");
 	double* linvel = SensorByName(model, data, "base_linvel");
@@ -258,7 +287,7 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 	// Null norm, so this is a linear reward on speed rather than a target to
 	// settle on: the gradient never vanishes, which is what lets the planner
 	// find a stroke instead of stalling once it is "fast enough".
-	residual[counter++] = -mju_dot3(linvel, forward);
+	residual[counter++] = on_the_spot ? 0.0 : -mju_dot3(linvel, forward);
 
 	// ----- Lateral ----- //
 	residual[counter++] =
@@ -266,15 +295,22 @@ void PaddleCrabSwimming::ResidualFn::Residual(const mjModel* model,
 
 	// ----- Heading ----- //
 	// The body spawns aligned with the world, so any y-component of its x-axis
-	// is a yaw error.
-	residual[counter++] = xaxis[1] + lead_path * angvel[2];
+	// is a yaw error. A turning primitive's target heading turns with it: the
+	// error is then sin(yaw - turned).
+	residual[counter++] = xaxis[1] * mju_cos(turned) -
+												xaxis[0] * mju_sin(turned) +
+												lead_path * (angvel[2] - yaw_rate);
 
 	// ----- Level ----- //
 	residual[counter++] = zaxis[0] + lead_attitude * angvel[1];
 	residual[counter++] = zaxis[1] - lead_attitude * angvel[0];
 
 	// ----- Depth ----- //
-	residual[counter++] = pos[2] - model->qpos0[2] + lead_attitude * linvel[2];
+	// pos[2] - qpos0[2] for a horizontal forward axis.
+	double offset[3];
+	mju_sub3(offset, pos, model->qpos0);
+	residual[counter++] = mju_dot3(vertical, offset) +
+												lead_attitude * mju_dot3(vertical, linvel);
 
 	// ----- Effort ----- //
 	for (int i = 0; i < model->nu; ++i) {

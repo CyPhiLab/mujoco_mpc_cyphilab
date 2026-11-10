@@ -13,8 +13,9 @@ A gait is scored on its limit cycle: the robot is rolled out from a start
 state for `warm` cycles and then `measure` cycles, and only the measured
 window counts. Its residual vector (least squares, everything scaled so 1 is
 "this much error") holds
-  speed       mean forward speed (world -Y) minus the target
-  straight    lateral drift rate, yaw rate, depth rate, mean heading
+  speed       mean speed along the swim direction minus the target
+  straight    lateral drift rate, yaw rate (minus its target), depth rate,
+              mean heading (off while turning)
   level       steady body tilt (weight 'tilt') and its oscillation
               about that ('wobble')
   cycle       state at the start of the last cycle minus at its end
@@ -31,6 +32,7 @@ Levenberg-Marquardt on theta, with the Jacobian from forward differences done
 as one batched rollout (lm). Per-step controls (iLQR) are not used: they
 would not stay periodic.
 """
+import json
 import multiprocessing as mp
 import os
 
@@ -122,13 +124,19 @@ class Problem:
   def __init__(self, dt=0.005, k=K_DEFAULT, warm=3, measure=2,
                speed=0.05, max_speed=False, weights=None, x0=None,
                tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
-               design=None, reference=None, fixed_period=None):
+               design=None, reference=None, fixed_period=None,
+               yaw_rate=0.0):
     self.dt, self.warm, self.measure = dt, warm, measure
-    # Swim direction in the world xy-plane; the body keeps its start heading,
-    # so this picks which side of the robot leads.
+    # Swim direction in the world frame; the body keeps its start heading,
+    # so this picks which side of the robot leads. It may point up or down
+    # (vertical primitives).
     self.direction = np.array(direction, dtype=float)
     self.direction /= np.linalg.norm(self.direction)
-    self.lateral = np.cross([0.0, 0.0, 1.0], self.direction)
+    self.lateral, self.vertical = drift_axes(self.direction)
+    # Yaw rate target (rad/s, + is counterclockwise seen from above): turning
+    # primitives. While turning the mean-heading residual is off and the tilt
+    # is measured in the turning heading frame.
+    self.yaw_rate = float(yaw_rate)
     self.speed, self.max_speed = speed, max_speed
     self.weights = dict(DEFAULT_WEIGHTS, **(weights or {}))
     self.layout = Layout(k)
@@ -156,7 +164,8 @@ class Problem:
                 x0=self.x0.tolist(), direction=self.direction.tolist(),
                 ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau,
                 reference=None if self.reference is None
-                else self.reference.tolist(), fixed_period=self.fixed_period)
+                else self.reference.tolist(), fixed_period=self.fixed_period,
+                yaw_rate=self.yaw_rate)
 
   def fix(self, thetas):
     """thetas with the fixed period, if there is one."""
@@ -216,7 +225,7 @@ class Problem:
     disp = p1 - p0
     speed = float(self.direction @ disp) / duration
     lateral = float(self.lateral @ disp) / duration
-    depth = float(disp[2]) / duration
+    depth = float(self.vertical @ disp) / duration
 
     R = C.quat_to_mat(qpos[:, 3:7])
     yaw = np.unwrap(C.yaw_of(R))
@@ -224,6 +233,13 @@ class Problem:
     yaw0 = C.yaw_of(C.quat_to_mat(self.x0[L.qpos][3:7]))
     heading = float(np.mean(yaw[window]) - yaw0)
     tilt = R[window][:, :2, 2]                          # body z in world xy
+    turning = self.yaw_rate != 0.0
+    if turning:
+      # Body z in the heading frame, which turns with the body.
+      cy, sy = np.cos(yaw[window]), np.sin(yaw[window])
+      tilt = np.stack([cy * tilt[:, 0] + sy * tilt[:, 1],
+                       -sy * tilt[:, 0] + cy * tilt[:, 1]], axis=1)
+      heading = 0.0
     tilt_mean = tilt.mean(axis=0)
     tilt_rms = float(np.sqrt(np.mean(np.sum((tilt - tilt_mean) ** 2, -1))))
 
@@ -271,7 +287,7 @@ class Problem:
     r = np.concatenate([
         [np.sqrt(w['speed']) * r_speed,
          np.sqrt(w['lateral']) * lateral / S_LATERAL,
-         np.sqrt(w['yaw']) * yaw_rate / S_YAW,
+         np.sqrt(w['yaw']) * (yaw_rate - self.yaw_rate) / S_YAW,
          np.sqrt(w['depth']) * depth / S_DEPTH,
          np.sqrt(w['heading']) * heading / S_HEADING],
         np.sqrt(w['tilt']) * tilt_mean / S_TILT,
@@ -286,6 +302,7 @@ class Problem:
     ])
     metrics = dict(
         period=period, speed=speed, lateral_rate=lateral, yaw_rate=yaw_rate,
+        yaw_rate_target=self.yaw_rate,
         depth_rate=depth, heading=heading, tilt_mean=float(np.hypot(*tilt_mean)),
         tilt_rms=tilt_rms, cycle_error=float(np.sqrt(np.mean(cycle ** 2))),
         effort=effort, saturated=saturated,
@@ -317,6 +334,38 @@ class Problem:
            * self.half[:, None]).T
     return dict(phase=phase, time=times, qpos=x[:, L.qpos], qvel=x[:, L.qvel],
                 act=x[:, L.act], ctrl=cmd, state=x[0])
+
+
+def step_design(z):
+  """A step npz's design overrides ({} in files older than the field)."""
+  return json.loads(str(z['design'])) if 'design' in z else {}
+
+
+def step_tau(z):
+  return float(z['tau']) if 'tau' in z else C.TAU
+
+
+def step_half(z):
+  """A step npz's command half-ranges (the task's in older files)."""
+  if 'half' in z:
+    return np.asarray(z['half'])
+  return C.load_model(ground=False).actuator_ctrlrange[:, 1].copy()
+
+
+def drift_axes(direction):
+  """The two axes drift is measured along for a swim direction: lateral
+  (horizontal, to the left of the direction) and vertical (completing the
+  frame; world up for a horizontal direction). For a vertical direction the
+  lateral axis is world +X and the "vertical" one world +-Y."""
+  up = np.array([0.0, 0.0, 1.0])
+  lateral = np.cross(up, direction)
+  if np.linalg.norm(lateral) < 1e-9:
+    lateral = np.array([1.0, 0.0, 0.0])
+  lateral /= np.linalg.norm(lateral)
+  if abs(direction[2]) < 1e-12:
+    return lateral, up
+  vertical = np.cross(direction, lateral)
+  return lateral, vertical / np.linalg.norm(vertical)
 
 
 def reference_at(reference, phase):

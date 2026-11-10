@@ -38,6 +38,17 @@ with real physics; the ladder then starts above that speed and keeps the
 tracking term (--weights track=W, default 1) as a regulariser on the
 stroke's shape.
 
+Turning primitives: --yaw_ladder W1 W2 ... runs the ladder over yaw-rate
+targets (rad/s, + turns left / counterclockwise from above) instead of speed,
+with the translation speed held at --turn_speed (default 0: turn on the spot);
+rungs are named w<W>. --yaw_rate W holds a yaw target through a speed ladder
+(arcs). Vertical primitives: --direction 0 0 1 (or -1).
+
+Seeds: --seed_style library adds the gaits in --seed_files (and their
+left/right mirror images) to the search batch, e.g. the -Y and +X gaits when
+searching a diagonal; splice adds every pairing of their right legs with
+another's left legs (seeds for turning).
+
 Every step writes stepK_<name>.npz (theta, metrics, limit cycle samples),
 stepK_<name>_controls.npy (one cycle of servo commands at the step's dt) and,
 with MUJOCO_GL set, a video and plots; the run writes args.json and
@@ -84,6 +95,7 @@ class Chain:
         self.summary = json.load(f)
     self.step = 0
     self.x0 = None          # None: start from rest; else a steady state
+    self.turning = bool(args.yaw_ladder)
     model = C.load_model(ground=False, ctrl_limit=args.ctrl_limit,
                          design=parse_weights(args.design))
     self.state_layout = C.StateLayout(model)
@@ -102,8 +114,9 @@ class Chain:
     with open(os.path.join(self.out, 'log.txt'), 'a') as f:
       f.write(text + '\n')
 
-  def problem(self, dt, speed, x0=None, weights=None):
+  def problem(self, dt, speed, x0=None, weights=None, yaw=None):
     a = self.args
+    yaw = a.yaw_rate if yaw is None else yaw
     return G.Problem(dt=dt, k=a.k, warm=a.warm if x0 is None else a.warm_steady,
                      measure=a.measure, speed=speed,
                      weights=dict(self.weights, **(weights or {})),
@@ -111,17 +124,21 @@ class Chain:
                      design=self.design, tau=a.tau,
                      reference=None if self.reference is None
                      else self.reference['angles'],
-                     fixed_period=a.fix_period)
+                     fixed_period=a.fix_period, yaw_rate=yaw)
 
   def straight(self, metrics):
     a = self.args
     return bool(abs(metrics['lateral_rate']) <= a.drift_tol
                 and metrics['saturated'] <= a.saturation_tol)
 
-  def feasible(self, metrics, speed):
+  def feasible(self, metrics, speed, yaw=0.0):
     a = self.args
     tol = max(a.speed_tol, a.speed_rtol * speed)
-    return bool(abs(metrics['speed'] - speed) <= tol and self.straight(metrics))
+    ok = abs(metrics['speed'] - speed) <= tol and self.straight(metrics)
+    if self.turning or yaw:
+      ok = ok and abs(metrics['yaw_rate'] - yaw) <= max(
+          a.yaw_tol, a.speed_rtol * abs(yaw))
+    return bool(ok)
 
   def steady_state(self, path):
     """The limit-cycle state at phase 0 of a saved step, moved back to the
@@ -130,6 +147,10 @@ class Chain:
     state = np.load(path)['state'].copy()
     state[L.time] = 0.0
     state[L.qpos][:3] = self.rest[L.qpos][:3]
+    if self.turning:
+      # A turning gait's cycle ends turned; take the yaw out so every step
+      # starts at the rest heading (world linear velocity turned with it).
+      remove_yaw(state, L)
     return state
 
   def save(self, name, problem, theta, history, stage, seconds):
@@ -155,7 +176,8 @@ class Chain:
       json.dump(history, f)
     row = dict(step=self.step, name=name, stage=stage, dt=problem.dt,
                speed_target=problem.speed,
-               feasible=self.feasible(metrics, problem.speed),
+               feasible=self.feasible(metrics, problem.speed,
+                                      problem.yaw_rate),
                straight=self.straight(metrics),
                from_rest=problem.warm == self.args.warm,
                symmetry_index=G.symmetry_index(problem.layout, theta),
@@ -192,16 +214,20 @@ class Chain:
       history += h
     return problem.fix(theta), history, time.time() - t0
 
-  def search(self, speed):
+  def search(self, speed, yaw=None):
     a = self.args
-    problem = self.problem(a.dts[0], speed)
+    problem = self.problem(a.dts[0], speed, yaw=yaw)
     t0 = time.time()
     families = {
         'random': lambda n: G.seeds(problem.layout, n=n, seed=a.seed),
         'wide': lambda n: G.seeds(problem.layout, n=n, seed=a.seed + 1,
                                   offset=0.8),
         'crab': lambda n: G.crab_seeds(problem.layout, problem.half, n=n,
-                                       direction=a.direction, seed=a.seed)}
+                                       direction=a.direction, seed=a.seed),
+        'library': lambda n: library_seeds(a.seed_files, problem.layout,
+                                           problem.half),
+        'splice': lambda n: splice_seeds(library_seeds(
+            a.seed_files, problem.layout, problem.half), problem.layout)}
     styles = a.seed_style.split('+')
     seeds = np.concatenate([families[style](a.seeds // len(styles))
                             for style in styles])
@@ -259,15 +285,29 @@ class Chain:
       v *= a.speed_growth
     return speeds
 
+  def targets(self, speeds):
+    """Rungs as (name, speed, yaw rate)."""
+    a = self.args
+    if self.turning:
+      return [(f'w{w:g}', a.turn_speed, w) for w in a.yaw_ladder]
+    return [(f'v{v:g}', v, a.yaw_rate) for v in speeds]
+
   def run(self):
     a = self.args
     dt0 = a.dts[0]
     speeds = self.ladder()
-    rungs = []    # (name, theta, speed, x0) of every rung met, at dt0
+    rungs = []    # (name, theta, speed, x0, yaw) of every rung met, at dt0
     best_effort = None
 
     def solver(problem, theta, iters, es_iters=0):
       return lambda: (problem,) + self.solve(problem, theta, iters, es_iters)
+
+    def progress(row):
+      """What the ladder climbs: speed, or yaw rate (in the target's
+      sense) for a turning ladder."""
+      if self.turning:
+        return float(np.sign(a.yaw_ladder[0]) * row['yaw_rate'])
+      return row['speed']
 
     if self.reference is not None and not a.init:
       layout = G.Layout(a.k)
@@ -299,57 +339,111 @@ class Chain:
         self.x0 = self.steady_state(a.init)
       self.log(f'init from {a.init}')
     else:
-      theta, _ = self.run_step(f'v{speeds[0]:g}_dt{dt0:g}_search', 'search',
-                               lambda: self.search(speeds[0]))
+      name0, speed0, yaw0 = self.targets(speeds)[0]
+      theta, _ = self.run_step(f'{name0}_dt{dt0:g}_search', 'search',
+                               lambda: self.search(speed0, yaw0))
 
-    for speed in speeds:
-      problem = self.problem(dt0, speed, self.x0)
-      theta_v, row = self.run_step(f'v{speed:g}_dt{dt0:g}', 'speed',
+    for rung, speed, yaw in self.targets(speeds):
+      problem = self.problem(dt0, speed, self.x0, yaw=yaw)
+      theta_v, row = self.run_step(f'{rung}_dt{dt0:g}', 'speed',
                                    solver(problem, theta, a.lm_iters))
       # A missed rung is retried from where it got to (the first retry
       # through the ES) for as long as each attempt still gains speed.
       for attempt in range(1, a.patience + 1):
         if row['feasible']:
           break
-        reached = row['speed']
-        self.log(f' v {speed:g} not met (reached {reached:.4f}), retry '
-                 f'{attempt}')
-        problem = self.problem(dt0, speed, self.x0)
+        reached = progress(row)
+        self.log(f' {rung} not met (reached v {row["speed"]:.4f} yaw '
+                 f'{row["yaw_rate"]:+.4f}), retry {attempt}')
+        problem = self.problem(dt0, speed, self.x0, yaw=yaw)
         theta_v, row = self.run_step(
-            f'v{speed:g}_dt{dt0:g}_r{attempt}', 'speed',
+            f'{rung}_dt{dt0:g}_r{attempt}', 'speed',
             solver(problem, theta_v, a.lm_iters,
                    a.es_iters if attempt == 1 else 0))
-        if row['speed'] < reached * (1 + a.min_gain):
+        if progress(row) < reached * (1 + a.min_gain):
           break
       if not row['feasible']:
-        self.log(f' v {speed:g} missed (reached {row["speed"]:.4f}); '
-                 'ending the ladder')
-        fastest = rungs[-1][2] if rungs else 0.0
-        if row['straight'] and row['speed'] > fastest:
-          best_effort = ('max', theta_v, speed, self.x0)
+        self.log(f' {rung} missed (reached v {row["speed"]:.4f} yaw '
+                 f'{row["yaw_rate"]:+.4f}); ending the ladder')
+        best = rungs[-1][5] if rungs else 0.0
+        if row['straight'] and progress(row) > best:
+          best_effort = ('max', theta_v, speed, self.x0, yaw, progress(row))
         break
       theta = theta_v
-      rungs.append((f'v{speed:g}', theta.copy(), speed, self.x0))
+      rungs.append((rung, theta.copy(), speed, self.x0, yaw, progress(row)))
 
     finals = rungs if a.refine_all else rungs[-1:]
     if best_effort:
       finals = finals + [best_effort]
-    for name, theta, speed, x0 in finals:
+    for name, theta, speed, x0, yaw, _ in finals:
       self.x0 = x0
       row = None
       for dt in a.dts[1:]:
-        problem = self.problem(dt, speed, self.x0)
+        problem = self.problem(dt, speed, self.x0, yaw=yaw)
         theta, row = self.run_step(f'{name}_dt{dt:g}', 'dt',
                                    solver(problem, theta, a.refine_iters))
       if row is None or 'plan_dt_check' in row:
         continue
-      check = self.problem(C.PLAN_DT, speed, self.x0)
+      check = self.problem(C.PLAN_DT, speed, self.x0, yaw=yaw)
       _, info = check.evaluate(theta[None])
       row['plan_dt_check'] = info[0]
       with open(self.summary_path, 'w') as f:
         json.dump(self.summary, f, indent=2)
       self.log(f' {name}: at the planner dt {C.PLAN_DT} it swims '
                f'{info[0]["speed"]:+.4f} m/s (sim {row["speed"]:.4f})')
+
+
+def remove_yaw(state, L):
+  """Turns a full-physics state about world z so the body's heading is the
+  rest heading (zero yaw); free-joint world linear velocity turns with it,
+  the body-frame angular velocity does not change."""
+  qpos = state[L.qpos]
+  yaw = float(C.yaw_of(C.quat_to_mat(qpos[3:7])))
+  half = -0.5 * yaw
+  qz = np.array([np.cos(half), 0.0, 0.0, np.sin(half)])
+  w1, x1, y1, z1 = qz
+  w2, x2, y2, z2 = qpos[3:7]
+  qpos[3:7] = [w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
+               w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+               w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+               w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2]
+  c, s = np.cos(-yaw), np.sin(-yaw)
+  qvel = state[L.qvel]
+  vx, vy = qvel[0], qvel[1]
+  qvel[0], qvel[1] = c * vx - s * vy, s * vx + c * vy
+  state[L.qpos], state[L.qvel] = qpos, qvel
+
+
+def library_seeds(paths, layout, half):
+  """Saved gaits and their left/right mirror images, as seeds for this
+  layout (harmonics padded or cut) and these command half-ranges."""
+  out = []
+  for path in paths or []:
+    z = np.load(path, allow_pickle=True)
+    theta = G.Layout(int(z['k'])).with_k(z['theta'], layout.k)
+    old = z['half'] if 'half' in z else \
+        C.load_model(ground=False).actuator_ctrlrange[:, 1]
+    theta = G.rescale_theta(layout, theta, old, half)
+    out += [G.clip_theta(layout, theta),
+            G.clip_theta(layout, G.mirror_theta(layout, theta))]
+  return np.array(out).reshape(-1, layout.size)
+
+
+def splice_seeds(thetas, layout):
+  """Right legs from one gait, left legs from another (period of the first),
+  for every ordered pair: e.g. right legs rowing toward -Y and left legs
+  toward +Y, a turn."""
+  out = []
+  for i, ti in enumerate(thetas):
+    for j, tj in enumerate(thetas):
+      if i == j:
+        continue
+      log_t, c, a, b = layout.split(ti)
+      _, c2, a2, b2 = layout.split(tj)
+      c, a, b = c.copy(), a.copy(), b.copy()
+      c[9:], a[9:], b[9:] = c2[9:], a2[9:], b2[9:]
+      out.append(layout.join(np.exp(log_t), c, a, b))
+  return np.array(out).reshape(-1, layout.size)
 
 
 def load_reference(path, mode, nphase=200):
@@ -380,6 +474,15 @@ def main():
                  help='refine every rung met, not just the fastest')
   p.add_argument('--direction', type=float, nargs=3, default=[0, -1, 0],
                  help='swim direction (world); the body keeps its heading')
+  p.add_argument('--yaw_rate', type=float, default=0.0,
+                 help='yaw-rate target (rad/s) held through a speed ladder')
+  p.add_argument('--yaw_ladder', type=float, nargs='*', default=[],
+                 help='turning primitives: ladder over these yaw-rate '
+                      'targets (rad/s) with the speed held at --turn_speed')
+  p.add_argument('--turn_speed', type=float, default=0.0,
+                 help='speed target along --direction during a yaw ladder')
+  p.add_argument('--yaw_tol', type=float, default=0.01,
+                 help='yaw-rate tolerance of a turning rung (rad/s)')
   p.add_argument('--dts', type=float, nargs='+', default=[0.002, 0.001],
                  help='timesteps: search and ladder at the first, then '
                       'refined at the rest (5 ms is too coarse for the kp 50 '
@@ -412,6 +515,9 @@ def main():
   p.add_argument('--weights', default='',
                  help='residual weight overrides, e.g. effort=0.5,lateral=3')
   p.add_argument('--init', help='warm start from a step npz (skips search)')
+  p.add_argument('--seed_files', nargs='*', default=[],
+                 help="gait npz files for --seed_style library (each is "
+                      "added with its mirror image)")
   p.add_argument('--reference',
                  help='kinematic reference JSON (kinematic_ref.py) to track')
   p.add_argument('--mode', help='the reference gait (mode) to track')
