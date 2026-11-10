@@ -201,6 +201,11 @@ class Chain:
         self.log(f'  render failed: {e}')
     return row
 
+  def checkpoint(self, stage):
+    """Checkpoint file of a stage of the step being computed (a rerun after
+    a crash or restart continues from it; removed once the step is saved)."""
+    return os.path.join(self.out, f'.ckpt_{self.tag}_{stage}.pkl')
+
   def solve(self, problem, theta, iters, es_iters=0):
     t0 = time.time()
     history = []
@@ -208,9 +213,11 @@ class Chain:
       if es_iters:
         theta, _, h = G.es(ev, problem.layout, theta, iters=es_iters,
                            pop=self.args.pop, sigma=self.args.sigma,
-                           seed=self.args.seed, log=self.log)
+                           seed=self.args.seed, log=self.log,
+                           checkpoint=self.checkpoint('es'))
         history += h
-      theta, _, h = G.lm(ev, problem.layout, theta, iters=iters, log=self.log)
+      theta, _, h = G.lm(ev, problem.layout, theta, iters=iters, log=self.log,
+                         checkpoint=self.checkpoint('lm'))
       history += h
     return problem.fix(theta), history, time.time() - t0
 
@@ -241,17 +248,19 @@ class Chain:
         self.log(f' start {rank}: seed {i} cost {cost[i]:.2f} '
                  f'v {info[i]["speed"]:+.4f} T {info[i]["period"]:.3f}')
         theta, c, h = G.lm(ev, problem.layout, seeds[i],
-                           iters=a.search_iters, log=self.log)
+                           iters=a.search_iters, log=self.log,
+                           checkpoint=self.checkpoint(f'start{rank}'))
         history.append(h)
         if c < best_cost:
           best, best_cost = theta, c
       self.log(f' polishing the best start (cost {best_cost:.2f})')
       if a.es_iters:
         best, _, h = G.es(ev, problem.layout, best, iters=a.es_iters,
-                          pop=a.pop, sigma=a.sigma, seed=a.seed, log=self.log)
+                          pop=a.pop, sigma=a.sigma, seed=a.seed, log=self.log,
+                          checkpoint=self.checkpoint('es'))
         history.append(h)
       best, _, h = G.lm(ev, problem.layout, best, iters=a.lm_iters,
-                        log=self.log)
+                        log=self.log, checkpoint=self.checkpoint('lm'))
       history.append(h)
     return problem, best, history, time.time() - t0
 
@@ -269,8 +278,12 @@ class Chain:
         if not self.args.from_rest:
           self.x0 = self.steady_state(os.path.join(self.out, row['file']))
         return theta, row
+    self.tag = tag
     problem, theta, history, seconds = compute()
     row = self.save(name, problem, theta, history, stage, seconds)
+    for f in os.listdir(self.out):
+      if f.startswith(f'.ckpt_{tag}_'):
+        os.remove(os.path.join(self.out, f))
     if not self.args.from_rest:
       self.x0 = self.steady_state(os.path.join(self.out, row['file']))
     return theta, row

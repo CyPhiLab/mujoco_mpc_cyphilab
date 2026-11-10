@@ -35,6 +35,7 @@ would not stay periodic.
 import json
 import multiprocessing as mp
 import os
+import pickle
 
 import mujoco
 import mujoco.rollout
@@ -459,8 +460,27 @@ def clip_theta(layout, theta):
 
 # ----- Optimizers ----- #
 
+def load_checkpoint(path):
+  """An optimizer checkpoint (see es and lm), or None."""
+  if not path or not os.path.exists(path):
+    return None
+  with open(path, 'rb') as f:
+    return pickle.load(f)
+
+
+def save_checkpoint(path, state):
+  """Writes atomically, so a run killed mid-write keeps the last one."""
+  if not path:
+    return
+  tmp = path + '.tmp'
+  with open(tmp, 'wb') as f:
+    pickle.dump(state, f)
+  os.replace(tmp, path)
+
+
 def es(evaluate, layout, base, iters=100, pop=48, sigma=0.05,
-       sigma_period=0.05, sigma_min=0.005, seed=0, log=print):
+       sigma_period=0.05, sigma_min=0.005, seed=0, log=print,
+       checkpoint=None):
   """Elitist evolution strategy around the best gait so far.
 
   Each generation samples around the current best and moves only when a
@@ -469,16 +489,28 @@ def es(evaluate, layout, base, iters=100, pop=48, sigma=0.05,
   would cancel out strokes of different phase, as the MJPC README notes for
   the Cross-Entropy planner; the pterosaur's launch_track_refine.py uses the
   same elitist scheme.)
+
+  checkpoint: a file the state is saved to after every generation; a rerun
+  with the same file continues from it (a finished run returns at once).
   """
   rng = np.random.default_rng(seed)
   base = clip_theta(layout, base)
   scale = np.full(layout.size, 1.0)
   scale[0] = sigma_period / sigma
-  res, info = evaluate(base[None])
-  best_cost, best_info = 0.5 * res[0] @ res[0], info[0]
-  momentum = np.zeros(layout.size)
-  history = []
-  for it in range(iters):
+  saved = load_checkpoint(checkpoint)
+  if saved:
+    base, best_cost, best_info = saved['base'], saved['cost'], saved['info']
+    momentum, sigma, start = saved['momentum'], saved['sigma'], saved['it']
+    history = saved['history']
+    rng.bit_generator.state = saved['rng']
+    if log:
+      log(f'  es resumed at generation {start} (cost {best_cost:.3f})')
+  else:
+    res, info = evaluate(base[None])
+    best_cost, best_info = 0.5 * res[0] @ res[0], info[0]
+    momentum = np.zeros(layout.size)
+    history, start = [], 0
+  for it in range(start, iters):
     samples = base + sigma * scale * rng.standard_normal((pop, layout.size))
     samples[0] = base + momentum
     samples = clip_theta(layout, samples)
@@ -494,6 +526,9 @@ def es(evaluate, layout, base, iters=100, pop=48, sigma=0.05,
     sigma = max(sigma_min, sigma * (1.2 if success > 0.2 else 0.85))
     m = best_info
     history.append(dict(m, iter=it, cost=float(best_cost), sigma=sigma))
+    save_checkpoint(checkpoint, dict(
+        base=base, cost=best_cost, info=best_info, momentum=momentum,
+        sigma=sigma, it=it + 1, history=history, rng=rng.bit_generator.state))
     if log and (it % 10 == 0 or it == iters - 1):
       log(f'  es {it:4d} cost {best_cost:10.3f} v {m["speed"]:+.4f} '
           f'T {m["period"]:.3f} lat {m["lateral_rate"]:+.4f} '
@@ -503,18 +538,32 @@ def es(evaluate, layout, base, iters=100, pop=48, sigma=0.05,
 
 
 def lm(evaluate, layout, theta, iters=30, eps=1e-4, mu=1e-2, max_step=0.3,
-       log=print):
+       log=print, checkpoint=None):
   """Levenberg-Marquardt on the residuals, forward-difference Jacobian.
 
   The n + 1 rollouts of one Jacobian go out as one batch. mu adapts like
   launch_ilqr.py: /3 on an accepted step, x10 on a rejected one.
+
+  checkpoint: a file the state is saved to after every iteration; a rerun
+  with the same file continues from it (a finished run returns at once).
   """
   theta = clip_theta(layout, theta)
-  res, info = evaluate(theta[None])
-  r, cost = res[0], 0.5 * res[0] @ res[0]
-  history = [dict(info[0], iter=0, cost=float(cost), mu=mu)]
   n = layout.size
-  for it in range(1, iters + 1):
+  saved = load_checkpoint(checkpoint)
+  if saved:
+    theta, cost, info = saved['theta'], saved['cost'], saved['info']
+    mu, start, history = saved['mu'], saved['it'], saved['history']
+    if saved['done']:
+      return theta, cost, history
+    if log:
+      log(f'  lm resumed at iteration {start} (cost {cost:.4f})')
+  else:
+    res, info = evaluate(theta[None])
+    r, cost = res[0], 0.5 * res[0] @ res[0]
+    history = [dict(info[0], iter=0, cost=float(cost), mu=mu)]
+    start = 1
+  accepted = True
+  for it in range(start, iters + 1):
     probes = theta + eps * np.eye(n)
     res_p, _ = evaluate(np.vstack([theta[None], probes]))
     r = res_p[0]
@@ -544,8 +593,13 @@ def lm(evaluate, layout, theta, iters=30, eps=1e-4, mu=1e-2, max_step=0.3,
           f'T {m["period"]:.3f} lat {m["lateral_rate"]:+.4f} '
           f'yaw {m["yaw_rate"]:+.3f} cyc {m["cycle_error"]:.3f} '
           f'eff {m["effort"]:.3f} sat {m["saturated"]:.3f}')
+    save_checkpoint(checkpoint, dict(
+        theta=theta, cost=cost, info=info, mu=mu, it=it + 1,
+        history=history, done=not accepted or it == iters))
     if not accepted:
       break
+  save_checkpoint(checkpoint, dict(theta=theta, cost=cost, info=info, mu=mu,
+                                   it=iters + 1, history=history, done=True))
   return theta, cost, history
 
 

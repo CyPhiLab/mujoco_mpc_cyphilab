@@ -1,0 +1,24 @@
+[
+  {
+    "file": "step8_max_dt0.001_mirror.npz",
+    "source": "runs/prim_pXmY/step8_max_dt0.001.npz",
+    "polish": 0,
+    "period": 0.7397538426723572,
+    "speed": 0.08003117289808868,
+    "lateral_rate": 0.0032867430449398,
+    "yaw_rate": 0.012760094027071189,
+    "yaw_rate_target": -0.0,
+    "depth_rate": 0.0011161219007154958,
+    "heading": 0.04549923777210349,
+    "tilt_mean": 0.07117498602887969,
+    "tilt_rms": 0.007619212962590993,
+    "cycle_error": 0.0382437711916529,
+    "effort": 0.5448897144970983,
+    "saturated": 0.06403903903903904,
+    "command_clipped": 0.004279279279279279,
+    "work_per_cycle": 36.96080110107457,
+    "cot": 5.710640925047774,
+    "track_rms": null,
+    "cost": 32.47070624502068
+  }
+]

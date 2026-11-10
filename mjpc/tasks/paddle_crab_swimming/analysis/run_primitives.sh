@@ -3,12 +3,13 @@
 # built (XW430 servos at 12 V, the task's command ranges).
 #
 #   ./run_primitives.sh chain1   # diagonals and +X
-#   ./run_primitives.sh chain2   # turning, up, down
+#   ./run_primitives.sh chain2   # turning, up
+#   ./run_primitives.sh chain3   # down
 #   ./run_primitives.sh NAME     # one primitive (see the case below)
 #
-# Each run takes 2-4 h on 2 cores; run the two chains side by side on 4.
-# Reruns resume from finished steps (a container restart kills a run: just
-# rerun the same command). The left/right mirror images (-X, the -X
+# Each run takes 2-4 h on 2 cores. Reruns resume (finished steps are
+# reloaded, and the step in progress continues from its last LM/ES iteration
+# checkpoint), so after a container restart just rerun the same commands. The left/right mirror images (-X, the -X
 # diagonals, turning right) need no runs: mirror_primitives.py makes them.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -56,7 +57,8 @@ one() {
 
 case ${1:-} in
   chain1) for p in pXmY pXpY pX; do one $p; done ;;
-  chain2) for p in turnL up down; do one $p; done ;;
+  chain2) for p in turnL up; do one $p; done ;;
+  chain3) one down ;;
   "") echo "usage: $0 chain1|chain2|NAME" >&2; exit 2 ;;
   *) one "$1" ;;
 esac
