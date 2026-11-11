@@ -114,10 +114,14 @@ one() {
       run cruise_up --init runs/prim_up/step9_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 0 0 1 --speed_start 0.03 \
         --speed_growth 1.15 $COMMON ;;
-    cruise_down)
-      run cruise_down --init runs/prim_down/step10_v0.0781_dt0.001.npz \
+    cruise_down_s0) # first attempt: overshot its first rung (0.047 vs 0.02)
+      run cruise_down_s0 --init runs/prim_down/step10_v0.0781_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 0 0 -1 --speed_start 0.02 \
         --speed_growth 1.15 $COMMON ;;
+    cruise_down) # ...so the ladder continues from it at 0.047
+      run cruise_down --init runs/prim_cruise_down_s0/step1_v0.02_dt0.002.npz \
+        --hold_legs R1,R2,L1,L2 --direction 0 0 -1 --speed_start 0.047 \
+        --speed_growth 1.1 $COMMON ;;
     *) echo "unknown primitive $1" >&2; exit 2 ;;
   esac
 }
