@@ -215,26 +215,43 @@ _OVERFLOW_HINT = {
     4: "broadphase: pass a larger nconmax",
     8: "narrowphase/contacts: pass a larger nconmax",
 }
+# mjw.OverflowType bits that are solver limits, not dropped buffer entries
+_SOLVER_LIMIT = {512: "solver iterations", 1024: "linesearch iterations"}
 
 
 def check_overflow(d: mjw.Data, where: str = "") -> int:
-  """Warns if any world overflowed its contact/constraint buffers.
+  """Warns if any world overflowed its buffers or hit a solver limit.
 
-  Returns the number of overflowed worlds and clears the flags.
+  Returns the number of worlds with dropped contacts/constraints (solver
+  iteration limits are reported but not counted) and clears the flags.
   """
   flags = d.overflow.numpy()
   bad = np.flatnonzero(flags)
-  if bad.size:
-    bits = int(np.bitwise_or.reduce(flags[bad]))
+  if not bad.size:
+    return 0
+  limit_bits = sum(_SOLVER_LIMIT)
+  buf = np.flatnonzero(flags & ~limit_bits)
+  lim = np.flatnonzero(flags & limit_bits)
+  if buf.size:
+    bits = int(np.bitwise_or.reduce(flags[buf])) & ~limit_bits
     hints = [h for b, h in _OVERFLOW_HINT.items() if bits & b] or [f"flags {bits}"]
     warnings.warn(
-        f"MJWarp buffer overflow {where}in {bad.size}/{len(flags)} worlds "
+        f"MJWarp buffer overflow {where}in {buf.size}/{len(flags)} worlds "
         f"({'; '.join(hints)}; current nconmax={d.naconmax // d.nworld}, "
         f"njmax={d.njmax}). Dropped contacts make the physics wrong.",
         stacklevel=2,
     )
-    d.overflow.zero_()
-  return int(bad.size)
+  if lim.size:
+    bits = int(np.bitwise_or.reduce(flags[lim]))
+    what = " and ".join(n for b, n in _SOLVER_LIMIT.items() if bits & b)
+    warnings.warn(
+        f"MJWarp {what} limit reached {where}in {lim.size}/{len(flags)} "
+        "worlds (constraint forces not converged; usually worlds that blew "
+        "up under extreme controls).",
+        stacklevel=2,
+    )
+  d.overflow.zero_()
+  return int(buf.size)
 
 
 def data_from_state(mjm: mujoco.MjModel, x: np.ndarray) -> mujoco.MjData:

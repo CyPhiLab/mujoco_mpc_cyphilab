@@ -185,28 +185,57 @@ class FiniteDifference:
       probe: Optional[mujoco.MjData] = None,
       nconmax: Optional[int] = None,
       njmax: Optional[int] = None,
+      use_graph: Optional[bool] = None,
   ):
     self.mjm = mjm
     self.task = task
     self.eps = eps
     self.layout = lay = state_lib.StateLayout(mjm)
     self.npert = 1 + lay.ndx + lay.nu
-    self.items_per_chunk = max(1, max_worlds // self.npert)
-    self.nworld = self.items_per_chunk * self.npert
+    self.max_items_per_chunk = max(1, max_worlds // self.npert)
     if probe is None:
       probe = mujoco.MjData(mjm)
       if mjm.nkey:
         mujoco.mj_resetDataKeyframe(mjm, probe, 0)
-    self.m, self.d = model_lib.make_batch(mjm, probe, self.nworld, nconmax, njmax)
+    self.probe = probe
+    if nconmax is None or njmax is None:
+      c, j = model_lib.contact_capacity(mjm, probe)
+      nconmax, njmax = nconmax or c, njmax or j
+    self.nconmax, self.njmax = nconmax, njmax
+    # On CUDA each chunk is captured into a graph: eager MJWarp steps are
+    # far slower (pterosaur, L40S: 452 ms eager vs 5.6 ms captured for
+    # 16384 worlds).
+    if use_graph is None:
+      use_graph = wp.get_device().is_cuda
+    self.use_graph = use_graph
+    self._graphs = {}
+    self._task_key = None
+    # the world batch is allocated on first use, sized to what is needed
+    self.items_per_chunk = 0
+    self.nworld = 0
+    self._cap = 0
+
+  def _alloc_worlds(self, nitem: int):
+    """(Re)allocates the world batch for min(nitem, max) items per chunk."""
+    items = min(nitem, self.max_items_per_chunk)
+    if items <= self.items_per_chunk:
+      return
+    lay, task = self.layout, self.task
+    self.items_per_chunk = items
+    self.nworld = items * self.npert
+    self.m, self.d = model_lib.make_batch(
+        self.mjm, self.probe, self.nworld, self.nconmax, self.njmax
+    )
     self.x_in = wp.zeros((self.nworld, lay.nq), dtype=float)
     self.dq = wp.zeros((self.nworld, lay.nv), dtype=float)
     self.dx = wp.zeros((self.nworld, lay.ndx), dtype=float)
     self.stage_time = wp.zeros(self.nworld, dtype=float)
     self.residual = wp.zeros((self.nworld, task.nresidual), dtype=float)
     self.weight = wp.zeros((self.nworld, task.nterm), dtype=float)
-    self._cap = 0
+    self._graphs.clear()
 
   def _ensure(self, nitem: int):
+    self._alloc_worlds(nitem)
     if nitem <= self._cap:
       return
     lay, task = self.layout, self.task
@@ -218,6 +247,36 @@ class FiniteDifference:
     self.J = wp.zeros((nitem, task.nresidual, lay.ndx + lay.nu), dtype=float)
     self.r0 = wp.zeros((nitem, task.nresidual), dtype=float)
     self.w0 = wp.zeros((nitem, task.nterm), dtype=float)
+    self._graphs.clear()
+
+  def _chunk(self, item0: int, nitem: int):
+    """Perturb, step and collect one chunk of items starting at item0."""
+    lay, task, d = self.layout, self.task, self.d
+    wp.launch(
+        _fd_setup_kernel,
+        dim=self.nworld,
+        inputs=[
+            lay.jnt_type, lay.jnt_qposadr, lay.jnt_dofadr,
+            lay.nq, lay.nv, lay.na, lay.nu, item0, nitem,
+            self.X, self.U, self.T, self.eps, self.x_in, self.dq,
+        ],
+        outputs=[d.qpos, d.qvel, d.act, d.ctrl, d.time, d.qacc_warmstart,
+                 self.stage_time],
+    )
+    mjw.forward(self.m, d)
+    task.residual(self.m, d, self.stage_time, self.residual, self.weight)
+    state_lib.integrate(self.m, d)
+    wp.launch(
+        _fd_collect_kernel,
+        dim=self.nworld,
+        inputs=[
+            lay.jnt_type, lay.jnt_qposadr, lay.jnt_dofadr,
+            lay.nq, lay.nv, lay.na, lay.nu, task.nresidual, task.nterm,
+            item0, nitem, self.eps, d.qpos, d.qvel, d.act,
+            self.residual, self.weight,
+        ],
+        outputs=[self.F, self.J, self.r0, self.w0, self.dx],
+    )
 
   def compute(
       self, states: np.ndarray, actions: np.ndarray, times: np.ndarray
@@ -242,34 +301,23 @@ class FiniteDifference:
     self.X.assign(np.ascontiguousarray(states.reshape(nitem, nx), np.float32))
     self.U.assign(np.ascontiguousarray(U.reshape(nitem, lay.nu), np.float32))
     self.T.assign(np.ascontiguousarray(times.reshape(nitem), np.float32))
-    d = self.d
+    task_key = task.graph_key()
+    if task_key != self._task_key:
+      self._graphs.clear()
+      self._task_key = task_key
     for item0 in range(0, nitem, self.items_per_chunk):
-      wp.launch(
-          _fd_setup_kernel,
-          dim=self.nworld,
-          inputs=[
-              lay.jnt_type, lay.jnt_qposadr, lay.jnt_dofadr,
-              lay.nq, lay.nv, lay.na, lay.nu, item0, nitem,
-              self.X, self.U, self.T, self.eps, self.x_in, self.dq,
-          ],
-          outputs=[d.qpos, d.qvel, d.act, d.ctrl, d.time, d.qacc_warmstart,
-                   self.stage_time],
-      )
-      mjw.forward(self.m, d)
-      task.residual(self.m, d, self.stage_time, self.residual, self.weight)
-      state_lib.integrate(self.m, d)
-      wp.launch(
-          _fd_collect_kernel,
-          dim=self.nworld,
-          inputs=[
-              lay.jnt_type, lay.jnt_qposadr, lay.jnt_dofadr,
-              lay.nq, lay.nv, lay.na, lay.nu, task.nresidual, task.nterm,
-              item0, nitem, self.eps, d.qpos, d.qvel, d.act,
-              self.residual, self.weight,
-          ],
-          outputs=[self.F, self.J, self.r0, self.w0, self.dx],
-      )
-    model_lib.check_overflow(d, "during finite differencing ")
+      if not self.use_graph:
+        self._chunk(item0, nitem)
+        continue
+      # item0 and nitem are scalar launch arguments, frozen into the graph
+      graph = self._graphs.get((item0, nitem))
+      if graph is None:
+        self._chunk(item0, nitem)  # warm up: compile outside capture
+        with wp.ScopedCapture() as capture:
+          self._chunk(item0, nitem)
+        graph = self._graphs[(item0, nitem)] = capture.graph
+      wp.capture_launch(graph)
+    model_lib.check_overflow(self.d, "during finite differencing ")
     ndx = lay.ndx
     F = self.F.numpy()[:nitem].astype(np.float64).reshape(M, T1, ndx, -1)
     J = self.J.numpy()[:nitem].astype(np.float64).reshape(M, T1, task.nresidual, -1)
