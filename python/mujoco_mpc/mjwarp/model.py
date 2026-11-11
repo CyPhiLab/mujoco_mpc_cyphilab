@@ -111,6 +111,7 @@ def load_model(
     *,
     disable_collision_geoms: Sequence[str] = (),
     disable_collision_classes: Sequence[str] = (),
+    self_collision: bool = True,
     integrator: Optional[str] = None,
 ) -> mujoco.MjModel:
   """Loads an MJPC task model, optionally pruning collisions.
@@ -119,6 +120,10 @@ def load_model(
     xml_path: path to the task XML (absolute, or relative to mjpc/tasks)
     disable_collision_geoms: geom names whose contype/conaffinity are zeroed
     disable_collision_classes: default classes whose geoms get the same
+    self_collision: if False, geoms on bodies collide only with geoms of the
+      world body (the ground), not with each other. MJWarp's mesh-mesh
+      contacts (GJK/EPA) are far less reproducible than mesh-plane ones; see
+      the README.
     integrator: optional override, one of "euler", "implicit",
       "implicitfast", "rk4"
 
@@ -137,6 +142,15 @@ def load_model(
       if geom.name in names or cls in classes:
         geom.contype = 0
         geom.conaffinity = 0
+  if not self_collision:
+    world = spec.worldbody
+    world_geoms = set(id(g) for g in world.geoms)
+    world_contype = 0
+    for geom in world.geoms:
+      world_contype |= geom.contype
+    for geom in spec.geoms:
+      if id(geom) not in world_geoms and (geom.contype or geom.conaffinity):
+        geom.contype, geom.conaffinity = 0, world_contype
   if integrator is not None:
     spec.option.integrator = {
         "euler": mujoco.mjtIntegrator.mjINT_EULER,

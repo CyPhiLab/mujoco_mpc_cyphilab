@@ -121,11 +121,19 @@ def backward_pass(
     Quu = luu[:, t] + np.swapaxes(B, 1, 2) @ VB + ctrl_reg * eye
     Qux = lux[:, t] + np.swapaxes(B, 1, 2) @ VA
     Quu_reg = 0.5 * (Quu + np.swapaxes(Quu, 1, 2)) + mu[:, None, None] * eye
-    eig_min = np.linalg.eigvalsh(Quu_reg)[:, 0]
+    # a problem whose rollout blew up has non-finite derivatives: mark it bad
+    # (it keeps its trajectory) instead of letting eigvalsh raise for all
+    finite = np.isfinite(Quu_reg).all(axis=(1, 2)) & np.isfinite(Qux).all(axis=(1, 2)) & np.isfinite(Qu).all(axis=1)
+    Quu_reg = np.where(finite[:, None, None], Quu_reg, eye)
+    Quu = np.where(finite[:, None, None], Quu, eye)
+    Qu = np.where(finite[:, None], Qu, 0.0)
+    Qux = np.where(finite[:, None, None], Qux, 0.0)
+    eig_min = np.where(finite, np.linalg.eigvalsh(Quu_reg)[:, 0], -np.inf)
     bad = ~(eig_min > 1e-12)
     ok &= ~bad
     # keep going for the good problems; bad ones get a safe fallback
-    Quu_safe = np.where(bad[:, None, None], Quu_reg + (1e-6 - np.minimum(eig_min, 0))[:, None, None] * eye, Quu_reg)
+    shift = np.where(finite, 1e-6 - np.minimum(eig_min, 0), 0.0)
+    Quu_safe = np.where(bad[:, None, None], Quu_reg + shift[:, None, None] * eye, Quu_reg)
     kt = -np.linalg.solve(Quu_safe, Qu[..., None])[..., 0]
     Kt = -np.linalg.solve(Quu_safe, Qux)
     k[:, t], K[:, t] = kt, Kt

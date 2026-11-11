@@ -61,6 +61,10 @@ def main():
                  help="constraint rows per world (default: sized by a CPU probe)")
   p.add_argument("--no-mesh-collisions", action="store_true",
                  help="disable the 'collision' mesh class (feet/knees stay)")
+  p.add_argument("--no-self-collision", action="store_true",
+                 help="robot geoms collide with the ground only; keeps mesh "
+                      "ground contacts but drops mesh-mesh self-contacts, "
+                      "which MJWarp cannot reproduce (see README)")
   p.add_argument("--integrator", default=None,
                  help="override integrator used on the GPU (e.g. implicitfast)")
   p.add_argument("--seed", type=int, default=0)
@@ -76,7 +80,7 @@ def main():
   classes = ("collision",) if args.no_mesh_collisions else ()
   mjm = model_lib.load_model(
       pterosaur.XML, disable_collision_classes=classes,
-      integrator=args.integrator,
+      self_collision=not args.no_self_collision, integrator=args.integrator,
   )
   mjm_cpu = model_lib.load_model(pterosaur.XML)  # unmodified, for the check
   task = pterosaur.PterosaurLaunch(mjm)
@@ -134,7 +138,9 @@ def main():
 
   # unmodified model: gap to MJPC's simulator; with pruned collisions also
   # the same model as on the GPU, which isolates the GPU/float32 gap
-  checks = [("", mjm_cpu)] + ([(", GPU model", mjm)] if classes or args.integrator else [])
+  checks = [("", mjm_cpu)] + ([(", GPU model", mjm)]
+                                  if classes or args.no_self_collision or args.integrator
+                                  else [])
   for suffix, check_model in checks:
     for label, gains in (("open loop", None), ("with iLQR feedback", None if K is None else K[b])):
       if label != "open loop" and gains is None:
