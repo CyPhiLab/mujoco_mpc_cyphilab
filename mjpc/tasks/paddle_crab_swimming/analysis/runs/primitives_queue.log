@@ -21,3 +21,5 @@
 2026-11-11T05:09:28Z stopped down_rest (worse over 30 s open loop; down needs feedback)
 2026-11-11T05:12:52Z done  up (0)
 2026-11-11T15:36:09Z start k5_mY
+2026-11-11T15:53:19Z start hold_mY
+2026-11-11T15:53:19Z start energy_mY
