@@ -1,0 +1,5 @@
+init from runs/ladder_pY/step8_max_dt0.001.npz
+[step1_v0.065_dt0.002] reused from an earlier run
+ v0.065 not met (reached v 0.0641 yaw -0.0121), retry 1
+[step2_v0.065_dt0.002_r1] reused from an earlier run
+ v0.065 missed (reached v 0.0596 yaw -0.0017); ending the ladder

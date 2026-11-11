@@ -1,0 +1,33 @@
+init from runs/prim_pXmY/step8_max_dt0.001.npz
+  lm    1 cost    10.3202 mu  3.3e-03 v +0.0592 T 0.741 lat -0.0023 yaw -0.001 cyc 0.144 eff 0.328 sat 0.019
+  lm    2 cost     9.7624 mu  1.1e-03 v +0.0590 T 0.741 lat -0.0021 yaw -0.001 cyc 0.137 eff 0.323 sat 0.018
+  lm    3 cost     9.4188 mu  3.7e-04 v +0.0588 T 0.741 lat -0.0020 yaw -0.001 cyc 0.135 eff 0.319 sat 0.018
+  lm    4 cost     9.0879 mu  1.2e-04 v +0.0582 T 0.742 lat -0.0019 yaw -0.001 cyc 0.123 eff 0.328 sat 0.016
+  lm    5 cost     8.0480 mu  4.1e-05 v +0.0577 T 0.741 lat -0.0017 yaw -0.001 cyc 0.112 eff 0.313 sat 0.014
+  lm    6 cost     7.9421 mu  1.4e-05 v +0.0577 T 0.742 lat -0.0017 yaw -0.001 cyc 0.111 eff 0.310 sat 0.013
+  lm    7 cost     7.9052 mu  4.6e-06 v +0.0576 T 0.742 lat -0.0017 yaw -0.001 cyc 0.109 eff 0.308 sat 0.013
+  lm    8 cost     7.8181 mu  1.5e-06 v +0.0575 T 0.742 lat -0.0017 yaw -0.001 cyc 0.108 eff 0.305 sat 0.013
+  lm    9 cost     7.7037 mu  1.0e-06 v +0.0575 T 0.742 lat -0.0017 yaw -0.001 cyc 0.108 eff 0.303 sat 0.013
+  lm   10 cost     7.4982 mu  3.3e-06 v +0.0574 T 0.742 lat -0.0017 yaw -0.001 cyc 0.104 eff 0.300 sat 0.013
+  lm   11 cost     7.2762 mu  1.1e-06 v +0.0572 T 0.742 lat -0.0017 yaw -0.001 cyc 0.101 eff 0.298 sat 0.013
+  lm   12 cost     6.9527 mu  3.7e+01 v +0.0569 T 0.742 lat -0.0015 yaw -0.001 cyc 0.098 eff 0.298 sat 0.013
+[step1_v0.052_dt0.002] v 0.0569 T 0.742 lat -0.0015 yaw -0.001 eff 0.298 cot 2.37 cyc 0.098 feasible False
+  render failed: [Errno 2] No such file or directory: 'runs/prim_cruise_pXmY/step1_v0.052_dt0.002.npz'
+Traceback (most recent call last):
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/gait_chain.py", line 582, in <module>
+    main()
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/gait_chain.py", line 578, in main
+    Chain(p.parse_args()).run()
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/gait_chain.py", line 362, in run
+    theta_v, row = self.run_step(f'{rung}_dt{dt0:g}', 'speed',
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/gait_chain.py", line 289, in run_step
+    self.x0 = self.steady_state(os.path.join(self.out, row['file']))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/gait_chain.py", line 148, in steady_state
+    state = np.load(path)['state'].copy()
+            ^^^^^^^^^^^^^
+  File "/home/user/venv312/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'runs/prim_cruise_pXmY/step1_v0.052_dt0.002.npz'

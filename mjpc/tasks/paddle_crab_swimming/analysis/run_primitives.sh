@@ -94,10 +94,14 @@ one() {
       run cruise_pX --init runs/ladder_pX/step4_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 1 0 0 --speed_start 0.05 \
         --speed_growth 1.15 $COMMON ;;
-    cruise_pXmY)
-      run cruise_pXmY --init runs/prim_pXmY/step8_max_dt0.001.npz \
+    cruise_pXmY_s0) # first attempt: overshot its first rung (0.057 vs 0.052)
+      run cruise_pXmY_s0 --init runs/prim_pXmY/step8_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 1 -1 0 --speed_start 0.052 \
         --speed_growth 1.15 $COMMON ;;
+    cruise_pXmY) # ...so the ladder continues from it at 0.057
+      run cruise_pXmY --init runs/prim_cruise_pXmY_s0/step1_v0.052_dt0.002.npz \
+        --hold_legs R1,R2,L1,L2 --direction 1 -1 0 --speed_start 0.057 \
+        --speed_growth 1.1 $COMMON ;;
     cruise_pXpY)
       run cruise_pXpY --init runs/prim_pXpY/step6_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 1 1 0 --speed_start 0.046 \
