@@ -143,14 +143,15 @@ def load_model(
         geom.contype = 0
         geom.conaffinity = 0
   if not self_collision:
-    world = spec.worldbody
-    world_geoms = set(id(g) for g in world.geoms)
     world_contype = 0
-    for geom in world.geoms:
+    for geom in spec.worldbody.geoms:
       world_contype |= geom.contype
-    for geom in spec.geoms:
-      if id(geom) not in world_geoms and (geom.contype or geom.conaffinity):
-        geom.contype, geom.conaffinity = 0, world_contype
+    for body in spec.bodies:
+      if body.name == "world":
+        continue
+      for geom in body.geoms:
+        if geom.contype or geom.conaffinity:
+          geom.contype, geom.conaffinity = 0, world_contype
   if integrator is not None:
     spec.option.integrator = {
         "euler": mujoco.mjtIntegrator.mjINT_EULER,
