@@ -11,5 +11,6 @@ diag_left_trail=runs/prim_mXpY/step6_max_dt0.001_mirror.npz
 turn_left=runs/prim_turnL/step12_max_dt0.001.npz
 turn_right=runs/prim_turnR/step12_max_dt0.001_mirror.npz
 down=runs/prim_down/step10_v0.0781_dt0.001.npz
+up=runs/prim_up/step9_max_dt0.001.npz
 # +-pi commands, steady tilt free (round 2):
 crab_side=runs/crab_heading/step2_v0.09_dt0.001.npz

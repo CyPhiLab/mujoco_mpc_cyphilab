@@ -234,6 +234,162 @@ ones break the stroke. A low-dimensional steering interface, such as
 left/right paddle amplitude for yaw and paddle mean angle for depth, is the
 likely next step.
 
+## Round 3: a primitive library for every direction and turning
+
+The same pipeline now produces one primitive per motion a controller needs:
+8 horizontal swim directions, turning on the spot both ways, and swimming up
+and down. Everything uses the robot as built: XW430-T333-R servos at 12 V and
+the task's command ranges. `library.txt` lists the library, and
+`../gait_reference.xml` and `export_v3/` hold its export.
+
+### What changed in the pipeline
+
+- **Turning primitives.**
+  - `gait_opt.Problem(yaw_rate=W)` targets a yaw rate. While turning, the
+    mean-heading residual is off, and the tilt is measured in the heading
+    frame that turns with the body.
+  - `gait_chain.py --yaw_ladder W1 W2 ...` climbs a ladder of yaw-rate
+    targets, holding translation at `--turn_speed` (default 0). Rungs are
+    named `w<W>`. Each step's start state has its yaw removed.
+  - `--yaw_rate W` instead holds a yaw target through a speed ladder (arcs).
+- **Vertical primitives.** `--direction 0 0 ±1` is supported. Drift is then
+  measured along world X ("lateral") and world ±Y ("depth" slot).
+- **Mirror images.** The robot is mirror-symmetric to within its CAD, so
+  `mirror_primitives.py` makes −X, the −X diagonals and turning right from
+  their counterparts. The mirrors swim the same speed with the drift flipped
+  (checked by simulation; mirrored states agree to 0.4 mm over 3 s). Only one
+  side of each pair needs an optimization.
+- **Library seeds.** `--seed_style library --seed_files A.npz ...` adds known
+  gaits and their mirror images to the search batch, and `splice` adds one
+  gait's right legs with another's left. Both diagonal searches started from
+  a library gait.
+- **Restart-safe solvers.** `es`/`lm` save a checkpoint after every iteration,
+  and every search stage and ladder step has its own. Reruns continue
+  exactly where they stopped; interrupted-and-resumed runs give the same
+  result as uninterrupted ones. The container restarted twice during these
+  runs.
+- **`primitive_report.py`** scores a library the way MJPC runs it:
+  - the steady limit cycle (12 cycles from rest);
+  - cycles 5–6 from rest;
+  - the 20 ms planner model;
+  - a 20 s open-loop path.
+
+  It writes `runs/primitives_report.{md,json}` and `_paths.png`.
+- **`run_primitives.sh`** holds the exact commands.
+
+### The library
+
+Steady limit cycle at 1 ms (`runs/primitives_report.md` has every column).
+The heading change is over 20 s open loop from rest.
+
+| primitive | swims | stroke (s) | speed | drift (lateral) | yaw | sat. | 20 ms planner | 20 s open loop | run |
+|---|---|---|---|---|---|---|---|---|---|
+| paddles_lead | −Y | 1.10 | 0.112 m/s | +8 mm/s | +0.003 rad/s | 0.09 | 0.116 | 2.15 m, +0.11 rad | `ladder_mY` |
+| paddles_trail | +Y | 1.23 | 0.086 | +2 | −0.010 | 0.09 | 0.093 | 1.66 m, −0.19 rad | `ladder_pY` |
+| side / side_left | ±X | 0.73 | 0.073 | ∓2 | ±0.003 | 0.06 | 0.081 | 1.37 m, ±0.12 rad | `ladder_pX`, `prim_mX` |
+| diag_right_lead / diag_left_lead | ±X−Y | 0.74 | 0.080 | ±4 | ∓0.012 | 0.06 | 0.083 | 1.53 m, ∓0.09 rad | `prim_pXmY`, `prim_mXmY` |
+| diag_right_trail / diag_left_trail | ±X+Y | 1.22 | 0.070 | ±2 | ±0.004 | 0.04 | 0.076 | 1.35 m, ±0.08 rad | `prim_pXpY`, `prim_mXpY` |
+| turn_left / turn_right | on the spot | 2.26 | ±0.373 rad/s (21°/s) | ∓4 | — | 0.03 | ±0.374 rad/s | ±6.97 rad, 2 cm | `prim_turnL`, `prim_turnR` |
+| up | +Z | 1.71 | 0.071 | 23 (−Y) | −0.001 | 0.03 | 0.077 | climbs 1.35 m, 0.47 m −Y | `prim_up` |
+| down | −Z | 2.15 | 0.072 | 21 (−Y) | −0.004 | 0.02 | 0.067 | sinks 1.13 m, 0.75 m −Y | `prim_down` |
+| crab_side (round 2) | +X, ±π, tilt free | 1.21 | 0.084 | 23 | −0.034 | 0.03 | 0.088 | 1.46 m, −0.20 rad | `crab_heading` |
+
+Notes:
+
+- **Diagonals.** The paddles-leading diagonals (0.080 m/s) are faster than
+  pure ±X (0.073), and the paddles-trailing ones (0.070) about as fast.
+  Leading with the paddles wins on the diagonal as it does on ±Y. From rest the leading
+  diagonals start out heading more −Y and bend onto the diagonal within a
+  few strokes (`_paths.png`).
+- **Turning.**
+  - With the default yaw weight (1, sized for drift), the turning ladder
+    stalls short of 0.1 rad/s (`prim_turnL_w1`). With `--weights yaw=8` (a
+    yaw target weighted like a speed target) it climbs to 0.38 rad/s at
+    2 ms. The 1 ms polish settles at 0.373.
+  - The turn uses a slow stroke (2.3 s).
+- **Vertical.**
+  - Up and down hold their attitude only slowly: their tilt keeps settling
+    for tens of seconds. They slide about 2 cm/s in −Y open loop, which the
+    steady-start ladder (scored on cycles 3–4) does not see.
+  - A re-polish of down scored from rest after 10 cycles (`prim_down_rest`,
+    stopped) was worse over 30 s. This is an attitude-stability issue, not a
+    scoring-window one.
+  - **In MJPC closed loop the drift goes away** (below), so they are usable
+    as primitives under feedback.
+- **+X.** The library re-search (`prim_pX`, 0.069 m/s) did not beat
+  `ladder_pX` (0.073), which stays the side primitive.
+
+### In MJPC
+
+The gait header gained a yaw rate (`period, K, speed, direction(3),
+yaw_rate, c, a, b, limit`), and the old layout is still read.
+
+With a gait running, the residuals change as follows:
+
+- **Turning primitives:** the Heading target turns at the gait's yaw rate.
+- **Turning on the spot:** the Forward reward is dropped.
+- **Vertical primitives:** Lateral holds world X and Depth holds world Y
+  (for horizontal ones Depth is unchanged).
+
+`cost_sweep` builds with clang. GCC's LTO objects don't link with lld.
+`mjpc/tasks/CMakeLists.txt` also copies two models from sibling repos
+(`../ptero_sim`, `../spirob_mujoco`) that a build needs present.
+
+- **Open loop (`--open_loop`, 20 s):** every primitive matches the Python
+  rollout to the millimetre (paddles_lead, turn_left/right, down,
+  diag_right_lead, side_left checked).
+- **Closed loop (`sampling_exploration=0.01`, single runs):**
+
+  | gait | open loop | closed loop |
+  |---|---|---|
+  | paddles_lead, 20 s | 0.108 m/s | 0.111 m/s, 1 cm lateral (as in round 2) |
+  | diag_right_lead, 20 s | 0.077 m/s | 0.078 m/s |
+  | turn_left, 20 s | 6.97 rad | 6.87 rad, 11 cm translation |
+  | turn_right, 30 s | | −11.1 rad |
+  | down, 30 s | sinks 1.84 m, 0.98 m −Y | **sinks 2.04 m, 3 cm horizontal** |
+  | up, 30 s | climbs 2.06 m, 0.69 m −Y | climbs 2.13 m, 0.28 m −Y |
+
+### Supply voltage: 14.8 V (realistic, same servos)
+
+At 14.8 V the XW430 gives 3.6 N m stall and 39 rpm
+(`--design torque=1.16,damping=0.88`):
+
+| run | gait | speed (1 ms) | stroke | 20 ms planner |
+|---|---|---|---|---|
+| `v148_mY` | paddles_lead re-optimized at 14.8 V | **0.150 m/s (+34%)** | 1.05 s | 0.157 |
+| `v12_from148_mY` | 12 V re-optimized from that gait (control) | 0.1135 | 1.16 s | 0.117 |
+
+The control shows that the 12 V gait was already at its optimum (+1%), so
+the gain comes from the supply.
+
+- **Power scaling alone would predict about +13%.** That's 1.46× peak power
+  with drag going as v².
+- **The rest comes from the higher no-load speed.** The paddle servos sit at
+  their speed limit (`stroke_dynamics.py`), and raising that limit is what
+  pays.
+- **14.8 V gaits are not exported.** MJPC simulates 12 V servos;
+  `export_gaits.py` now warns when a gait was made for a design variant.
+
+Not run yet: streamlined walking-leg postures (body drag ×0.5 was worth +38%
+in round 2) and more harmonics (`--k 5`, warm-started with `--init`).
+
+### Reproduce
+
+The exact `ladder_mY` command (`runs/repro_mY`) reruns its search step
+bit-identically: same theta and limit cycle. The saved gaits re-evaluate
+bit-exactly too.
+
+```sh
+./run_primitives.sh chain1        # +X-Y, +X+Y, +X
+./run_primitives.sh turnL_w1      # turning search (then:)
+./run_primitives.sh chain2        # turning ladder (yaw weight 8), up
+./run_primitives.sh chain3        # down
+python mirror_primitives.py runs/prim_pXmY/step8_max_dt0.001.npz runs/prim_mXmY   # and mX, mXpY, turnR
+python export_gaits.py $(grep -v '^#' library.txt) --mjpc ../gait_reference.xml --package export_v3
+python primitive_report.py $(grep -v '^#' library.txt) --out runs/primitives_report
+build/bin/cost_sweep --open_loop --seconds 20 Gait=turn_left Gait=down
+```
+
 ## Kinematic swimming reference (`kinematic_ref.py`, `crab_reference.json`)
 
 This is a pure kinematic animation keyframed by eye against blue crab

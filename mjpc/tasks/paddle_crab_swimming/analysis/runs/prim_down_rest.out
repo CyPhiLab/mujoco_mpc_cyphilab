@@ -1,0 +1,14 @@
+init from runs/prim_down/step10_v0.0781_dt0.001.npz
+  lm    1 cost   768.4786 mu  3.3e-03 v +0.0302 T 2.208 lat +0.0020 yaw -0.007 cyc 0.200 eff 0.410 sat 0.019
+  lm    2 cost   574.9305 mu  1.1e-03 v +0.0352 T 2.266 lat +0.0044 yaw -0.006 cyc 0.163 eff 0.399 sat 0.019
+  lm    3 cost   426.8784 mu  3.7e-04 v +0.0400 T 2.322 lat +0.0082 yaw -0.006 cyc 0.176 eff 0.398 sat 0.018
+  lm    4 cost   365.2114 mu  1.2e-04 v +0.0422 T 2.318 lat +0.0059 yaw -0.007 cyc 0.145 eff 0.393 sat 0.018
+  lm    5 cost   334.9324 mu  4.1e-05 v +0.0435 T 2.317 lat +0.0044 yaw -0.006 cyc 0.128 eff 0.395 sat 0.017
+  lm    6 cost   288.3421 mu  1.4e-05 v +0.0454 T 2.319 lat +0.0037 yaw -0.005 cyc 0.109 eff 0.386 sat 0.017
+  lm    7 cost   256.4467 mu  4.6e-06 v +0.0470 T 2.319 lat +0.0017 yaw -0.005 cyc 0.076 eff 0.391 sat 0.017
+  lm    8 cost   231.8296 mu  1.5e-06 v +0.0480 T 2.319 lat +0.0016 yaw -0.004 cyc 0.070 eff 0.390 sat 0.017
+  lm    9 cost   200.3349 mu  1.0e-06 v +0.0495 T 2.319 lat +0.0004 yaw -0.003 cyc 0.031 eff 0.387 sat 0.017
+  lm   10 cost   188.0910 mu  1.0e-06 v +0.0502 T 2.319 lat -0.0005 yaw -0.003 cyc 0.012 eff 0.389 sat 0.016
+  lm   11 cost   167.3801 mu  1.0e-06 v +0.0512 T 2.319 lat -0.0010 yaw -0.003 cyc 0.021 eff 0.389 sat 0.016
+  lm   12 cost   156.4944 mu  1.0e-06 v +0.0518 T 2.318 lat -0.0020 yaw -0.002 cyc 0.057 eff 0.392 sat 0.017
+[step1_v0.07_dt0.002] v 0.0518 T 2.318 lat -0.0020 yaw -0.002 eff 0.392 cot 4.56 cyc 0.057 feasible False

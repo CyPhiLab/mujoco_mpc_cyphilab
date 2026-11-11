@@ -11,6 +11,12 @@ Everything lives in `mjpc/tasks/paddle_crab_swimming/analysis/` on branch
 `updated_paddle`. `README.md` in the same folder has the longer history,
 including the earlier gait search without references.
 
+**Newer: the primitive library.** `README.md`, "Round 3", covers gait
+primitives for every swim direction, turning both ways, up and down, plus the
+14.8 V study. The library is listed in `library.txt` and exported to
+`../gait_reference.xml` and `export_v3/`. The checks are in
+`runs/primitives_report.{md,png}`, and `run_primitives.sh` has the commands.
+
 ## Setup
 
 - **Run from `analysis/`.** The scripts import each other as siblings
