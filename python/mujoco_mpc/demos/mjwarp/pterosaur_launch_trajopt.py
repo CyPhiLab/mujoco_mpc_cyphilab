@@ -25,6 +25,7 @@ Without an NVIDIA GPU, Warp falls back to its CPU device: use tiny settings
 """
 
 import argparse
+import gc
 import time
 
 import numpy as np
@@ -53,6 +54,10 @@ def main():
   p.add_argument("--init-std", type=float, default=0.4)
   p.add_argument("--fd-eps", type=float, default=1e-3)
   p.add_argument("--max-fd-worlds", type=int, default=16384)
+  p.add_argument("--nconmax", type=int, default=None,
+                 help="contacts per world (default: sized by a CPU probe)")
+  p.add_argument("--njmax", type=int, default=None,
+                 help="constraint rows per world (default: sized by a CPU probe)")
   p.add_argument("--no-mesh-collisions", action="store_true",
                  help="disable the 'collision' mesh class (feet/knees stay)")
   p.add_argument("--integrator", default=None,
@@ -90,7 +95,8 @@ def main():
         nknot=args.nknot, init_std=args.init_std,
         iterations=args.cem_iters, seed=args.seed,
     )
-    opt = cem_lib.CEM(mjm, task, horizon, x0, nproblem=args.nproblem, config=cfg)
+    opt = cem_lib.CEM(mjm, task, horizon, x0, nproblem=args.nproblem, config=cfg,
+                      nconmax=args.nconmax, njmax=args.njmax)
     # spread the problems' exploration scales (batched hyperparameter sweep)
     opt.std *= np.geomspace(0.5, 2.0, args.nproblem)[:, None, None]
     t0 = time.time()
@@ -98,12 +104,16 @@ def main():
         f"  cem {it:3d}  best {c.min():.4f}  per-problem {np.round(c, 3)}"))
     print(f"CEM: {time.time() - t0:.2f} s, best cost {res.cost.min():.4f}")
     actions, states, stage, cost = res.actions, res.states, res.stage_costs, res.cost
+    # free CEM's world batch before iLQR allocates its own (GPU memory)
+    del opt, res
+    gc.collect()
   if "ilqr" in args.optimizer:
     cfg = ilqr_lib.ILQRConfig(
         iterations=args.ilqr_iters, fd_eps=args.fd_eps,
         max_fd_worlds=args.max_fd_worlds,
     )
-    opt = ilqr_lib.ILQR(mjm, task, horizon, x0, nproblem=args.nproblem, config=cfg)
+    opt = ilqr_lib.ILQR(mjm, task, horizon, x0, nproblem=args.nproblem, config=cfg,
+                        nconmax=args.nconmax, njmax=args.njmax)
     t0 = time.time()
     res = opt.optimize(actions, callback=lambda it, c: print(
         f"  ilqr {it:3d}  best {c.min():.4f}  per-problem {np.round(c, 3)}"))
@@ -120,12 +130,16 @@ def main():
   )
   print(f"saved best trajectory (problem {b}, cost {cost[b]:.4f}) to {path}")
 
-  for label, gains in (("open loop", None), ("with iLQR feedback", None if K is None else K[b])):
-    if label != "open loop" and gains is None:
-      continue
-    sim = trajectory_io.resimulate(mjm_cpu, states[b], actions[b], K=gains)
-    print(f"CPU MuJoCo re-simulation ({label}): max qpos error "
-          f"{sim.qpos_error.max():.3e}, diverged at step {sim.diverged_at}")
+  # unmodified model: gap to MJPC's simulator; with pruned collisions also
+  # the same model as on the GPU, which isolates the GPU/float32 gap
+  checks = [("", mjm_cpu)] + ([(", GPU model", mjm)] if classes or args.integrator else [])
+  for suffix, check_model in checks:
+    for label, gains in (("open loop", None), ("with iLQR feedback", None if K is None else K[b])):
+      if label != "open loop" and gains is None:
+        continue
+      sim = trajectory_io.resimulate(check_model, states[b], actions[b], K=gains)
+      print(f"CPU MuJoCo re-simulation ({label}{suffix}): max qpos error "
+            f"{sim.qpos_error.max():.3e}, diverged at step {sim.diverged_at}")
 
   if args.view:
     trajectory_io.replay(mjm_cpu, states[b])
