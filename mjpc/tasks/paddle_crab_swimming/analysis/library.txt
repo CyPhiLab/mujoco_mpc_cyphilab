@@ -1,0 +1,15 @@
+# Gait primitive library (NAME=STEP.npz), exported to ../gait_reference.xml.
+# 12 V XW430 servos, the task's command ranges unless noted.
+paddles_lead=runs/ladder_mY/step10_max_dt0.001.npz
+paddles_trail=runs/ladder_pY/step8_max_dt0.001.npz
+side=runs/ladder_pX/step4_max_dt0.001.npz
+side_left=runs/prim_mX/step4_max_dt0.001_mirror.npz
+diag_right_lead=runs/prim_pXmY/step8_max_dt0.001.npz
+diag_left_lead=runs/prim_mXmY/step8_max_dt0.001_mirror.npz
+diag_right_trail=runs/prim_pXpY/step6_max_dt0.001.npz
+diag_left_trail=runs/prim_mXpY/step6_max_dt0.001_mirror.npz
+turn_left=runs/prim_turnL/step12_max_dt0.001.npz
+turn_right=runs/prim_turnR/step12_max_dt0.001_mirror.npz
+down=runs/prim_down/step10_v0.0781_dt0.001.npz
+# +-pi commands, steady tilt free (round 2):
+crab_side=runs/crab_heading/step2_v0.09_dt0.001.npz

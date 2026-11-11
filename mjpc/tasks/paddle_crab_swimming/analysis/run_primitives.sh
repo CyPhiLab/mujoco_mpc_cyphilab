@@ -57,6 +57,12 @@ one() {
     down)
       run down --direction 0 0 -1 --speed_start 0.04 \
         --seed_style random+wide+library --seed_files $LIB $COMMON ;;
+    down_rest) # down re-polished on its true limit cycle: scored from rest
+      # after 10 cycles (its attitude settles slowly; the steady-start chain
+      # scores too early and the gait drifts -Y at 2 cm/s), drift weighted up
+      run down_rest --init runs/prim_down/step10_v0.0781_dt0.001.npz \
+        --from_rest --warm 10 --speeds 0.07 --weights depth=3 \
+        --patience 1 $COMMON ;;
     *) echo "unknown primitive $1" >&2; exit 2 ;;
   esac
 }
