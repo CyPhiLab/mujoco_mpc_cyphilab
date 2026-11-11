@@ -42,9 +42,15 @@ one() {
     pX)    # sideways, right legs leading (re-search with the library)
       run pX --direction 1 0 0 --speed_start 0.06 \
         --seed_style random+wide+crab+library --seed_files $LIB $COMMON ;;
-    turnL) # turn on the spot, counterclockwise seen from above
-      run turnL --yaw_ladder 0.1 0.15 0.2 0.3 0.4 0.5 0.65 0.8 1.0 \
+    turnL_w1) # turn on the spot, counterclockwise seen from above: search
+      # (with the default yaw weight 1 the ladder stalls short of 0.1 rad/s)
+      run turnL_w1 --yaw_ladder 0.1 0.15 0.2 0.3 0.4 0.5 0.65 0.8 1.0 \
         --seed_style random+wide+library+splice --seed_files $LIB $COMMON ;;
+    turnL) # the turning ladder from that search, yaw target weighted like
+      # a speed target
+      run turnL --init runs/prim_turnL_w1/step2_w0.1_dt0.002.npz \
+        --yaw_ladder 0.1 0.15 0.2 0.3 0.4 0.5 0.65 0.8 1.0 \
+        --weights yaw=8 $COMMON ;;
     up)
       run up --direction 0 0 1 --speed_start 0.04 \
         --seed_style random+wide+library --seed_files $LIB $COMMON ;;
@@ -57,7 +63,7 @@ one() {
 
 case ${1:-} in
   chain1) for p in pXmY pXpY pX; do one $p; done ;;
-  chain2) for p in turnL up; do one $p; done ;;
+  chain2) for p in turnL up; do one $p; done ;;  # after turnL_w1
   chain3) one down ;;
   "") echo "usage: $0 chain1|chain2|NAME" >&2; exit 2 ;;
   *) one "$1" ;;
