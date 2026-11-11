@@ -59,7 +59,8 @@ def mirror_state(state):
   idx, sign = C.MIRROR_INDEX, C.MIRROR_SIGN
   qpos[7:] = sign * qpos[7:][idx]
   qvel[6:] = sign * qvel[6:][idx]
-  act = sign * act[idx]
+  if act.size:                       # v2 has no servo filter states
+    act = sign * act[idx]
   s[L.qpos], s[L.qvel], s[L.act] = qpos, qvel, act
   return s
 
@@ -68,6 +69,7 @@ def save(path, problem, theta, history):
   res, info = problem.evaluate(theta[None])
   cycle = problem.limit_cycle(theta)
   np.savez(path, theta=theta, k=problem.layout.k, dt=problem.dt,
+           robot=problem.robot,
            speed_target=problem.speed, max_speed=problem.max_speed,
            direction=problem.direction, x0=problem.x0, half=problem.half,
            design=json.dumps(problem.design), tau=problem.tau,
@@ -91,6 +93,7 @@ def main():
   p.add_argument('--processes', type=int, default=2)
   a = p.parse_args()
   z = np.load(a.src, allow_pickle=True)
+  C.set_robot(C.step_robot(z))
   problem = load_problem(z)
   layout = problem.layout
   theta = G.mirror_theta(layout, z['theta'])

@@ -147,6 +147,7 @@ def main():
   p.add_argument('--out')
   a = p.parse_args()
   z = np.load(a.step, allow_pickle=True)
+  C.set_robot(C.step_robot(z))
   problem = problem_for(z, C.SIM_DT, STEADY_WARM, measure=2)
   theta = z['theta']
   _, info = problem.evaluate(theta[None])

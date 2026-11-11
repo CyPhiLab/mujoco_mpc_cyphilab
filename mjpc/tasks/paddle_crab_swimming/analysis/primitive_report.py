@@ -27,6 +27,7 @@ PATH_SECONDS = 20.0
 
 
 def problem_for(z, dt, warm, measure=2):
+  C.set_robot(C.step_robot(z))
   metrics = json.loads(str(z['metrics']))
   half = step_half(z)
   stock = C.load_model(ground=False).actuator_ctrlrange[:, 1]

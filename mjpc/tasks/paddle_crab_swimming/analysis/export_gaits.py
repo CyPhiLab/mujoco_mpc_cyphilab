@@ -38,6 +38,7 @@ import gait_opt as G
 
 def load_step(path):
   z = np.load(path, allow_pickle=True)
+  C.set_robot(C.step_robot(z))
   return dict(path=path, theta=z['theta'], k=int(z['k']), dt=float(z['dt']),
               metrics=json.loads(str(z['metrics'])), phase=z['phase'],
               qpos=z['qpos'], ctrl=z['ctrl'], warm=int(z['warm']),

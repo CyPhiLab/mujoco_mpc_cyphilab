@@ -127,6 +127,7 @@ def main():
   p.add_argument('--slow', type=float, default=1.0)
   args = p.parse_args()
   z = np.load(args.npz, allow_pickle=True)
+  C.set_robot(C.step_robot(z))
   base = os.path.splitext(args.npz)[0]
   render(base + '.mp4', z['theta'], int(z['k']), args.dt, args.cycles,
          args.camera, slow=args.slow, half=z['half'] if 'half' in z else None,

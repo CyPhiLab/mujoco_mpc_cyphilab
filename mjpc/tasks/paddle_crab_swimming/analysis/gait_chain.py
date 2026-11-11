@@ -86,6 +86,7 @@ class Chain:
 
   def __init__(self, args):
     self.args = args
+    C.set_robot(args.robot)
     self.out = args.out
     os.makedirs(self.out, exist_ok=True)
     self.summary_path = os.path.join(self.out, 'summary.json')
@@ -135,7 +136,10 @@ class Chain:
   def feasible(self, metrics, speed, yaw=0.0):
     a = self.args
     tol = max(a.speed_tol, a.speed_rtol * speed)
-    ok = abs(metrics['speed'] - speed) <= tol and self.straight(metrics)
+    if self.turning:   # translation held near its target
+      ok = abs(metrics['speed'] - speed) <= tol and self.straight(metrics)
+    else:              # a speed rung is met by swimming at least that fast
+      ok = metrics['speed'] >= speed - tol and self.straight(metrics)
     if self.turning or yaw:
       ok = ok and abs(metrics['yaw_rate'] - yaw) <= max(
           a.yaw_tol, a.speed_rtol * abs(yaw))
@@ -164,6 +168,7 @@ class Chain:
     ctrl, _ = G.controls(problem.layout, theta, problem.half, n, problem.dt)
     path = os.path.join(self.out, tag + '.npz')
     np.savez(path, theta=theta, k=problem.layout.k, dt=problem.dt,
+             robot=problem.robot,
              speed_target=problem.speed, max_speed=problem.max_speed,
              direction=problem.direction, x0=problem.x0, half=problem.half,
              design=json.dumps(problem.design), tau=problem.tau,
@@ -349,9 +354,12 @@ class Chain:
           C.load_model(ground=False).actuator_ctrlrange[:, 1]
       new = self.problem(dt0, speeds[0]).half
       theta = G.rescale_theta(G.Layout(a.k), theta, old, new)
-      if not a.from_rest:
+      if not a.from_rest and C.step_robot(z) == C.robot():
         self.x0 = self.steady_state(a.init)
-      self.log(f'init from {a.init}')
+      # (From another robot's gait the commands carry over, its state does
+      # not: the first step then starts from rest.)
+      self.log(f'init from {a.init} ({C.step_robot(z)} gait'
+               f'{"" if C.step_robot(z) == C.robot() else ", from rest"})')
     else:
       name0, speed0, yaw0 = self.targets(speeds)[0]
       theta, _ = self.run_step(f'{name0}_dt{dt0:g}_search', 'search',
@@ -363,6 +371,7 @@ class Chain:
                                    solver(problem, theta, a.lm_iters))
       # A missed rung is retried from where it got to (the first retry
       # through the ES) for as long as each attempt still gains speed.
+      attempts = [(theta_v, row, self.x0)]
       for attempt in range(1, a.patience + 1):
         if row['feasible']:
           break
@@ -374,14 +383,19 @@ class Chain:
             f'{rung}_dt{dt0:g}_r{attempt}', 'speed',
             solver(problem, theta_v, a.lm_iters,
                    a.es_iters if attempt == 1 else 0))
+        attempts.append((theta_v, row, self.x0))
         if progress(row) < reached * (1 + a.min_gain):
           break
       if not row['feasible']:
         self.log(f' {rung} missed (reached v {row["speed"]:.4f} yaw '
                  f'{row["yaw_rate"]:+.4f}); ending the ladder')
+        # "max" is the best straight attempt at this rung (not the last).
         best = rungs[-1][5] if rungs else 0.0
-        if row['straight'] and progress(row) > best:
-          best_effort = ('max', theta_v, speed, self.x0, yaw, progress(row))
+        straight = [t for t in attempts if t[1]['straight']]
+        if straight:
+          th_b, row_b, x0_b = max(straight, key=lambda t: progress(t[1]))
+          if progress(row_b) > best:
+            best_effort = ('max', th_b, speed, x0_b, yaw, progress(row_b))
         break
       theta = theta_v
       rungs.append((rung, theta.copy(), speed, self.x0, yaw, progress(row)))
@@ -505,6 +519,10 @@ def main():
                       'targets (rad/s) with the speed held at --turn_speed')
   p.add_argument('--turn_speed', type=float, default=0.0,
                  help='speed target along --direction during a yaw ladder')
+  p.add_argument('--robot', default=C.robot(), choices=C.ROBOTS,
+                 help='v1: robot_xdomain.xml (MuJoCo 3.2.3); v2: '
+                      'robot_v2/Robot.xml with dcmotor servos (MuJoCo >= 4). '
+                      'Default: $CRAB_ROBOT, else v2 (crab_model.ROBOTS)')
   p.add_argument('--hold_legs', default='',
                  help="legs held still, e.g. R1,R2,L1,L2: their joints' "
                       "oscillation is zero, their posture stays free")

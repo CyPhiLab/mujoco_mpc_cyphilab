@@ -460,6 +460,109 @@ python primitive_report.py $(grep -v '^#' library.txt) --out runs/primitives_rep
 build/bin/cost_sweep --open_loop --seconds 20 Gait=turn_left Gait=down
 ```
 
+## Robot v2 (the updated robot)
+
+The collaborators' updated model is in `../robot_v2/` (`Robot.xml` plus its
+meshes, committed verbatim). It is the robot from here on; v1
+(`robot_xdomain.xml`) stays for MJPC until MJPC moves to MuJoCo 4.
+
+What changed (see `crab_model.ROBOTS`):
+
+| | v1 | v2 |
+|---|---|---|
+| body | flat plate, cylinder, ballast | chassis mesh, buoyancy foam |
+| mass | 11.1 kg | 8.9 kg |
+| drag at 0.1 m/s (−Y / +X / +Z) | 0.57 / 0.58 / 0.88 N | 0.70 / 0.79 / 1.01 N |
+| servo housings | 0.34 kg | 0.096 kg |
+| walking-leg feet | box | foot mesh |
+| servos | kp 50 position servo + 0.08 s setpoint filter, joint damping 1 as the speed limit | MuJoCo `dcmotor`: XW430 at 12 V (3.1 N m stall, 3.25 rad/s no load) with its own PID position control |
+| MuJoCo | 3.2.3 | ≥ 4 (`dcmotor`) |
+
+How the pipeline loads v2 (`crab_model.load_v2`):
+
+- **Joint damping is set to 0.** The file keeps damping 1 on every joint as
+  well as the `dcmotor`, which already models the back-EMF. That counts the
+  speed limit twice: the servos then reach 1.58 rad/s instead of the
+  datasheet's 3.25 (measured with a step command). This should go back to
+  the collaborators.
+- **The task's command ranges, not the file's.** The file's ranges are
+  ±1.6 / ±1.0 / ±0.5 rad, and the paddle feather would be ±0.5. The task's
+  are ±1.2 / ±1.57 / ±1.05, with the paddle feather ±1.57.
+- **No floor, contacts off, no setpoint filter.**
+- **`input="position"` is rewritten to `"pos"`** when the installed MuJoCo
+  needs it. The file is written for mjlab's newer MuJoCo; 4.0.1 spells it
+  `pos`.
+- **Actuator-force sensors are added.**
+
+**Effort, saturation and work on v2.** The `dcmotor` reports the net torque
+on the joint, which is small (0.1–0.5 N m: the fluid and inertial load). Its
+speed limit is the supply voltage. On v2 these measures therefore use the
+supply fraction u = torque / 3.1 N m + speed / 3.25 rad/s (1 at the voltage
+limit; checked on step responses):
+
+- effort is RMS(u);
+- "saturated" is the time at |u| > 0.99;
+- work is (u × 3.1 N m) × speed.
+
+This is what v1's damping-inclusive servo torque measured, so v1 and v2
+numbers compare.
+
+Checks:
+
+- **Timestep.** At 2 ms, speeds are within about 1% of 0.5 and 1 ms, but
+  5 ms is off (drift). The schedule stays 2 ms, then 1 ms.
+- **The 20 ms planner check is NaN on v2.** The `dcmotor` is unstable at a
+  20 ms step; MJPC will need its own planner step for v2.
+- **Mirror images** swim within about 2% of their source on v2 (0.1% on
+  v1). `run_primitives_v2.sh mirrors` re-polishes them with 4 LM iterations.
+- **v1 results** still re-score bit-identically (`CRAB_ROBOT=v1`, MuJoCo
+  3.2.3).
+
+The robot is chosen per run with `gait_chain.py --robot v1|v2` or
+`CRAB_ROBOT`; the default is v2. Every step npz records its robot in a
+`robot` field (files without it are v1), and the analysis tools follow it.
+`--init` from a v1 gait works on v2: the commands are radians, and the first
+step starts from rest. Speed rungs now count as met when the gait swims at
+least the target (an overshoot used to count as a miss and pull the gait
+back), and a missed rung's `max` is its best straight attempt, not its last.
+
+The v1 primitives on v2, unchanged (2 ms, from rest):
+
+| primitive | v1 speed | on v2 | note |
+|---|---|---|---|
+| paddles_lead (K = 5) | 0.116 | 0.129 | |
+| paddles_cruise | 0.093 | 0.090 | |
+| paddles_trail | 0.087 | 0.096 | yaw −0.02 rad/s |
+| side | 0.073 | 0.072 | 49 mm/s lateral drift, yaw −0.05 rad/s |
+| diag_right_lead | 0.080 | 0.094 | yaw −0.045 rad/s |
+| diag_right_trail | 0.070 | 0.084 | |
+| turn_left | 0.382 rad/s | 0.359 rad/s | |
+| up | 0.074 | 0.052 | |
+| down | 0.075 | 0.020 | |
+
+### Running the v2 library (any machine)
+
+```sh
+git clone -b updated_paddle https://github.com/CyPhiLab/mujoco_mpc_cyphilab
+cd mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis
+python3.12 -m venv ~/venv_mj4 && ~/venv_mj4/bin/pip install -r requirements_v2.txt
+PROCS=8 MUJOCO_GL=egl nohup ./run_primitives_v2.sh all > v2_all.log 2>&1 &
+```
+
+- **`all`** runs two chains side by side, then the mirror images:
+  - `chainA`: −Y, +X−Y, turn, up, cruise −Y;
+  - `chainB`: +Y, +X, +X+Y, down.
+- **`PROCS`** is the worker count per run, so about half the cores. Batches
+  are capped at 32 rollouts, so beyond about 16 per run extra cores help
+  less. For more parallelism, start the single runs (`./run_primitives_v2.sh
+  NAME`) yourself.
+- **`MUJOCO_GL`**: `egl` on a GPU machine, `osmesa` with libosmesa, or empty
+  to skip the per-step videos.
+- **Restarts.** A restarted run resumes from its last iteration; rerun the
+  same command.
+- **Outputs** go to `runs/v2_<name>/` (step npz, mp4, plots, summary.json)
+  and `runs/primitives_queue.log`.
+
 ## Kinematic swimming reference (`kinematic_ref.py`, `crab_reference.json`)
 
 This is a pure kinematic animation keyframed by eye against blue crab

@@ -128,7 +128,7 @@ class Problem:
                speed=0.05, max_speed=False, weights=None, x0=None,
                tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
                design=None, reference=None, fixed_period=None,
-               yaw_rate=0.0, hold=None):
+               yaw_rate=0.0, hold=None, robot=None):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world frame; the body keeps its start heading,
     # so this picks which side of the robot leads. It may point up or down
@@ -149,8 +149,11 @@ class Problem:
     self.ctrl_limit = ctrl_limit
     self.design = dict(design or {})
     self.tau = tau
+    self.robot = robot or C.robot()
     self.m = C.load_model(dt=dt, tau=tau, ground=False, ctrl_limit=ctrl_limit,
-                          design=self.design)
+                          design=self.design, robot=self.robot)
+    # v2: servo force comes from actuatorfrc sensors in the rollout.
+    self.v2 = C.is_v2(self.m)
     C.check_layout(self.m)
     self.d = mujoco.MjData(self.m)
     self.state_layout = C.StateLayout(self.m)
@@ -171,7 +174,7 @@ class Problem:
                 ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau,
                 reference=None if self.reference is None
                 else self.reference.tolist(), fixed_period=self.fixed_period,
-                yaw_rate=self.yaw_rate, hold=self.hold)
+                yaw_rate=self.yaw_rate, hold=self.hold, robot=self.robot)
 
   def fix(self, thetas):
     """thetas with the fixed period, if there is one, and the held
@@ -200,9 +203,13 @@ class Problem:
       ctrl[i], excess[i] = controls(self.layout, theta, self.half, nstep,
                                     self.dt)
     # rollout's states are after each step; prepend the start state.
-    states, _ = mujoco.rollout.rollout(self.m, self.d, self.x0, ctrl)
+    states, sensordata = mujoco.rollout.rollout(self.m, self.d, self.x0, ctrl)
     x0 = np.broadcast_to(self.x0, (len(thetas), 1, self.x0.size))
     states = np.concatenate([x0, states], axis=1)
+    if self.v2:
+      # Actuator force over each step (sensor data is after the step; the
+      # first step's stands in for the start state).
+      self.last_force = np.concatenate([sensordata[:, :1], sensordata], axis=1)
     return states, ctrl, excess
 
   def evaluate(self, thetas):
@@ -210,12 +217,13 @@ class Problem:
     states, ctrl, excess = self.rollout(thetas)
     res, info = [], []
     for i, theta in enumerate(self.fix(np.atleast_2d(thetas))):
-      r, metrics = self.residual_from(theta, states[i], excess[i])
+      force = self.last_force[i] if self.v2 else None
+      r, metrics = self.residual_from(theta, states[i], excess[i], force)
       res.append(r)
       info.append(metrics)
     return np.array(res), info
 
-  def residual_from(self, theta, states, excess):
+  def residual_from(self, theta, states, excess, force_all=None):
     L = self.state_layout
     dt, period = self.dt, self.layout.period(theta)
     qpos, qvel, act = states[:, L.qpos], states[:, L.qvel], states[:, L.act]
@@ -272,12 +280,23 @@ class Problem:
     cycle = cycle_state(t1) - cycle_state(tl)
 
     q, a, qd = qpos[window, 7:], act[window], qvel[window, 6:]
-    force = C.actuator_force(self.m, q, a)
-    effort = float(np.sqrt(np.mean((force / C.FORCE_LIMIT) ** 2)))
-    servo = C.servo_command_force(self.m, q, a)
     limit = self.m.actuator_forcerange[:, 1]
-    force_excess = np.maximum(np.abs(servo) - limit, 0) / limit
-    saturated = float(np.mean(np.abs(servo) > limit))
+    if force_all is None:
+      force = C.actuator_force(self.m, q, a)
+      servo = C.servo_command_force(self.m, q, a)
+      force_excess = np.maximum(np.abs(servo) - limit, 0) / limit
+      saturated = float(np.mean(np.abs(servo) > limit))
+    else:
+      # dcmotor: the motor's speed limit is voltage saturation, not torque.
+      # Effort, saturation and work use the supply fraction u (C.motor_
+      # fraction); the "force" for effort and work is the gross motor torque
+      # u * stall, which is what v1's servo torque (with joint damping as the
+      # back-EMF) measured.
+      u = C.motor_fraction(force_all[window], qd)
+      force = u * C.V2_STALL
+      force_excess = np.maximum(np.abs(u) - 0.95, 0)
+      saturated = float(np.mean(np.abs(u) > 0.99))
+    effort = float(np.sqrt(np.mean((force / C.FORCE_LIMIT) ** 2)))
     power = force * qd
     work = float(np.sum(np.maximum(power, 0)) * dt)      # positive work
     distance = max(abs(speed) * duration, 1e-9)

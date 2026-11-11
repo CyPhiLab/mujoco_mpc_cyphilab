@@ -1,0 +1,8 @@
+# Python environment for robot v2 (robot_v2/Robot.xml, dcmotor actuators).
+# Python 3.12; robot v1 and MJPC still use mujoco==3.2.3 in a separate env.
+mujoco==4.0.1
+numpy
+matplotlib
+imageio[pyav]
+imageio-ffmpeg
+Pillow
