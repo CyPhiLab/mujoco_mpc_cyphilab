@@ -284,7 +284,7 @@ The heading change is over 20 s open loop from rest.
 
 | primitive | swims | stroke (s) | speed | drift (lateral) | yaw | sat. | 20 ms planner | 20 s open loop | run |
 |---|---|---|---|---|---|---|---|---|---|
-| paddles_lead | −Y | 1.10 | 0.112 m/s | +8 mm/s | +0.003 rad/s | 0.09 | 0.116 | 2.15 m, +0.11 rad | `ladder_mY` |
+| paddles_lead (K = 5) | −Y | 1.10 | 0.116 m/s | +1 mm/s | 0.000 rad/s | 0.07 | 0.120 | 2.23 m, +0.03 rad | `prim_k5_mY` |
 | paddles_trail | +Y | 1.23 | 0.086 | +2 | −0.010 | 0.09 | 0.093 | 1.66 m, −0.19 rad | `ladder_pY` |
 | side / side_left | ±X | 0.73 | 0.073 | ∓2 | ±0.003 | 0.06 | 0.081 | 1.37 m, ±0.12 rad | `ladder_pX`, `prim_mX` |
 | diag_right_lead / diag_left_lead | ±X−Y | 0.74 | 0.080 | ±4 | ∓0.012 | 0.06 | 0.083 | 1.53 m, ∓0.09 rad | `prim_pXmY`, `prim_mXmY` |
@@ -370,8 +370,17 @@ the gain comes from the supply.
 - **14.8 V gaits are not exported.** MJPC simulates 12 V servos;
   `export_gaits.py` now warns when a gait was made for a design variant.
 
-Not run yet: streamlined walking-leg postures (body drag ×0.5 was worth +38%
-in round 2) and more harmonics (`--k 5`, warm-started with `--init`).
+### More harmonics (K = 5)
+
+`prim_k5_mY` warm-starts paddles first from the K = 3 gait with `--k 5`
+(199 parameters instead of 127). It swims 0.1161 m/s at 1 ms against
+0.1125 (+3%), with a 0.120 m/s prediction from the 20 ms planner model. It
+is also straighter: lateral drift is 1.3 mm/s against 8.1, and over 20 s
+open loop it ends 2 cm off line with a 0.03 rad heading change (12 cm and
+0.11 rad for K = 3). It replaces the K = 3 gait as `paddles_lead` in the
+library. MJPC plays it back exactly (`cost_sweep --open_loop`: 2.23 m,
+2 cm lateral).
+
 
 ### Reproduce
 

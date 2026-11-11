@@ -9,7 +9,7 @@ folder `mjpc/tasks/paddle_crab_swimming/analysis/`.
 
 | name | motion | speed | stroke T |
 |---|---|---|---|
-| paddles_lead | swim −Y (toward the paddles) | 0.112 m/s | 1.10 s |
+| paddles_lead | swim −Y (toward the paddles) | 0.116 m/s | 1.10 s |
 | paddles_trail | swim +Y (anterior) | 0.086 m/s | 1.23 s |
 | side / side_left | swim +X / −X (robot right / left) | 0.073 m/s | 0.73 s |
 | diag_right_lead / diag_left_lead | swim (±X, −Y)/√2 | 0.080 m/s | 0.74 s |
@@ -35,7 +35,7 @@ to hold position. The others drift under about 1 cm/s and turn under about
 - `names[i]`, `period[i]` (s), `k[i]` (harmonics)
 - `speed[i]`, `direction[i]` (unit 3-vector), `yaw_rate[i]` (rad/s)
 - `c[i]` (18), `a[i]` and `b[i]` (18 × K, padded; use the first `k[i]`
-  columns)
+  columns: paddles_lead has K = 5, the rest K = 3)
 - `half[i]` (18): the per-servo command limit, rad
 - `table_time[i]`, `table_ctrl[i]`: one cycle of commands at 100 Hz
 - `joint_phase[i]`, `joint_qpos[i]`: the resulting joint-angle limit cycle

@@ -9,7 +9,7 @@ Made by `mjpc/tasks/paddle_crab_swimming/analysis/gait_chain.py` and exported by
 
 | gait | direction | yaw rate (rad/s) | period (s) | steady speed (m/s) | replay from rest (m/s) |
 |---|---|---|---|---|---|
-| paddles_lead | [0.0, -1.0, 0.0] | +0.000 | 1.103 | 0.1121 | 0.0922 |
+| paddles_lead | [0.0, -1.0, 0.0] | +0.000 | 1.098 | 0.1161 | 0.0961 |
 | paddles_trail | [0.0, 1.0, 0.0] | +0.000 | 1.227 | 0.0855 | 0.0734 |
 | side | [1.0, 0.0, 0.0] | +0.000 | 0.728 | 0.0728 | 0.0485 |
 | side_left | [-1.0, 0.0, 0.0] | +0.000 | 0.728 | 0.0728 | 0.0485 |
