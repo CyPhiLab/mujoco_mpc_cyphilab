@@ -130,8 +130,11 @@ class Chain:
 
   def straight(self, metrics):
     a = self.args
-    return bool(abs(metrics['lateral_rate']) <= a.drift_tol
-                and metrics['saturated'] <= a.saturation_tol)
+    ok = (abs(metrics['lateral_rate']) <= a.drift_tol
+          and metrics['saturated'] <= a.saturation_tol)
+    if not self.turning:   # a straight gait also holds its heading
+      ok = ok and abs(metrics['yaw_rate'] - a.yaw_rate) <= a.yaw_drift_tol
+    return bool(ok)
 
   def feasible(self, metrics, speed, yaw=0.0):
     a = self.args
@@ -587,6 +590,8 @@ def main():
   p.add_argument('--speed_tol', type=float, default=0.003)
   p.add_argument('--speed_rtol', type=float, default=0.05)
   p.add_argument('--drift_tol', type=float, default=0.005)
+  p.add_argument('--yaw_drift_tol', type=float, default=0.015,
+                 help='yaw-rate drift a straight gait may have (rad/s)')
   p.add_argument('--saturation_tol', type=float, default=0.2,
                  help='fraction of time a servo may sit at its torque limit')
   p.add_argument('--processes', type=int, default=None)

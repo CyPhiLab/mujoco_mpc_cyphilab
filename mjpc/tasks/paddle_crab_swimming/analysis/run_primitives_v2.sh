@@ -36,6 +36,10 @@ export MUJOCO_GL=${MUJOCO_GL-osmesa}
 
 COMMON="--robot v2 --starts 3 --search_iters 6 --es_iters 10 --lm_iters 12 \
   --refine_iters 4 --processes $PROCS"
+# Straight gaits weight yaw drift 4 (the v1 gaits start out turning 0.03-0.05
+# rad/s on v2; weight 1 let that stand); gait_chain's straight check also
+# holds them to 0.015 rad/s. The turn sets its own yaw weight.
+STRAIGHT="--weights yaw=4"
 
 final() {  # the 1 ms gait a run ended with (max if any, else its last rung)
   local dir=runs/v2_$1 f
@@ -73,32 +77,32 @@ one() {
   case $1 in
     mY)        # paddles first (K = 5)
       run mY --init runs/prim_k5_mY/step5_max_dt0.001.npz --k 5 \
-        --direction 0 -1 0 --speed_start 0.125 --speed_growth 1.08 $COMMON ;;
+        --direction 0 -1 0 --speed_start 0.125 --speed_growth 1.08 $STRAIGHT $COMMON ;;
     pY)        # paddles trailing
       run pY --init runs/ladder_pY/step8_max_dt0.001.npz \
-        --direction 0 1 0 --speed_start 0.09 --speed_growth 1.1 $COMMON ;;
+        --direction 0 1 0 --speed_start 0.09 --speed_growth 1.1 $STRAIGHT $COMMON ;;
     pX)        # sideways, right legs leading
       run pX --init runs/ladder_pX/step4_max_dt0.001.npz \
-        --direction 1 0 0 --speed_start 0.065 --speed_growth 1.1 $COMMON ;;
+        --direction 1 0 0 --speed_start 0.065 --speed_growth 1.1 $STRAIGHT $COMMON ;;
     pXmY)      # diagonal, right side and paddles leading
       run pXmY --init runs/prim_pXmY/step8_max_dt0.001.npz \
-        --direction 1 -1 0 --speed_start 0.085 --speed_growth 1.1 $COMMON ;;
+        --direction 1 -1 0 --speed_start 0.085 --speed_growth 1.1 $STRAIGHT $COMMON ;;
     pXpY)      # diagonal, right side leading, paddles trailing
       run pXpY --init runs/prim_pXpY/step6_max_dt0.001.npz \
-        --direction 1 1 0 --speed_start 0.08 --speed_growth 1.1 $COMMON ;;
+        --direction 1 1 0 --speed_start 0.08 --speed_growth 1.1 $STRAIGHT $COMMON ;;
     turnL)     # turn on the spot, counterclockwise from above
       run turnL --init runs/prim_turnL/step12_max_dt0.001.npz \
         --yaw_ladder 0.35 0.4 0.45 0.5 --weights yaw=8 $COMMON ;;
     up)
       run up --init runs/prim_up/step9_max_dt0.001.npz \
-        --direction 0 0 1 --speed_start 0.05 --speed_growth 1.15 $COMMON ;;
+        --direction 0 0 1 --speed_start 0.05 --speed_growth 1.15 $STRAIGHT $COMMON ;;
     down)
       run down --init runs/prim_down/step10_v0.0781_dt0.001.npz \
-        --direction 0 0 -1 --speed_start 0.02 --speed_growth 1.25 $COMMON ;;
+        --direction 0 0 -1 --speed_start 0.02 --speed_growth 1.25 $STRAIGHT $COMMON ;;
     cruise_mY) # paddles first, walking legs held (the efficient gait)
       run cruise_mY --init runs/prim_hold_mY/step6_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 0 -1 0 --speed_start 0.09 \
-        --speed_growth 1.08 $COMMON ;;
+        --speed_growth 1.08 $STRAIGHT $COMMON ;;
     *) echo "unknown run $1" >&2; exit 2 ;;
   esac
 }
