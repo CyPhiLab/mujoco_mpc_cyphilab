@@ -1,0 +1,24 @@
+[
+  {
+    "file": "step4_max_dt0.001_mirror.npz",
+    "source": "runs/ladder_pX/step4_max_dt0.001.npz",
+    "polish": 0,
+    "period": 0.7283676448916384,
+    "speed": 0.07286989538207117,
+    "lateral_rate": -0.0006662966239623834,
+    "yaw_rate": -0.0020834671733707556,
+    "yaw_rate_target": -0.0,
+    "depth_rate": -0.0009091148163717872,
+    "heading": 0.0048805084860216175,
+    "tilt_mean": 0.195781284900735,
+    "tilt_rms": 0.015427156880526842,
+    "cycle_error": 0.09435011151830418,
+    "effort": 0.5193964231311844,
+    "saturated": 0.060779379241973616,
+    "command_clipped": 0.0043087012887973765,
+    "work_per_cycle": 33.12359669389294,
+    "cot": 5.708586494598039,
+    "track_rms": null,
+    "cost": 19.983929363564922
+  }
+]
