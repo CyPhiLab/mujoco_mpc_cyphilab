@@ -125,12 +125,15 @@ Run this again after editing `pterosaur.cc`.
   Open-loop controls optimized on the GPU drift on CPU MuJoCo once contacts
   change. Track the saved states in MJPC, or apply the saved iLQR gains: in a
   CPU test this reduced the qpos gap about 10×.
-- **Mesh collisions are nondeterministic.** MJWarp's contact pipeline is not
-  bitwise reproducible: identical worlds get different contact sets. With
-  the pterosaur's mesh collisions this is large (see
-  [measurements](#measured-on-nvidia-l40s)): one control sequence replayed in
-  256 identical worlds costs anywhere from 532 to 3176. CEM and iLQR then
-  optimize noise. Optimize the pterosaur with `--no-mesh-collisions`.
+- **Mesh self-collisions are not reproducible.** MJWarp's contact pipeline
+  is not bitwise reproducible, and mesh-mesh contacts (GJK/EPA) turn
+  rounding-level differences into different contact sets. On the pterosaur,
+  limb-trunk mesh contacts start 0.18 s into the launch, and one control
+  sequence in 256 identical worlds then costs anywhere from 532 to 3176:
+  CEM and iLQR optimize noise. Mesh-ground contacts are fine. Keep the meshes
+  for ground contact and handle self-collision with primitives (see
+  [Mesh collisions](#mesh-collisions-what-reproduces)), or at least pass
+  `--no-self-collision`.
 - **Contact buffers.** MJWarp preallocates contacts and constraint rows per
   world and drops the excess. Capacities come from a short CPU probe
   simulation (`model.contact_capacity`). If you see an "MJWarp buffer
@@ -214,6 +217,41 @@ wall time, best cost over problems):
   it stays within threshold until step 150 of 160 for nproblem 1 (73–75
   for 8 and 32). Against the full mesh model it diverges at step 16–31
   (model mismatch).
+
+### Mesh collisions: what reproduces
+
+Same check as above (saved controls plus two random control sequences, 256
+identical worlds each, oversized buffers, no overflow), per collision setup:
+
+| setup | IQR/median of cost (launch / random0 / random1) | identical worlds diverge at step | steps/s, 4096 worlds |
+|---|---|---|---|
+| task model (mesh ground + mesh self-collision) | 78% / blow-ups / 21% | 19 / 24 / 45 | 452k |
+| `opt.deterministic = ALL` (only ATOMICS is implemented in 4.0.1) | 40% / 2% / 12% | 24 / 53 / 46 | ~2× slower, more memory |
+| multiccd off | 51% / blow-ups / 2% | 19 / 24 / 59 | 643k |
+| `maxhullvert=32` | 1% / all blow up / 2% | 21 / 45 / 86 | 824k |
+| pterosaur_mjlab's 4 trunk excludes | 3% / blow-ups / 0.3% | 31 / 45 / 67 | 448k |
+| `--no-mesh-collisions` (feet/knee/hand spheres only) | 0.2% / blow-ups / 0.0% | 80 / 63 / 83 | 527k |
+| `--no-self-collision` (meshes touch the ground only) | 0.1% / 12% / 0.2% | 92 / 62 / 76 | 476k |
+| meshes touch the ground + one PCA-fitted capsule per mesh for self-collision | 0.1% / 0.0% / 0.0% | 118 / never / 131 | 1,387k |
+
+Settings that keep mesh-mesh contacts stay noisy or become unstable. Ground-
+only collision is reproducible, but the optimizer then folds the limbs into
+the trunk (93 of 161 steps, up to 195 mm deep in the mesh model). With
+capsule proxies for self-collision the demo becomes well behaved:
+
+| nproblem | CEM | iLQR | CPU re-simulation, same model |
+|---:|---|---|---|
+| 8 | 24.9 s, 213.6 | 21.3 s, no further improvement | open loop: no divergence in 160 steps (max qpos error 5e-4) |
+| 32 | 83.7 s, 212.0 | 66.4 s, no further improvement | open loop: no divergence (4e-4) |
+
+The mesh geometry then self-penetrates in 8-10 of 161 steps, at most 37 mm
+(trunk vs femur / leg motor, the hull overlap pterosaur_mjlab also notes),
+against 141 steps and 56 mm for the trajectory optimized with mesh
+self-collision. The proxies change the physics relative to the C++ task
+model, so the C++ model needs the same proxies before MJPC can track these
+trajectories (against the unmodified model they diverge after 12-18 steps).
+mjlab's robots model collision the same way: hand-placed capsules, spheres
+and boxes, with meshes for visuals only.
 
 `python/launch.npz` is the mesh-collision nproblem 8 run (the
 command in the quick start) and is subject to the noise above.
