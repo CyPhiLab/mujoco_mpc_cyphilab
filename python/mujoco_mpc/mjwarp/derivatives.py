@@ -47,7 +47,7 @@ def _fd_setup_kernel(
     nv: int,
     na: int,
     nu: int,
-    item0: int,
+    item0_arr: wp.array(dtype=int),  # first item of the chunk
     nitem_total: int,
     X: wp.array2d(dtype=float),  # (nitem_total, nx) point per item
     U: wp.array2d(dtype=float),  # (nitem_total, nu)
@@ -67,7 +67,7 @@ def _fd_setup_kernel(
 ):
   w = wp.tid()
   npert = 1 + 2 * nv + na + nu
-  item = item0 + w // npert
+  item = item0_arr[0] + w // npert
   j = w % npert - 1  # -1: nominal
   if item >= nitem_total:
     item = nitem_total - 1  # padding worlds duplicate the last item
@@ -112,7 +112,7 @@ def _fd_collect_kernel(
     nu: int,
     nres: int,
     nterm: int,
-    item0: int,
+    item0_arr: wp.array(dtype=int),  # first item of the chunk
     nitem_total: int,
     eps: float,
     qpos: wp.array2d(dtype=float),
@@ -130,7 +130,7 @@ def _fd_collect_kernel(
   w = wp.tid()
   npert = 1 + 2 * nv + na + nu
   local = w // npert
-  item = item0 + local
+  item = item0_arr[0] + local
   j = w % npert - 1
   if item >= nitem_total:
     return
@@ -180,7 +180,7 @@ class FiniteDifference:
       mjm: mujoco.MjModel,
       task: base.Task,
       *,
-      max_worlds: int = 16384,
+      max_worlds: int = 8192,
       eps: float = 1e-3,
       probe: Optional[mujoco.MjData] = None,
       nconmax: Optional[int] = None,
@@ -210,6 +210,7 @@ class FiniteDifference:
     self.use_graph = use_graph
     self._graphs = {}
     self._task_key = None
+    self.item0 = wp.zeros(1, dtype=int)
     # the world batch is allocated on first use, sized to what is needed
     self.items_per_chunk = 0
     self.nworld = 0
@@ -249,15 +250,15 @@ class FiniteDifference:
     self.w0 = wp.zeros((nitem, task.nterm), dtype=float)
     self._graphs.clear()
 
-  def _chunk(self, item0: int, nitem: int):
-    """Perturb, step and collect one chunk of items starting at item0."""
+  def _chunk(self, nitem: int):
+    """Perturb, step and collect the chunk of items starting at self.item0."""
     lay, task, d = self.layout, self.task, self.d
     wp.launch(
         _fd_setup_kernel,
         dim=self.nworld,
         inputs=[
             lay.jnt_type, lay.jnt_qposadr, lay.jnt_dofadr,
-            lay.nq, lay.nv, lay.na, lay.nu, item0, nitem,
+            lay.nq, lay.nv, lay.na, lay.nu, self.item0, nitem,
             self.X, self.U, self.T, self.eps, self.x_in, self.dq,
         ],
         outputs=[d.qpos, d.qvel, d.act, d.ctrl, d.time, d.qacc_warmstart,
@@ -272,7 +273,7 @@ class FiniteDifference:
         inputs=[
             lay.jnt_type, lay.jnt_qposadr, lay.jnt_dofadr,
             lay.nq, lay.nv, lay.na, lay.nu, task.nresidual, task.nterm,
-            item0, nitem, self.eps, d.qpos, d.qvel, d.act,
+            self.item0, nitem, self.eps, d.qpos, d.qvel, d.act,
             self.residual, self.weight,
         ],
         outputs=[self.F, self.J, self.r0, self.w0, self.dx],
@@ -306,16 +307,18 @@ class FiniteDifference:
       self._graphs.clear()
       self._task_key = task_key
     for item0 in range(0, nitem, self.items_per_chunk):
+      # the chunk offset lives on device, so one graph serves every chunk
+      # (each captured graph owns its own MJWarp scratch memory)
+      self.item0.fill_(item0)
       if not self.use_graph:
-        self._chunk(item0, nitem)
+        self._chunk(nitem)
         continue
-      # item0 and nitem are scalar launch arguments, frozen into the graph
-      graph = self._graphs.get((item0, nitem))
+      graph = self._graphs.get(nitem)  # nitem is a frozen scalar argument
       if graph is None:
-        self._chunk(item0, nitem)  # warm up: compile outside capture
+        self._chunk(nitem)  # warm up: compile outside capture
         with wp.ScopedCapture() as capture:
-          self._chunk(item0, nitem)
-        graph = self._graphs[(item0, nitem)] = capture.graph
+          self._chunk(nitem)
+        graph = self._graphs[nitem] = capture.graph
       wp.capture_launch(graph)
     model_lib.check_overflow(self.d, "during finite differencing ")
     ndx = lay.ndx

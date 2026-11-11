@@ -53,7 +53,7 @@ class ILQRConfig:
   mu_max: float = 1e6
   mu_scale: float = 10.0
   fd_eps: float = 1e-3
-  max_fd_worlds: int = 16384
+  max_fd_worlds: int = 8192  # pterosaur, L40S: ~as fast as 16384 at half the memory
   feedback: bool = True
   tol: float = 1e-6  # relative improvement to stop a problem
 

@@ -52,6 +52,23 @@ def _stage_time_kernel(
   stage_time[w] = time0[src_of_world[w]] + float(stage) * dt
 
 
+def release_graph_memory(device=None) -> None:
+  """Returns memory held by deleted CUDA graphs to the device.
+
+  Allocations made during capture belong to CUDA's graph memory pool, which
+  keeps them reserved after the graphs are destroyed (with mesh collisions,
+  ~5 GB per 4096 pterosaur worlds). Call this after dropping a large
+  optimizer before allocating another. No-op on CPU.
+  """
+  device = wp.get_device(device)
+  if not device.is_cuda:
+    return
+  wp.synchronize_device(device)
+  core = wp._src.context.runtime.core  # no public Warp API (warp 1.19)
+  trim = getattr(core, "wp_cuda_device_graph_mem_trim", None)
+  if trim is not None:
+    trim(device.ordinal)
+
 class SplinePolicy:
   """Per-world spline knots, (nworld, nknot, nu) on device."""
 

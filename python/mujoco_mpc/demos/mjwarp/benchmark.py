@@ -42,7 +42,7 @@ def main():
   p.add_argument("--nworld", type=int, nargs="+", default=[64, 256, 1024, 4096])
   p.add_argument("--horizon", type=int, default=100)
   p.add_argument("--repeats", type=int, default=3)
-  p.add_argument("--max-fd-worlds", type=int, default=16384)
+  p.add_argument("--max-fd-worlds", type=int, default=8192)
   p.add_argument("--no-mesh-collisions", action="store_true")
   args = p.parse_args()
   dev = str(wp.get_device())

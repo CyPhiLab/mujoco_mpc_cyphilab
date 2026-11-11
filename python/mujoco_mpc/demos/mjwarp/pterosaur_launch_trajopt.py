@@ -35,6 +35,7 @@ from mujoco_mpc.mjwarp import cem as cem_lib
 from mujoco_mpc.mjwarp import ilqr as ilqr_lib
 from mujoco_mpc.mjwarp import model as model_lib
 from mujoco_mpc.mjwarp import policy as policy_lib
+from mujoco_mpc.mjwarp import rollout as rollout_lib
 from mujoco_mpc.mjwarp import trajectory_io
 from mujoco_mpc.mjwarp.tasks import pterosaur
 
@@ -53,7 +54,7 @@ def main():
   p.add_argument("--ilqr-iters", type=int, default=20)
   p.add_argument("--init-std", type=float, default=0.4)
   p.add_argument("--fd-eps", type=float, default=1e-3)
-  p.add_argument("--max-fd-worlds", type=int, default=16384)
+  p.add_argument("--max-fd-worlds", type=int, default=8192)
   p.add_argument("--nconmax", type=int, default=None,
                  help="contacts per world (default: sized by a CPU probe)")
   p.add_argument("--njmax", type=int, default=None,
@@ -107,6 +108,7 @@ def main():
     # free CEM's world batch before iLQR allocates its own (GPU memory)
     del opt, res
     gc.collect()
+    rollout_lib.release_graph_memory()
   if "ilqr" in args.optimizer:
     cfg = ilqr_lib.ILQRConfig(
         iterations=args.ilqr_iters, fd_eps=args.fd_eps,
