@@ -164,15 +164,15 @@ We provide a simple Python API for MJPC. This API is still experimental and expe
 
 2. Python 3.10
 
-3. (Optionally) Create a conda environment with **Python 3.10**:
+3. Create a virtual environment with [uv](https://docs.astral.sh/uv/) and **Python 3.10**:
 ```sh
-conda create -n mjpc python=3.10
-conda activate mjpc
+uv venv -p 3.10
+source .venv/bin/activate
 ```
 
-4. Install MuJoCo
+4. Install MuJoCo (and setuptools, which uv venvs do not include)
 ```sh
-pip install mujoco
+uv pip install mujoco setuptools
 ```
 
 ### Install API
