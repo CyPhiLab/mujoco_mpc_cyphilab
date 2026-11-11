@@ -27,6 +27,10 @@ if [ -z "${PY:-}" ]; then
   if [ -x "$HOME/venv_mj4/bin/python" ]; then PY=$HOME/venv_mj4/bin/python
   else PY=python3; fi
 fi
+if ! "$PY" -c 'import mujoco, sys; sys.exit(int(mujoco.__version__.split(".")[0]) < 4)' 2>/dev/null; then
+  echo "PY=$PY needs mujoco >= 4 (pip install -r requirements_v2.txt)" >&2
+  exit 2
+fi
 PROCS=${PROCS:-2}
 export MUJOCO_GL=${MUJOCO_GL-osmesa}
 
@@ -36,16 +40,21 @@ COMMON="--robot v2 --starts 3 --search_iters 6 --es_iters 10 --lm_iters 12 \
 final() {  # the 1 ms gait a run ended with (max if any, else its last rung)
   local dir=runs/v2_$1 f
   f=$(ls "$dir"/step*_max_dt0.001.npz 2>/dev/null | tail -1)
-  [ -n "$f" ] || f=$(ls -v "$dir"/step*_dt0.001.npz | tail -1)
+  [ -n "$f" ] || f=$(ls -v "$dir"/step*_dt0.001.npz 2>/dev/null | tail -1)
   echo "$f"
 }
 
 mirrors() {  # left/right mirror images, re-polished (v2 is not exactly
              # mirror-symmetric: about 2% apart unpolished)
   for pair in pX:mX pXmY:mXmY pXpY:mXpY turnL:turnR; do
-    local src=${pair%%:*} dst=${pair##*:}
+    local src=${pair%%:*} dst=${pair##*:} f
+    f=$(final "$src")
+    if [ -z "$f" ]; then
+      echo "skipping v2_$dst: v2_$src has no 1 ms result yet" >&2
+      continue
+    fi
     echo "$(date -u +%FT%TZ) start v2_$dst (mirror)" >> runs/primitives_queue.log
-    $PY mirror_primitives.py "$(final $src)" "runs/v2_$dst" --polish 4 \
+    $PY mirror_primitives.py "$f" "runs/v2_$dst" --polish 4 \
       --processes "$PROCS" > "runs/v2_$dst.out" 2>&1
     echo "$(date -u +%FT%TZ) done  v2_$dst" >> runs/primitives_queue.log
   done
