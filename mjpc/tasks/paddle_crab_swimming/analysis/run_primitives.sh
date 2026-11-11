@@ -85,6 +85,11 @@ one() {
       run cruise_pY --init runs/ladder_pY/step8_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 0 1 0 --speed_start 0.065 \
         --speed_growth 1.15 $COMMON ;;
+    cruise_pY2) # cruise_pY met no rung (it drifts 5.5 mm/s sideways, just
+      # over the tolerance): from its first attempt, lateral weighted up
+      run cruise_pY2 --init runs/prim_cruise_pY/step1_v0.065_dt0.002.npz \
+        --hold_legs R1,R2,L1,L2 --direction 0 1 0 --speeds 0.062 \
+        --weights lateral=4 --patience 1 $COMMON ;;
     cruise_pX)
       run cruise_pX --init runs/ladder_pX/step4_max_dt0.001.npz \
         --hold_legs R1,R2,L1,L2 --direction 1 0 0 --speed_start 0.05 \
