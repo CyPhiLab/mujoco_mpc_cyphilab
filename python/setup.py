@@ -296,6 +296,10 @@ setuptools.setup(
         "test": [
             "absl-py",
         ],
+        # GPU offline trajectory optimization (mujoco_mpc.mjwarp)
+        "mjwarp": [
+            "mujoco-warp",
+        ],
     },
     ext_modules=[CMakeExtension("agent_server")],
     cmdclass={

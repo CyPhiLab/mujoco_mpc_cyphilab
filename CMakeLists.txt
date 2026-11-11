@@ -44,6 +44,7 @@ option(MJPC_BUILD_TESTS "Build tests for MJPC" ON)
 option(MJPC_GRPC_BUILD_TESTS "Build tests for gRPC" ON)
 option(MJPC_BUILD_GRPC_SERVICE "Build MJPC gRPC service." OFF)
 option(PYMJPC_BUILD_TESTS "Build tests for Python bindings" ON)
+option(MJPC_BUILD_MJWARP_VALIDATION "Build residual dump tools used to validate the MJWarp task ports." OFF)
 
 include(FindOrFetch)
 

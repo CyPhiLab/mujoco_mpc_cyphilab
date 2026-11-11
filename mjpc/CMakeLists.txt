@@ -241,6 +241,19 @@ target_compile_definitions(testspeed PRIVATE MJSIMULATE_STATIC)
 
 add_subdirectory(tasks)
 
+# Dumps C++ task residuals at given states, to check the GPU ports in
+# python/mujoco_mpc/mjwarp/tasks (see python/mujoco_mpc/mjwarp/README.md).
+if(MJPC_BUILD_MJWARP_VALIDATION)
+  add_executable(
+    pterosaur_residual_dump
+    tasks/pterosaur/pterosaur_residual_dump.cc
+  )
+  target_link_libraries(pterosaur_residual_dump libmjpc)
+  target_include_directories(pterosaur_residual_dump PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+  target_compile_options(pterosaur_residual_dump PUBLIC ${MJPC_COMPILE_OPTIONS})
+  target_link_options(pterosaur_residual_dump PRIVATE ${MJPC_LINK_OPTIONS})
+endif()
+
 if(BUILD_TESTING AND MJPC_BUILD_TESTS)
   enable_testing()
   add_subdirectory(test)
