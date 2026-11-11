@@ -75,6 +75,81 @@
     }
   },
   {
+    "name": "paddles_cruise",
+    "file": "runs/prim_hold_mY/step6_max_dt0.001.npz",
+    "direction": [
+      0.0,
+      -1.0,
+      0.0
+    ],
+    "design": {},
+    "steady": {
+      "period": 1.0939044488145677,
+      "speed": 0.0912756007793195,
+      "lateral_rate": 0.0008003752750877469,
+      "yaw_rate": 0.0013822187675274103,
+      "yaw_rate_target": 0.0,
+      "depth_rate": -0.01765463570776714,
+      "heading": 0.008816793791712565,
+      "tilt_mean": 0.14216955448967955,
+      "tilt_rms": 0.03546686464629448,
+      "cycle_error": 0.01339147962307871,
+      "effort": 0.2982112381001746,
+      "saturated": 0.01068962015031485,
+      "command_clipped": 0.16666666666666666,
+      "work_per_cycle": 16.163205579514468,
+      "cot": 1.480755304911451,
+      "track_rms": null,
+      "cost": 14.99383101162538
+    },
+    "rest": {
+      "period": 1.0939044488145677,
+      "speed": 0.09099596641114464,
+      "lateral_rate": -0.0004548178669020316,
+      "yaw_rate": 0.000441011738477896,
+      "yaw_rate_target": 0.0,
+      "depth_rate": -0.017512537760226522,
+      "heading": -0.0004933433042498433,
+      "tilt_mean": 0.1464651358292566,
+      "tilt_rms": 0.035827249084836546,
+      "cycle_error": 0.022303875313495584,
+      "effort": 0.29820148176448025,
+      "saturated": 0.010765793215518992,
+      "command_clipped": 0.16666666666666666,
+      "work_per_cycle": 16.162708969483873,
+      "cot": 1.48526009159569,
+      "track_rms": null,
+      "cost": 15.254595284283164
+    },
+    "plan": {
+      "period": 1.0939044488145677,
+      "speed": 0.0934253148620416,
+      "lateral_rate": 0.0031037941143769784,
+      "yaw_rate": 0.004117409191823691,
+      "yaw_rate_target": 0.0,
+      "depth_rate": -0.00763183697108303,
+      "heading": 0.03832971039202629,
+      "tilt_mean": 0.05330288587259567,
+      "tilt_rms": 0.03677600896831365,
+      "cycle_error": 0.05420510446409825,
+      "effort": 0.3104842087510877,
+      "saturated": 0.0290519877675841,
+      "command_clipped": 0.16666666666666666,
+      "work_per_cycle": 17.109216509310087,
+      "cot": 1.531355605438364,
+      "track_rms": null,
+      "cost": 9.729625729738691
+    },
+    "path": {
+      "seconds": 20.0,
+      "along": 1.751621195254052,
+      "lateral": -0.0003436478376903442,
+      "vertical": -0.28309815588046194,
+      "heading_change": 0.013681776568894534,
+      "max_heading_error": 0.02010942499361399
+    }
+  },
+  {
     "name": "paddles_trail",
     "file": "runs/ladder_pY/step8_max_dt0.001.npz",
     "direction": [
