@@ -78,6 +78,37 @@ one() {
       run energy_mY --init runs/ladder_mY/step10_max_dt0.001.npz \
         --direction 0 -1 0 --speeds 0.11 0.10 0.09 0.08 --weights energy=4 \
         --speed_rtol 0.1 --patience 0 --dts 0.002 $COMMON ;;
+    # Cruise versions: walking legs held still (posture free), warm-started
+    # from each direction's sprint gait; the ladder starts near the speed the
+    # sprint gait keeps with its walking legs simply held.
+    cruise_pY)
+      run cruise_pY --init runs/ladder_pY/step8_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 0 1 0 --speed_start 0.065 \
+        --speed_growth 1.15 $COMMON ;;
+    cruise_pX)
+      run cruise_pX --init runs/ladder_pX/step4_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 1 0 0 --speed_start 0.05 \
+        --speed_growth 1.15 $COMMON ;;
+    cruise_pXmY)
+      run cruise_pXmY --init runs/prim_pXmY/step8_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 1 -1 0 --speed_start 0.052 \
+        --speed_growth 1.15 $COMMON ;;
+    cruise_pXpY)
+      run cruise_pXpY --init runs/prim_pXpY/step6_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 1 1 0 --speed_start 0.046 \
+        --speed_growth 1.15 $COMMON ;;
+    cruise_turnL)
+      run cruise_turnL --init runs/prim_turnL/step12_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --yaw_ladder 0.35 0.4 0.45 0.5 \
+        --weights yaw=8 $COMMON ;;
+    cruise_up)
+      run cruise_up --init runs/prim_up/step9_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 0 0 1 --speed_start 0.03 \
+        --speed_growth 1.15 $COMMON ;;
+    cruise_down)
+      run cruise_down --init runs/prim_down/step10_v0.0781_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 0 0 -1 --speed_start 0.02 \
+        --speed_growth 1.15 $COMMON ;;
     *) echo "unknown primitive $1" >&2; exit 2 ;;
   esac
 }
@@ -86,6 +117,8 @@ case ${1:-} in
   chain1) for p in pXmY pXpY pX; do one $p; done ;;
   chain2) for p in turnL up; do one $p; done ;;  # after turnL_w1
   chain3) one down ;;
+  cruise1) for p in cruise_pY cruise_pXmY cruise_turnL cruise_up; do one $p; done ;;
+  cruise2) for p in cruise_pX cruise_pXpY cruise_down; do one $p; done ;;
   "") echo "usage: $0 chain1|chain2|NAME" >&2; exit 2 ;;
   *) one "$1" ;;
 esac
