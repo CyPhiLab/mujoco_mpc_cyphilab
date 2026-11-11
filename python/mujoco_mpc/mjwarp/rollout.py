@@ -187,6 +187,7 @@ class Rollout:
       use_graph = wp.get_device().is_cuda
     self.use_graph = use_graph
     self._graphs = {}
+    self._task_key = None
 
   # ---------------------------------------------------------------------------
   def set_sources(
@@ -259,14 +260,21 @@ class Rollout:
   def run(self, policy) -> np.ndarray:
     """Simulates all worlds under `policy`; returns total cost (nworld,)."""
     if self.use_graph:
+      # non-array launch arguments (task structs, use_feedback) are frozen
+      # into the graph: recapture when they change
+      task_key = self.task.graph_key()
+      if task_key != self._task_key:
+        self._graphs.clear()
+        self._task_key = task_key
       key = (id(policy), getattr(policy, "use_feedback", None))
-      graph = self._graphs.get(key)
-      if graph is None:
+      entry = self._graphs.get(key)
+      if entry is None:
         self._simulate(policy)  # warm up: compile kernels outside capture
         with wp.ScopedCapture() as capture:
           self._simulate(policy)
-        graph = self._graphs[key] = capture.graph
-      wp.capture_launch(graph)
+        # keep the policy alive so its id() cannot be reused by another
+        entry = self._graphs[key] = (capture.graph, policy)
+      wp.capture_launch(entry[0])
     else:
       self._simulate(policy)
     total = self.total.numpy().astype(np.float64)

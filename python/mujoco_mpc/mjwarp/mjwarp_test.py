@@ -91,6 +91,50 @@ class SwingUp(base.Task):
     )
 
 
+@wp.struct
+class _Target:
+  angle: float
+
+
+@wp.kernel
+def _target_kernel(
+    target: _Target,
+    qpos: wp.array2d(dtype=float),
+    residual: wp.array2d(dtype=float),
+    weight: wp.array2d(dtype=float),
+):
+  w = wp.tid()
+  residual[w, 0] = qpos[w, 0] - target.angle
+  for i in range(1, 4):
+    residual[w, i] = 0.0
+  weight[w, 0] = 1.0
+  weight[w, 1] = 0.0
+  weight[w, 2] = 0.0
+
+
+class TargetAngle(base.Task):
+  """Task whose `bind` changes a struct argument (frozen into CUDA graphs)."""
+
+  def __init__(self, mjm):
+    super().__init__(mjm)
+    self.target = _Target()
+    self.target.angle = 0.0
+
+  def bind(self, x0, time0=0.0):
+    self.target.angle = float(x0[0])
+
+  def graph_key(self):
+    return self.target.angle
+
+  def residual(self, m, d, stage_time, residual, weight):
+    wp.launch(
+        _target_kernel,
+        dim=d.nworld,
+        inputs=[self.target, d.qpos],
+        outputs=[residual, weight],
+    )
+
+
 def _model():
   return mujoco.MjModel.from_xml_string(_XML)
 
@@ -171,6 +215,65 @@ class MJWarpTest(absltest.TestCase):
         host_cost += c
         mujoco.mj_step(mjm, d)
       self.assertLess(abs(cost[w] - host_cost - stage[w, T]), 1e-2)
+
+  @absltest.skipUnless(wp.get_device().is_cuda, "needs a CUDA device")
+  def test_graph_matches_eager(self):
+    mjm = _model()
+    task = SwingUp(mjm)
+    x0 = _x0(mjm)
+    T, nworld, nprob = 60, 16, 2
+    rs = [rollout_lib.Rollout(mjm, task, nworld, T, use_graph=g)
+          for g in (True, False)]
+    for r in rs:
+      r.set_sources(x0[None])
+    lay = rs[0].layout
+    rng = np.random.default_rng(3)
+    spline = [rollout_lib.SplinePolicy(nworld, 5, mjm.nu) for _ in rs]
+    feedback = [rollout_lib.FeedbackPolicy(nworld, nprob, T, lay) for _ in rs]
+    prev = None
+    for i in range(6):
+      if i < 3:  # new knots every run: the graph must not replay stale inputs
+        knots = rng.uniform(-1, 1, (nworld, 5, mjm.nu))
+        for p in spline:
+          p.set(knots)
+        pols = spline
+      else:  # feedback with and without gains (one graph per use_feedback)
+        xs, us = rs[1].get_states()[:nprob], rs[1].get_actions()[:nprob]
+        gains = rng.normal(0, 0.1, (nprob, T, mjm.nu, lay.ndx)) if i == 4 else None
+        args = (np.arange(nworld) % nprob, rng.uniform(0, 1, nworld),
+                us + rng.normal(0, 0.1, us.shape), xs,
+                rng.normal(0, 0.1, us.shape), gains)
+        for p in feedback:
+          p.set(*args)
+        pols = feedback
+      out = [(r.run(p), r.get_states(), r.get_actions())
+             for r, p in zip(rs, pols)]
+      for a, b in zip(*out):
+        np.testing.assert_allclose(a, b, rtol=1e-5, atol=1e-5)
+      if prev is not None:
+        self.assertGreater(np.abs(out[0][0] - prev).max(), 1e-3)
+      prev = out[0][0]
+    self.assertEqual(len(rs[0]._graphs), 3)
+
+  @absltest.skipUnless(wp.get_device().is_cuda, "needs a CUDA device")
+  def test_graph_recaptures_after_bind(self):
+    mjm = _model()
+    task = TargetAngle(mjm)
+    x0 = _x0(mjm)
+    rs = [rollout_lib.Rollout(mjm, task, 4, 20, use_graph=g)
+          for g in (True, False)]
+    pol = rollout_lib.SplinePolicy(4, 3, mjm.nu)
+    for r in rs:
+      r.set_sources(x0[None])
+    before = [r.run(pol) for r in rs]
+    x1 = x0.copy()
+    x1[0] += 1.0
+    task.bind(x1)
+    after = [r.run(pol) for r in rs]
+    np.testing.assert_allclose(before[0], before[1], rtol=1e-5)
+    np.testing.assert_allclose(after[0], after[1], rtol=1e-5)
+    self.assertGreater(np.abs(after[0] - before[0]).min(), 1.0)
+
 
   def test_state_maps(self):
     mjm = _model()

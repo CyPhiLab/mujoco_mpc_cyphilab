@@ -557,6 +557,10 @@ class PterosaurLaunch(base.Task):
     compos = d.sensordata[p.adr_compos : p.adr_compos + 3]
     p.ground = ground_height(mjm, d, compos)
 
+  def graph_key(self):
+    p = self.params
+    return (p.start_time, tuple(p.position), tuple(p.orientation), p.ground)
+
   def residual(self, m, d, stage_time, residual, weight) -> None:
     wp.launch(
         launch_residual_kernel,

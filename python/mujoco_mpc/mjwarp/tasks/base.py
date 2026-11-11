@@ -55,6 +55,15 @@ class Task(abc.ABC):
     """
     del x0, time0
 
+  def graph_key(self):
+    """Hashable summary of host-side state passed to kernels by value.
+
+    Launch arguments that are not arrays (e.g. Warp structs) are frozen into
+    a captured CUDA graph. `Rollout` recaptures when this value changes, so
+    tasks whose `bind` changes such arguments must override it.
+    """
+    return None
+
   @abc.abstractmethod
   def residual(
       self,
