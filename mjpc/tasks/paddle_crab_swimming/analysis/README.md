@@ -285,6 +285,7 @@ The heading change is over 20 s open loop from rest.
 | primitive | swims | stroke (s) | speed | drift (lateral) | yaw | sat. | 20 ms planner | 20 s open loop | run |
 |---|---|---|---|---|---|---|---|---|---|
 | paddles_lead (K = 5) | −Y | 1.10 | 0.116 m/s | +1 mm/s | 0.000 rad/s | 0.07 | 0.120 | 2.23 m, +0.03 rad | `prim_k5_mY` |
+| paddles_cruise (walking legs held) | −Y | 1.09 | 0.091 | +1 (sinks 18 mm/s) | +0.001 | 0.01 | 0.093 | 1.75 m, +0.01 rad | `prim_hold_mY` |
 | paddles_trail | +Y | 1.23 | 0.086 | +2 | −0.010 | 0.09 | 0.093 | 1.66 m, −0.19 rad | `ladder_pY` |
 | side / side_left | ±X | 0.73 | 0.073 | ∓2 | ±0.003 | 0.06 | 0.081 | 1.37 m, ±0.12 rad | `ladder_pX`, `prim_mX` |
 | diag_right_lead / diag_left_lead | ±X−Y | 0.74 | 0.080 | ±4 | ∓0.012 | 0.06 | 0.083 | 1.53 m, ∓0.09 rad | `prim_pXmY`, `prim_mXmY` |
@@ -381,6 +382,66 @@ open loop it ends 2 cm off line with a 0.03 rad heading change (12 cm and
 library. MJPC plays it back exactly (`cost_sweep --open_loop`: 2.23 m,
 2 cm lateral).
 
+
+### Walking legs: what they cost, and a cruise gait
+
+`leg_audit.py STEP.npz` splits a gait's steady cycle by body part:
+
+- fluid force and moment from the body, each walking leg and each paddle;
+- passive drag at the mean posture (tow test);
+- servo work per leg;
+- the gait rerun with the walking legs held at their mean pose.
+
+For paddles_lead (K = 3):
+
+- **Drag.** The walking legs are 13% of the passive drag. The body is 72%
+  and the paddles 16%, so posture alone could gain at most about 7% speed.
+- **Work.** The walking legs do 62% of the servo work (38 of 61 J per
+  stroke), for almost no net thrust: the front pair +0.06 N, the centre
+  pair −0.05 N.
+- **What their motion is for.** Holding them still drops the speed 21% and
+  the body tilts 0.20 rad. They mostly keep the plate level.
+
+The objective lets them move because speed (weight 4 at 5 mm/s) far
+outweighs effort, and effort is RMS torque, not energy. Two experiments
+followed:
+
+- **`hold_mY`.** `--hold_legs R1,R2,L1,L2` holds the walking legs still
+  with their posture free, and the paddles re-optimize around them.
+- **`energy_mY`.** The `energy` weight puts cost of transport (positive
+  servo work / m g distance) in the objective (weight 4). It ran down a
+  ladder of speed targets from paddles_lead.
+
+Steady state at 1 ms, with the energy points optimized at 2 ms:
+
+| gait | speed (m/s) | cost of transport | servo work (J/stroke) | walking-leg share | tilt (rad) |
+|---|---|---|---|---|---|
+| paddles_lead K = 3 (sprint) | 0.112 | 4.52 | 61 | 62% | 0.05 |
+| paddles_lead K = 5 (sprint) | 0.116 | 4.07 | 57 | 58% | 0.06 |
+| energy-weighted, 0.11 target | 0.106 | 3.86 | 49 | 57% | 0.18 |
+| energy-weighted, 0.10 target | 0.097 | 3.15 | 37 | 48% | 0.18 |
+| energy-weighted, 0.09 target | 0.092 | 2.76 | 31 | 42% | 0.06 |
+| energy-weighted, 0.08 target | 0.086 | 2.75 | 29 | 41% | 0.03 |
+| **walking legs held (cruise)** | **0.091** | **1.48** | **16** | 0% | 0.14 |
+
+Findings:
+
+- **There are two regimes, like an animal's sprint and cruise gaits.**
+  - Paddling with the walking legs still costs about a third of the
+    sprint's energy per metre, at 79% of its speed.
+  - At equal speed (0.091 vs 0.092 m/s), the cruise gait uses 54% of the
+    energy-weighted all-legs gait's energy.
+- **They are separate local optima.** Even with energy in the objective,
+  descent from the sprint gait only shrinks the walking-leg motion (to 41%
+  of the work). It never finds the paddle-only gait, which needs the legs
+  held still to reach.
+- **The cruise gait couldn't regain speed.** Its ladder stalled at 0.093
+  m/s (target 0.099).
+- **The cruise gait sinks open loop.** It descends 1.8 cm/s.
+  - In MJPC closed loop (exploration 0.01, 20 s, one run) the sinking goes
+    away: −0.04 m against −0.28 m open loop, at 0.093 m/s.
+  - That run did take 0.29 rad of heading and drifted 16 cm sideways.
+- **It's in the library** as `paddles_cruise`.
 
 ### Reproduce
 

@@ -10,6 +10,7 @@ folder `mjpc/tasks/paddle_crab_swimming/analysis/`.
 | name | motion | speed | stroke T |
 |---|---|---|---|
 | paddles_lead | swim −Y (toward the paddles) | 0.116 m/s | 1.10 s |
+| paddles_cruise | swim −Y, walking legs still: ~3× less energy per metre | 0.091 m/s | 1.09 s |
 | paddles_trail | swim +Y (anterior) | 0.086 m/s | 1.23 s |
 | side / side_left | swim +X / −X (robot right / left) | 0.073 m/s | 0.73 s |
 | diag_right_lead / diag_left_lead | swim (±X, −Y)/√2 | 0.080 m/s | 0.74 s |
@@ -22,6 +23,10 @@ The robot frame is anterior = +Y, right = +X, up = +Z. The paddles are the
 rear legs (actuators R3_*, L3_*). Directions are in the frame of the start
 heading: a translation gait keeps the body's heading and moves in that
 direction.
+
+`paddles_lead` is the fast gait. `paddles_cruise` is the efficient one, with
+cost of transport 1.5 against 4.1. It sinks about 1.8 cm/s open loop, which
+feedback corrects.
 
 Speeds are steady state. From rest it takes about 2–4 strokes to get up to
 speed. Up and down slide about 2 cm/s toward −Y open loop and need feedback

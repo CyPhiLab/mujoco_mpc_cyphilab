@@ -1,7 +1,9 @@
 # Gait primitive library (NAME=STEP.npz), exported to ../gait_reference.xml.
 # 12 V XW430 servos, the task's command ranges unless noted.
 # paddles_lead uses K=5 harmonics (prim_k5_mY); the K=3 original is runs/ladder_mY/step10.
+# paddles_cruise: -Y with the walking legs held still (prim_hold_mY), the efficient gait.
 paddles_lead=runs/prim_k5_mY/step5_max_dt0.001.npz
+paddles_cruise=runs/prim_hold_mY/step6_max_dt0.001.npz
 paddles_trail=runs/ladder_pY/step8_max_dt0.001.npz
 side=runs/ladder_pX/step4_max_dt0.001.npz
 side_left=runs/prim_mX/step4_max_dt0.001_mirror.npz
