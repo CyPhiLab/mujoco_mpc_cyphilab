@@ -67,6 +67,17 @@ one() {
       run k5_mY --init runs/ladder_mY/step10_max_dt0.001.npz --k 5 \
         --direction 0 -1 0 --speed_start 0.115 --speed_growth 1.08 \
         $COMMON --processes 4 ;;
+    hold_mY) # paddles first with the walking legs held still (posture free):
+      # what their motion is worth once the paddles re-optimize around them
+      run hold_mY --init runs/ladder_mY/step10_max_dt0.001.npz \
+        --hold_legs R1,R2,L1,L2 --direction 0 -1 0 --speed_start 0.09 \
+        --speed_growth 1.1 $COMMON ;;
+    energy_mY) # paddles first with an energy (cost of transport) term, down
+      # a ladder of speeds: the speed-energy trade-off (2 ms; check at 1 ms
+      # with primitive_report.py / leg_audit.py)
+      run energy_mY --init runs/ladder_mY/step10_max_dt0.001.npz \
+        --direction 0 -1 0 --speeds 0.11 0.10 0.09 0.08 --weights energy=4 \
+        --speed_rtol 0.1 --patience 0 --dts 0.002 $COMMON ;;
     *) echo "unknown primitive $1" >&2; exit 2 ;;
   esac
 }

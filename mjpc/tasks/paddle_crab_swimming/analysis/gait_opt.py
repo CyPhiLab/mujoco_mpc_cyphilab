@@ -22,6 +22,8 @@ window counts. Its residual vector (least squares, everything scaled so 1 is
               (joints, servo filter states, body-frame velocities, tilt):
               zero on a limit cycle
   effort      RMS servo torque (fraction of the 3.1 N m limit)
+  energy      cost of transport: positive servo work / (m g distance)
+              (weight 0 by default, then left out)
   saturation  servo torque beyond its limit, command beyond its range
   track       (with a reference) joint angles over the last cycle minus a
               reference stroke's (e.g. kinematic_ref.py's) at the same phase
@@ -62,7 +64,7 @@ TRACK_SAMPLES = 40    # reference phases compared per cycle
 
 DEFAULT_WEIGHTS = dict(speed=4.0, lateral=1.0, yaw=1.0, depth=0.3,
                        heading=0.3, tilt=0.3, wobble=0.3, cycle=0.3,
-                       effort=1.0,
+                       effort=1.0, energy=0.0,
                        saturation=1.0, track=1.0)
 
 
@@ -126,7 +128,7 @@ class Problem:
                speed=0.05, max_speed=False, weights=None, x0=None,
                tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
                design=None, reference=None, fixed_period=None,
-               yaw_rate=0.0):
+               yaw_rate=0.0, hold=None):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world frame; the body keeps its start heading,
     # so this picks which side of the robot leads. It may point up or down
@@ -138,6 +140,9 @@ class Problem:
     # primitives. While turning the mean-heading residual is off and the tilt
     # is measured in the turning heading frame.
     self.yaw_rate = float(yaw_rate)
+    # Actuators held still: their oscillation (a, b) is zero, their offset
+    # (posture) stays free.
+    self.hold = sorted(int(i) for i in (hold or []))
     self.speed, self.max_speed = speed, max_speed
     self.weights = dict(DEFAULT_WEIGHTS, **(weights or {}))
     self.layout = Layout(k)
@@ -166,13 +171,20 @@ class Problem:
                 ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau,
                 reference=None if self.reference is None
                 else self.reference.tolist(), fixed_period=self.fixed_period,
-                yaw_rate=self.yaw_rate)
+                yaw_rate=self.yaw_rate, hold=self.hold)
 
   def fix(self, thetas):
-    """thetas with the fixed period, if there is one."""
+    """thetas with the fixed period, if there is one, and the held
+    actuators' oscillation zeroed."""
     thetas = np.array(thetas, dtype=float)
     if self.fixed_period:
       thetas[..., 0] = np.log(self.fixed_period)
+    if self.hold:
+      nu, k = self.layout.nu, self.layout.k
+      for i in self.hold:
+        for j in range(k):
+          thetas[..., 1 + nu + i * k + j] = 0.0            # a_ij
+          thetas[..., 1 + nu + nu * k + i * k + j] = 0.0   # b_ij
     return thetas
 
   def nstep(self, period):
@@ -301,6 +313,8 @@ class Problem:
             np.mean(excess[window] ** 2, axis=0)) / S_SAT,
         np.sqrt(w['track'] / max(track.size, 1)) * track / S_TRACK,
     ])
+    if w['energy']:
+      r = np.append(r, np.sqrt(w['energy']) * cot)
     metrics = dict(
         period=period, speed=speed, lateral_rate=lateral, yaw_rate=yaw_rate,
         yaw_rate_target=self.yaw_rate,

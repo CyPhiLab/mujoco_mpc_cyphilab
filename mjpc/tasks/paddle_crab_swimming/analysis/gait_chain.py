@@ -124,7 +124,8 @@ class Chain:
                      design=self.design, tau=a.tau,
                      reference=None if self.reference is None
                      else self.reference['angles'],
-                     fixed_period=a.fix_period, yaw_rate=yaw)
+                     fixed_period=a.fix_period, yaw_rate=yaw,
+                     hold=held_actuators(a.hold_legs))
 
   def straight(self, metrics):
     a = self.args
@@ -406,6 +407,16 @@ class Chain:
                f'{info[0]["speed"]:+.4f} m/s (sim {row["speed"]:.4f})')
 
 
+def held_actuators(legs):
+  """Actuator indices of the legs named in 'R1,R2,L1,L2' (all three joints
+  of each)."""
+  out = []
+  for leg in filter(None, (legs or '').split(',')):
+    out += [i for i, name in enumerate(C.ACTUATORS)
+            if name.startswith(leg.strip() + '_')]
+  return out
+
+
 def remove_yaw(state, L):
   """Turns a full-physics state about world z so the body's heading is the
   rest heading (zero yaw); free-joint world linear velocity turns with it,
@@ -494,6 +505,9 @@ def main():
                       'targets (rad/s) with the speed held at --turn_speed')
   p.add_argument('--turn_speed', type=float, default=0.0,
                  help='speed target along --direction during a yaw ladder')
+  p.add_argument('--hold_legs', default='',
+                 help="legs held still, e.g. R1,R2,L1,L2: their joints' "
+                      "oscillation is zero, their posture stays free")
   p.add_argument('--yaw_tol', type=float, default=0.01,
                  help='yaw-rate tolerance of a turning rung (rad/s)')
   p.add_argument('--dts', type=float, nargs='+', default=[0.002, 0.001],
