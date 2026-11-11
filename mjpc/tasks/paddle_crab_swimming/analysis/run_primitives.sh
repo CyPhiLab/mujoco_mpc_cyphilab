@@ -63,6 +63,10 @@ one() {
       run down_rest --init runs/prim_down/step10_v0.0781_dt0.001.npz \
         --from_rest --warm 10 --speeds 0.07 --weights depth=3 \
         --patience 1 $COMMON ;;
+    k5_mY) # paddles first with 5 harmonics, warm-started from the K=3 gait
+      run k5_mY --init runs/ladder_mY/step10_max_dt0.001.npz --k 5 \
+        --direction 0 -1 0 --speed_start 0.115 --speed_growth 1.08 \
+        $COMMON --processes 4 ;;
     *) echo "unknown primitive $1" >&2; exit 2 ;;
   esac
 }
