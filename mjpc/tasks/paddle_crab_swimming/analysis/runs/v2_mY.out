@@ -1,0 +1,9 @@
+init from runs/prim_k5_mY/step5_max_dt0.001.npz (v1 gait, from rest)
+[step1_v0.125_dt0.002] reused from an earlier run
+[step2_v0.135_dt0.002] reused from an earlier run
+[step3_v0.1458_dt0.002] reused from an earlier run
+[step4_v0.1575_dt0.002] reused from an earlier run
+ v0.1575 not met (reached v 0.1494 yaw -0.0003), retry 1
+[step5_v0.1575_dt0.002_r1] reused from an earlier run
+ v0.1575 missed (reached v 0.1515 yaw +0.0011); ending the ladder
+[step6_v0.1458_dt0.001] reused from an earlier run

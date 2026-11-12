@@ -1,0 +1,13 @@
+init from runs/ladder_pY/step8_max_dt0.001.npz (v1 gait, from rest)
+[step1_v0.09_dt0.002] reused from an earlier run
+[step2_v0.099_dt0.002] reused from an earlier run
+[step3_v0.1089_dt0.002] reused from an earlier run
+[step4_v0.1198_dt0.002] reused from an earlier run
+[step5_v0.1318_dt0.002] reused from an earlier run
+ v0.1318 not met (reached v 0.1261 yaw -0.0021), retry 1
+[step6_v0.1318_dt0.002_r1] reused from an earlier run
+[step7_v0.1449_dt0.002] reused from an earlier run
+ v0.1449 not met (reached v 0.1357 yaw -0.0031), retry 1
+[step8_v0.1449_dt0.002_r1] reused from an earlier run
+ v0.1449 missed (reached v 0.1371 yaw -0.0023); ending the ladder
+[step9_v0.1318_dt0.001] reused from an earlier run

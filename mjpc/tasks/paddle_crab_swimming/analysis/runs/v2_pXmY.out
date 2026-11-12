@@ -1,0 +1,14 @@
+init from runs/prim_pXmY/step8_max_dt0.001.npz (v1 gait, from rest)
+[step1_v0.085_dt0.002] reused from an earlier run
+ v0.085 not met (reached v 0.0824 yaw -0.0198), retry 1
+[step2_v0.085_dt0.002_r1] reused from an earlier run
+[step3_v0.0935_dt0.002] reused from an earlier run
+[step4_v0.1029_dt0.002] reused from an earlier run
+[step5_v0.1131_dt0.002] reused from an earlier run
+[step6_v0.1244_dt0.002] reused from an earlier run
+[step7_v0.1369_dt0.002] reused from an earlier run
+[step8_v0.1506_dt0.002] reused from an earlier run
+ v0.1506 not met (reached v 0.1407 yaw -0.0047), retry 1
+[step9_v0.1506_dt0.002_r1] reused from an earlier run
+ v0.1506 missed (reached v 0.1419 yaw -0.0017); ending the ladder
+[step10_v0.1369_dt0.001] reused from an earlier run
