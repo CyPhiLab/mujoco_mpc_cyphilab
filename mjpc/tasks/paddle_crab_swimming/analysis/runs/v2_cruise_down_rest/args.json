@@ -52,7 +52,7 @@
   "drift_tol": 0.005,
   "yaw_drift_tol": 0.015,
   "saturation_tol": 0.2,
-  "processes": 10,
+  "processes": 7,
   "seed": 0,
   "no_render": false,
   "out": "runs/v2_cruise_down_rest"

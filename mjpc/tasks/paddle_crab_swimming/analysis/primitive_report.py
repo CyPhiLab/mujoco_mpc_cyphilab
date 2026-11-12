@@ -36,7 +36,10 @@ def problem_for(z, dt, warm, measure=2):
                    speed=float(z['speed_target']), direction=z['direction'],
                    ctrl_limit=limit, design=step_design(z),
                    tau=step_tau(z),
-                   yaw_rate=float(metrics.get('yaw_rate_target', 0.0)))
+                   yaw_rate=float(metrics.get('yaw_rate_target', 0.0)),
+                   body_rate=metrics.get('body_rate_target'),
+                   attitude=metrics.get('attitude_target'),
+                   heading_frame=metrics.get('heading_frame', False))
 
 
 def path(z, seconds=PATH_SECONDS, dt=C.SIM_DT):
@@ -52,6 +55,8 @@ def path(z, seconds=PATH_SECONDS, dt=C.SIM_DT):
   qpos = states[:, L.qpos]
   yaw = np.unwrap(C.yaw_of(C.quat_to_mat(qpos[:, 3:7])))
   t = np.arange(n + 1) * dt
+  # Rotation about each body axis over the path (integrated body rates).
+  path.body_angle = (np.sum(states[1:, L.qvel][:, 3:6], axis=0) * dt).tolist()
   return t, qpos[:, :3] - qpos[0, :3], yaw - yaw[0]
 
 
@@ -72,6 +77,7 @@ def check(name, file):
                      lateral=float(pos[-1] @ lateral),
                      vertical=float(pos[-1] @ vertical),
                      heading_change=float(yaw[-1]),
+                     body_angle=path.body_angle,
                      max_heading_error=float(np.max(np.abs(
                          yaw - out['steady']['yaw_rate_target'] * t))))
   return out, (t, pos, yaw)

@@ -39,7 +39,14 @@ def load_problem(z, dt=None):
       speed=float(z['speed_target']), direction=direction,
       x0=mirror_state(z['x0']), ctrl_limit=limit,
       design=step_design(z), tau=step_tau(z),
-      yaw_rate=-float(metrics.get('yaw_rate_target', 0.0)))
+      yaw_rate=-float(metrics.get('yaw_rate_target', 0.0)),
+      # Angular velocity is a pseudovector: reflecting x keeps its x
+      # component and flips y and z. An attitude's tilt about y flips.
+      body_rate=None if metrics.get('body_rate_target') is None
+      else np.array(metrics['body_rate_target']) * [1, -1, -1],
+      attitude=None if metrics.get('attitude_target') is None
+      else np.array(metrics['attitude_target']) * [1, -1],
+      heading_frame=metrics.get('heading_frame', False))
 
 
 def mirror_state(state):

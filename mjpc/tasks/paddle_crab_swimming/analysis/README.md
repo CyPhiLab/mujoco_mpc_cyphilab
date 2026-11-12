@@ -563,6 +563,35 @@ PROCS=8 MUJOCO_GL=egl nohup ./run_primitives_v2.sh all > v2_all.log 2>&1 &
 - **Outputs** go to `runs/v2_<name>/` (step npz, mp4, plots, summary.json)
   and `runs/primitives_queue.log`.
 
+### More behaviours: rotations, attitude, arcs, a repertoire map
+
+New targets (all off by default; existing gaits re-score bit-identically):
+
+- **Rotation about any body axis.** `gait_chain.py --rate_axis x|y|z
+  --rate_ladder W1 W2 ... --from_rest` ladders the mean body-frame angular
+  rate about one axis (`gait_opt.Problem(body_rate=...)`). The other two
+  rates are held at 0 (`--off_axis_tol`). Heading, tilt and the world
+  attitude in the cycle residual are off while rotating; translation is held
+  at `--turn_speed`. Reflecting x keeps a rate about body x and flips body y
+  and z, so `mirror_primitives.py` turns a +y rotation into a −y one.
+- **Attitude-held swims.** `--attitude AX AY` holds the body z axis at its
+  direction after rotating about world x by AX, then world y by AY, instead
+  of level. `--start_attitude` starts from rest at that attitude, e.g.
+  `--attitude 3.14159 0 --start_attitude` swims upside down.
+- **Arcs and helices.** `--yaw_rate W` with a speed ladder now measures speed
+  and drift in the heading frame (turned by the mean heading change over the
+  scored cycles), and each step starts with its yaw removed.
+- **Attitude creep.** `--weights attitude_rate=W` adds the mean pitch and
+  roll rate to the objective; rungs then also need both within
+  `--yaw_drift_tol`. Held-leg gaits need it (`runs/v2_cruise_report_notes.md`).
+- New metrics in every step: `body_rate`, `body_velocity` (body frame) and
+  `velocity` (world). `primitive_report.py` adds the body rotation over the
+  20 s path (`path.body_angle`).
+- **`qd_map.py`**: MAP-Elites over gaits. It bins each gait by mean
+  body-frame linear and angular velocity and keeps the most periodic gait per
+  cell. `run` (resumable), `report` (projections, `cells.json`) and `export`
+  (cells as step npz for `gait_chain.py --init` and `render_gait.py`).
+
 ## Kinematic swimming reference (`kinematic_ref.py`, `crab_reference.json`)
 
 This is a pure kinematic animation keyframed by eye against blue crab

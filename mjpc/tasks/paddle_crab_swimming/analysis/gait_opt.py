@@ -65,7 +65,7 @@ TRACK_SAMPLES = 40    # reference phases compared per cycle
 DEFAULT_WEIGHTS = dict(speed=4.0, lateral=1.0, yaw=1.0, depth=0.3,
                        heading=0.3, tilt=0.3, wobble=0.3, cycle=0.3,
                        effort=1.0, energy=0.0,
-                       saturation=1.0, track=1.0)
+                       saturation=1.0, track=1.0, attitude_rate=0.0)
 
 
 class Layout:
@@ -128,7 +128,8 @@ class Problem:
                speed=0.05, max_speed=False, weights=None, x0=None,
                tau=C.TAU, direction=tuple(C.FORWARD), ctrl_limit=None,
                design=None, reference=None, fixed_period=None,
-               yaw_rate=0.0, hold=None, robot=None):
+               yaw_rate=0.0, hold=None, robot=None, body_rate=None,
+               attitude=None, heading_frame=False):
     self.dt, self.warm, self.measure = dt, warm, measure
     # Swim direction in the world frame; the body keeps its start heading,
     # so this picks which side of the robot leads. It may point up or down
@@ -140,6 +141,22 @@ class Problem:
     # primitives. While turning the mean-heading residual is off and the tilt
     # is measured in the turning heading frame.
     self.yaw_rate = float(yaw_rate)
+    # Body-frame angular-rate target (rad/s about body x, y, z): rotation
+    # primitives about any axis (pitch, roll). While rotating, the heading,
+    # tilt and wobble residuals are off, the yaw residual becomes the mean
+    # body angular velocity against the target (all three axes), and the
+    # cycle residual leaves out the world attitude.
+    self.body_rate = None if body_rate is None else np.asarray(
+        body_rate, dtype=float)
+    # Attitude target (rad, rotation about world x, then world y): the body
+    # z axis is held at that attitude's instead of level (attitude-held
+    # swims; (pi, 0) is upside down).
+    self.attitude = None if attitude is None else np.asarray(attitude,
+                                                             dtype=float)
+    # Measure speed and drift in the heading frame (turned by the mean
+    # heading change over the scored cycles) instead of the world frame:
+    # arcs and helices, whose heading turns while they swim.
+    self.heading_frame = bool(heading_frame)
     # Actuators held still: their oscillation (a, b) is zero, their offset
     # (posture) stays free.
     self.hold = sorted(int(i) for i in (hold or []))
@@ -174,7 +191,11 @@ class Problem:
                 ctrl_limit=self.ctrl_limit, design=self.design, tau=self.tau,
                 reference=None if self.reference is None
                 else self.reference.tolist(), fixed_period=self.fixed_period,
-                yaw_rate=self.yaw_rate, hold=self.hold, robot=self.robot)
+                yaw_rate=self.yaw_rate, hold=self.hold, robot=self.robot,
+                body_rate=None if self.body_rate is None
+                else self.body_rate.tolist(),
+                attitude=None if self.attitude is None
+                else self.attitude.tolist(), heading_frame=self.heading_frame)
 
   def fix(self, thetas):
     """thetas with the fixed period, if there is one, and the held
@@ -244,14 +265,19 @@ class Problem:
 
     p0, p1 = at(qpos[:, :3], t0), at(qpos[:, :3], t1)
     disp = p1 - p0
-    speed = float(self.direction @ disp) / duration
-    lateral = float(self.lateral @ disp) / duration
-    depth = float(self.vertical @ disp) / duration
-
     R = C.quat_to_mat(qpos[:, 3:7])
     yaw = np.unwrap(C.yaw_of(R))
     yaw_rate = float(at(yaw, t1) - at(yaw, t0)) / duration
     yaw0 = C.yaw_of(C.quat_to_mat(self.x0[L.qpos][3:7]))
+    axes = (self.direction, self.lateral, self.vertical)
+    if self.heading_frame:
+      psi = float(np.mean(yaw[window]) - yaw0)
+      c, s_ = np.cos(psi), np.sin(psi)
+      Rz = np.array([[c, -s_, 0.0], [s_, c, 0.0], [0.0, 0.0, 1.0]])
+      axes = tuple(Rz @ x for x in axes)
+    speed = float(axes[0] @ disp) / duration
+    lateral = float(axes[1] @ disp) / duration
+    depth = float(axes[2] @ disp) / duration
     heading = float(np.mean(yaw[window]) - yaw0)
     tilt = R[window][:, :2, 2]                          # body z in world xy
     turning = self.yaw_rate != 0.0
@@ -261,6 +287,9 @@ class Problem:
       tilt = np.stack([cy * tilt[:, 0] + sy * tilt[:, 1],
                        -sy * tilt[:, 0] + cy * tilt[:, 1]], axis=1)
       heading = 0.0
+    if self.attitude is not None:
+      # Body z in world (all three components) against the target's.
+      tilt = R[window][:, :, 2] - attitude_z(self.attitude)
     tilt_mean = tilt.mean(axis=0)
     tilt_rms = float(np.sqrt(np.mean(np.sum((tilt - tilt_mean) ** 2, -1))))
 
@@ -268,6 +297,11 @@ class Problem:
     # and body-frame angular velocity.
     lin_body = np.einsum('nji,nj->ni', R, qvel[:, :3])
     ang_body = qvel[:, 3:6]
+    rotating = self.body_rate is not None
+    body_rate = (at(np.cumsum(ang_body, 0) * dt, t1)
+                 - at(np.cumsum(ang_body, 0) * dt, t0)) / duration
+    body_vel = (at(np.cumsum(lin_body, 0) * dt, t1)
+                - at(np.cumsum(lin_body, 0) * dt, t0)) / duration
 
     def cycle_state(t):
       return np.concatenate([
@@ -276,7 +310,7 @@ class Problem:
           at(qvel[:, 6:], t) * period / (2 * np.pi) / S_CYCLE_Q,
           at(lin_body, t) / S_CYCLE_V,
           at(ang_body, t) / S_CYCLE_W,
-          at(R[:, :2, 2], t) / S_CYCLE_Q])
+          np.zeros(0) if rotating else at(R[:, :2, 2], t) / S_CYCLE_Q])
     cycle = cycle_state(t1) - cycle_state(tl)
 
     q, a, qd = qpos[window, 7:], act[window], qvel[window, 6:]
@@ -316,14 +350,21 @@ class Problem:
       r_speed = (1.0 - speed) / S_SPEED * 0.05     # constant pull to faster
     else:
       r_speed = (speed - self.speed) / S_SPEED
+    if rotating:
+      r_rate = np.sqrt(w['yaw']) * (body_rate - self.body_rate) / S_YAW
+      r_attitude = np.zeros(0)
+      heading = 0.0
+    else:
+      r_rate = [np.sqrt(w['yaw']) * (yaw_rate - self.yaw_rate) / S_YAW]
+      r_attitude = np.append(np.sqrt(w['tilt']) * tilt_mean / S_TILT,
+                             np.sqrt(w['wobble']) * tilt_rms / S_TILT)
     r = np.concatenate([
         [np.sqrt(w['speed']) * r_speed,
-         np.sqrt(w['lateral']) * lateral / S_LATERAL,
-         np.sqrt(w['yaw']) * (yaw_rate - self.yaw_rate) / S_YAW,
-         np.sqrt(w['depth']) * depth / S_DEPTH,
+         np.sqrt(w['lateral']) * lateral / S_LATERAL],
+        r_rate,
+        [np.sqrt(w['depth']) * depth / S_DEPTH,
          np.sqrt(w['heading']) * heading / S_HEADING],
-        np.sqrt(w['tilt']) * tilt_mean / S_TILT,
-        [np.sqrt(w['wobble']) * tilt_rms / S_TILT],
+        r_attitude,
         np.sqrt(w['cycle'] / cycle.size) * cycle,
         [np.sqrt(w['effort']) * effort / 0.1],
         np.sqrt(w['saturation']) * np.sqrt(
@@ -334,10 +375,22 @@ class Problem:
     ])
     if w['energy']:
       r = np.append(r, np.sqrt(w['energy']) * cot)
+    if w['attitude_rate'] and not rotating:
+      # Mean pitch and roll rate (body x, y) over the scored cycles: with the
+      # walking legs held, the attitude creeps (or loops) over many strokes
+      # while each scored window still looks straight.
+      r = np.append(r, np.sqrt(w['attitude_rate']) * body_rate[:2] / S_YAW)
     metrics = dict(
         period=period, speed=speed, lateral_rate=lateral, yaw_rate=yaw_rate,
         yaw_rate_target=self.yaw_rate,
-        depth_rate=depth, heading=heading, tilt_mean=float(np.hypot(*tilt_mean)),
+        depth_rate=depth, heading=heading,
+        tilt_mean=float(np.linalg.norm(tilt_mean)),
+        body_rate=body_rate.tolist(), body_velocity=body_vel.tolist(),
+        velocity=(disp / duration).tolist(), heading_frame=self.heading_frame,
+        body_rate_target=None if self.body_rate is None
+        else self.body_rate.tolist(),
+        attitude_target=None if self.attitude is None
+        else self.attitude.tolist(),
         tilt_rms=tilt_rms, cycle_error=float(np.sqrt(np.mean(cycle ** 2))),
         effort=effort, saturated=saturated,
         command_clipped=float(np.mean(excess[window] > 0)),
@@ -384,6 +437,15 @@ def step_half(z):
   if 'half' in z:
     return np.asarray(z['half'])
   return C.load_model(ground=False).actuator_ctrlrange[:, 1].copy()
+
+
+def attitude_z(attitude):
+  """World direction of the body z axis after rotating about world x by
+  attitude[0], then about world y by attitude[1]."""
+  ax, ay = attitude
+  z = np.array([0.0, -np.sin(ax), np.cos(ax)])          # Rx(ax) e_z
+  return np.array([np.cos(ay) * z[0] + np.sin(ay) * z[2], z[1],
+                   -np.sin(ay) * z[0] + np.cos(ay) * z[2]])  # Ry(ay) z
 
 
 def drift_axes(direction):

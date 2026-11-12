@@ -42,7 +42,16 @@ Turning primitives: --yaw_ladder W1 W2 ... runs the ladder over yaw-rate
 targets (rad/s, + turns left / counterclockwise from above) instead of speed,
 with the translation speed held at --turn_speed (default 0: turn on the spot);
 rungs are named w<W>. --yaw_rate W holds a yaw target through a speed ladder
-(arcs). Vertical primitives: --direction 0 0 1 (or -1).
+(arcs, and with --direction 0 0 +-1 helices; their speed and drift are
+measured in the heading frame). Vertical primitives: --direction 0 0 1 (or -1).
+
+Rotations about any body axis: --rate_axis x|y|z --rate_ladder W1 W2 ...
+ladders the mean body-frame angular rate about that axis (the other two
+held at 0, within --off_axis_tol); rungs are named w<axis><W>. Translation
+is held at --turn_speed. Needs --from_rest (a rotated attitude cannot be
+reset like a heading). Attitude-held swims: --attitude AX AY holds the body z
+axis at its direction after rotating about world x by AX, then world y by AY
+(rad), instead of level.
 
 Seeds: --seed_style library adds the gaits in --seed_files (and their
 left/right mirror images) to the search batch, e.g. the -Y and +X gaits when
@@ -68,6 +77,7 @@ import json
 import os
 import time
 
+import mujoco
 import numpy as np
 
 import crab_model as C
@@ -96,11 +106,20 @@ class Chain:
         self.summary = json.load(f)
     self.step = 0
     self.x0 = None          # None: start from rest; else a steady state
-    self.turning = bool(args.yaw_ladder)
+    self.rotating = bool(args.rate_ladder)
+    self.turning = bool(args.yaw_ladder) or self.rotating
+    self.axis = 'xyz'.index(args.rate_axis)
+    if self.rotating and (args.yaw_ladder or not args.from_rest):
+      raise SystemExit('--rate_ladder needs --from_rest and no --yaw_ladder')
     model = C.load_model(ground=False, ctrl_limit=args.ctrl_limit,
                          design=parse_weights(args.design))
     self.state_layout = C.StateLayout(model)
     self.rest = C.initial_state(model)
+    self.start = None       # rest turned to --attitude (--start_attitude)
+    if args.start_attitude:
+      if args.attitude is None:
+        raise SystemExit('--start_attitude needs --attitude')
+      self.start = turned_state(self.rest, self.state_layout, args.attitude)
     self.weights = parse_weights(args.weights)
     self.design = parse_weights(args.design)
     self.reference = None
@@ -118,7 +137,13 @@ class Chain:
   def problem(self, dt, speed, x0=None, weights=None, yaw=None):
     a = self.args
     yaw = a.yaw_rate if yaw is None else yaw
-    return G.Problem(dt=dt, k=a.k, warm=a.warm if x0 is None else a.warm_steady,
+    body_rate = None
+    if self.rotating:             # yaw carries the rate about the axis
+      body_rate, yaw = np.eye(3)[self.axis] * yaw, 0.0
+    warm = a.warm if x0 is None else a.warm_steady
+    if x0 is None and self.start is not None:
+      x0 = self.start
+    return G.Problem(dt=dt, k=a.k, warm=warm,
                      measure=a.measure, speed=speed,
                      weights=dict(self.weights, **(weights or {})),
                      direction=a.direction, x0=x0, ctrl_limit=a.ctrl_limit,
@@ -126,7 +151,20 @@ class Chain:
                      reference=None if self.reference is None
                      else self.reference['angles'],
                      fixed_period=a.fix_period, yaw_rate=yaw,
-                     hold=held_actuators(a.hold_legs))
+                     hold=held_actuators(a.hold_legs), body_rate=body_rate,
+                     attitude=a.attitude,
+                     heading_frame=bool(a.yaw_rate) and not self.turning)
+
+  def rate(self, metrics):
+    """The rate the ladder targets: body rate about the axis, or yaw."""
+    if self.rotating:
+      return float(metrics['body_rate'][self.axis])
+    return float(metrics['yaw_rate'])
+
+  def target_rate(self, problem):
+    if self.rotating:
+      return float(problem.body_rate[self.axis])
+    return problem.yaw_rate
 
   def straight(self, metrics):
     a = self.args
@@ -134,6 +172,10 @@ class Chain:
           and metrics['saturated'] <= a.saturation_tol)
     if not self.turning:   # a straight gait also holds its heading
       ok = ok and abs(metrics['yaw_rate'] - a.yaw_rate) <= a.yaw_drift_tol
+    if self.weights.get('attitude_rate') and not self.rotating:
+      # ... and, when asked (--weights attitude_rate=W), its pitch and roll
+      ok = ok and max(abs(w) for w in metrics['body_rate'][:2]) <= \
+          a.yaw_drift_tol
     return bool(ok)
 
   def feasible(self, metrics, speed, yaw=0.0):
@@ -144,8 +186,11 @@ class Chain:
     else:              # a speed rung is met by swimming at least that fast
       ok = metrics['speed'] >= speed - tol and self.straight(metrics)
     if self.turning or yaw:
-      ok = ok and abs(metrics['yaw_rate'] - yaw) <= max(
+      ok = ok and abs(self.rate(metrics) - yaw) <= max(
           a.yaw_tol, a.speed_rtol * abs(yaw))
+    if self.rotating:   # no rotation about the other two axes
+      off = np.delete(np.asarray(metrics['body_rate']), self.axis)
+      ok = ok and bool(np.all(np.abs(off) <= a.off_axis_tol))
     return bool(ok)
 
   def steady_state(self, path):
@@ -155,7 +200,7 @@ class Chain:
     state = np.load(path)['state'].copy()
     state[L.time] = 0.0
     state[L.qpos][:3] = self.rest[L.qpos][:3]
-    if self.turning:
+    if self.turning or self.args.yaw_rate:
       # A turning gait's cycle ends turned; take the yaw out so every step
       # starts at the rest heading (world linear velocity turned with it).
       remove_yaw(state, L)
@@ -186,7 +231,7 @@ class Chain:
     row = dict(step=self.step, name=name, stage=stage, dt=problem.dt,
                speed_target=problem.speed,
                feasible=self.feasible(metrics, problem.speed,
-                                      problem.yaw_rate),
+                                      self.target_rate(problem)),
                straight=self.straight(metrics),
                from_rest=problem.warm == self.args.warm,
                symmetry_index=G.symmetry_index(problem.layout, theta),
@@ -196,6 +241,8 @@ class Chain:
       json.dump(self.summary, f, indent=2)
     self.log(f'[{tag}] v {metrics["speed"]:.4f} T {metrics["period"]:.3f} '
              f'lat {metrics["lateral_rate"]:+.4f} yaw {metrics["yaw_rate"]:+.3f}'
+             + (f' w{self.args.rate_axis} {self.rate(metrics):+.3f}'
+                if self.rotating else '') +
              f' eff {metrics["effort"]:.3f} cot {metrics["cot"]:.2f} '
              f'cyc {metrics["cycle_error"]:.3f} feasible {row["feasible"]}')
     if os.environ.get('MUJOCO_GL') and not self.args.no_render:
@@ -310,6 +357,9 @@ class Chain:
   def targets(self, speeds):
     """Rungs as (name, speed, yaw rate)."""
     a = self.args
+    if self.rotating:
+      return [(f'w{a.rate_axis}{w:g}', a.turn_speed, w)
+              for w in a.rate_ladder]
     if self.turning:
       return [(f'w{w:g}', a.turn_speed, w) for w in a.yaw_ladder]
     return [(f'v{v:g}', v, a.yaw_rate) for v in speeds]
@@ -328,7 +378,8 @@ class Chain:
       """What the ladder climbs: speed, or yaw rate (in the target's
       sense) for a turning ladder."""
       if self.turning:
-        return float(np.sign(a.yaw_ladder[0]) * row['yaw_rate'])
+        first = (a.rate_ladder or a.yaw_ladder)[0]
+        return float(np.sign(first) * self.rate(row))
       return row['speed']
 
     if self.reference is not None and not a.init:
@@ -380,7 +431,7 @@ class Chain:
           break
         reached = progress(row)
         self.log(f' {rung} not met (reached v {row["speed"]:.4f} yaw '
-                 f'{row["yaw_rate"]:+.4f}), retry {attempt}')
+                 f'{self.rate(row):+.4f}), retry {attempt}')
         problem = self.problem(dt0, speed, self.x0, yaw=yaw)
         theta_v, row = self.run_step(
             f'{rung}_dt{dt0:g}_r{attempt}', 'speed',
@@ -391,7 +442,7 @@ class Chain:
           break
       if not row['feasible']:
         self.log(f' {rung} missed (reached v {row["speed"]:.4f} yaw '
-                 f'{row["yaw_rate"]:+.4f}); ending the ladder')
+                 f'{self.rate(row):+.4f}); ending the ladder')
         # "max" is the best straight attempt at this rung (not the last).
         best = rungs[-1][5] if rungs else 0.0
         straight = [t for t in attempts if t[1]['straight']]
@@ -432,6 +483,23 @@ def held_actuators(legs):
     out += [i for i, name in enumerate(C.ACTUATORS)
             if name.startswith(leg.strip() + '_')]
   return out
+
+
+def turned_state(state, L, attitude):
+  """A copy of a rest state turned about world x by attitude[0], then world
+  y by attitude[1] (rest is still: no velocities to turn)."""
+  state = np.array(state, dtype=float)
+  qpos = state[L.qpos]
+  hx, hy = 0.5 * attitude[0], 0.5 * attitude[1]
+  qx = np.array([np.cos(hx), np.sin(hx), 0.0, 0.0])
+  qy = np.array([np.cos(hy), 0.0, np.sin(hy), 0.0])
+  q = np.zeros(4)
+  mujoco.mju_mulQuat(q, qy, qx)
+  q2 = np.zeros(4)
+  mujoco.mju_mulQuat(q2, q, qpos[3:7])
+  qpos[3:7] = q2
+  state[L.qpos] = qpos
+  return state
 
 
 def remove_yaw(state, L):
@@ -529,6 +597,20 @@ def main():
   p.add_argument('--hold_legs', default='',
                  help="legs held still, e.g. R1,R2,L1,L2: their joints' "
                       "oscillation is zero, their posture stays free")
+  p.add_argument('--rate_axis', default='z', choices=('x', 'y', 'z'),
+                 help='body axis of a --rate_ladder')
+  p.add_argument('--rate_ladder', type=float, nargs='*', default=[],
+                 help='rotation primitives: ladder over these body-frame '
+                 'angular rates (rad/s) about --rate_axis; needs --from_rest')
+  p.add_argument('--off_axis_tol', type=float, default=0.05,
+                 help='body rate allowed about the other axes of a '
+                 '--rate_ladder rung (rad/s)')
+  p.add_argument('--attitude', type=float, nargs=2, default=None,
+                 help='attitude-held swims: body z axis held at its '
+                 'direction after rotating about world x, then y (rad)')
+  p.add_argument('--start_attitude', action='store_true',
+                 help='start from rest already at --attitude (e.g. upside '
+                 'down) instead of level')
   p.add_argument('--yaw_tol', type=float, default=0.01,
                  help='yaw-rate tolerance of a turning rung (rad/s)')
   p.add_argument('--dts', type=float, nargs='+', default=[0.002, 0.001],
