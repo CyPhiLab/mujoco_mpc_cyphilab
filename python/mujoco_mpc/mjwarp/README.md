@@ -253,5 +253,36 @@ trajectories (against the unmodified model they diverge after 12-18 steps).
 mjlab's robots model collision the same way: hand-placed capsules, spheres
 and boxes, with meshes for visuals only.
 
+### Against the CPU launch optimizer
+
+`launch_trajopt.py` (branch `claude/zen-rubin-gbn3pb`) is the sampling
+optimizer behind the offline launch studies: symmetric control knots,
+2 ms steps, 1 s horizon, takeoff-velocity objective scored on the host, CPU
+rollouts with `mujoco.rollout`. Its rollouts were swapped for batched MJWarp
+rollouts (optimizer and objective unchanged), and both sides ran on the same
+capsule-proxy model, 2× torque, 30° target, on an 8-core SLURM allocation
+plus the L40S:
+
+| run | wall | rollouts | best score (CPU replay) | takeoff |
+|---|---:|---:|---:|---|
+| CPU, 8 threads, population 192 (script default) | 148 s | 58k | 0.80 | 2.41 m/s at 30° |
+| CPU, 8 threads, population 640 | 488 s | 193k | 1.49 | 3.31 m/s at 33° |
+| GPU, population 2048 | 490 s | 615k | 1.30 | 3.27 m/s at 31° |
+| GPU, 20 problems (5 warm starts × 4 seeds) × 192 | 416 s | 580k | 1.21 | 3.16 m/s at 32° |
+
+- Throughput: 8 CPU threads run ~190k steps/s on this model; the GPU
+  physics runs 1.6–1.9M steps/s at 4k–16k worlds, but host transfers and the
+  host-side per-sample scoring cut the end-to-end gain to ~3×. At the
+  script's population of 192 the GPU is slower than the CPU.
+- At equal wall time the CPU found an equal or better launch: more samples
+  per iteration have diminishing returns, and with thousands of float32
+  samples the reported best is partly selection noise (the GPU winner
+  scored 1.74 on the GPU, 1.30 on CPU replay).
+- None of these controls transfer to the mesh-collision model (the GPU
+  winners do not take off there), so adopting the proxies is a model change.
+
+For this workflow the GPU path does not pay off on this node; a full
+48-core node would widen the CPU's lead.
+
 `python/launch.npz` is the mesh-collision nproblem 8 run (the
 command in the quick start) and is subject to the noise above.
