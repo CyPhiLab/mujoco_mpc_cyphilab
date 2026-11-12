@@ -1,0 +1,15 @@
+# Gait primitive library for robot v2 (robot_v2/Robot.xml, dcmotor XW430 at 12 V,
+# the task's command ranges). Sprint gaits; the cruise (walking legs held)
+# versions are run separately (run_cruise_v2.sh).
+paddles_lead=runs/v2_mY/step6_v0.1458_dt0.001.npz
+paddles_trail=runs/v2_pY/step9_v0.1318_dt0.001.npz
+side=runs/v2_pX/step11_v0.1267_dt0.001.npz
+side_left=runs/v2_mX/step11_v0.1267_dt0.001_mirror_polish.npz
+diag_right_lead=runs/v2_pXmY/step10_v0.1369_dt0.001.npz
+diag_left_lead=runs/v2_mXmY/step10_v0.1369_dt0.001_mirror_polish.npz
+diag_right_trail=runs/v2_pXpY/step8_v0.1171_dt0.001.npz
+diag_left_trail=runs/v2_mXpY/step8_v0.1171_dt0.001_mirror_polish.npz
+turn_left=runs/v2_turnL/step8_w0.5_dt0.001.npz
+turn_right=runs/v2_turnR/step8_w0.5_dt0.001_mirror_polish.npz
+up=runs/v2_up/step14_v0.1157_dt0.001.npz
+down=runs/v2_down/step12_max_dt0.001.npz
