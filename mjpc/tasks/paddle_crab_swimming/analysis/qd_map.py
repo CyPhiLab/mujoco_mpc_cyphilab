@@ -21,6 +21,7 @@ Usage:
   qd_map.py report DIR                      # projections, cell table
   qd_map.py export DIR --cells 12 40 ...    # step npz per cell
   qd_map.py export DIR --best 30            # the 30 most periodic cells
+  qd_map.py pick DIR --top 24               # best cell per kind of motion
 """
 
 import argparse
@@ -199,6 +200,35 @@ def report(out):
           f"cyc {r['cycle_error']:.3f} cot {r['cot']:.2f}")
 
 
+def label(r, v_min=0.02, w_min=0.08):
+  """Kind of motion: the axes it clearly moves along or turns about, e.g.
+  'vy- wz+' (swims -Y while turning left); 'still' for neither."""
+  parts = [f'{k}{"+" if r[k] > 0 else "-"}' for k in AXES
+           if abs(r[k]) >= (v_min if k[0] == 'v' else w_min)]
+  return ' '.join(parts) or 'still'
+
+
+def pick(a):
+  """The best cell of each kind of motion (label), periodic and not
+  saturated, best first; exported for rendering and gait_chain --init."""
+  archive = Archive.load(os.path.join(a.dir, 'archive.npz'))
+  best = {}
+  for r in rows(archive):                       # best first
+    if r['cycle_error'] > a.max_cycle or r['saturated'] > a.max_saturated:
+      continue
+    best.setdefault(label(r), r)
+  picks = sorted(best.items(), key=lambda kv: -kv[1]['fitness'])[:a.top]
+  with open(os.path.join(a.dir, 'picks.json'), 'w') as f:
+    json.dump([dict(label=k, **r) for k, r in picks], f, indent=1)
+  for k, r in picks:
+    print(f"{k:24s} cell {','.join(map(str, r['cell']))} "
+          + ' '.join(f'{x} {r[x]:+.3f}' for x in AXES)
+          + f" cyc {r['cycle_error']:.3f} sat {r['saturated']:.2f}")
+  a.cells = [','.join(map(str, r['cell'])) for _, r in picks]
+  a.best = 0
+  export(a)
+
+
 def export(a):
   archive = Archive.load(os.path.join(a.dir, 'archive.npz'))
   with open(os.path.join(a.dir, 'args.json')) as f:
@@ -267,11 +297,19 @@ def main():
                  help='cells as comma-separated bin indices, e.g. 3,0,3,3,3,3')
   e.add_argument('--best', type=int, default=0)
   e.add_argument('--dt', type=float, default=0.002)
+  k = sub.add_parser('pick')
+  k.add_argument('dir')
+  k.add_argument('--top', type=int, default=24)
+  k.add_argument('--max_cycle', type=float, default=0.1)
+  k.add_argument('--max_saturated', type=float, default=0.2)
+  k.add_argument('--dt', type=float, default=0.002)
   a = p.parse_args()
   if a.cmd == 'run':
     run(a)
   elif a.cmd == 'report':
     report(a.dir)
+  elif a.cmd == 'pick':
+    pick(a)
   else:
     export(a)
 

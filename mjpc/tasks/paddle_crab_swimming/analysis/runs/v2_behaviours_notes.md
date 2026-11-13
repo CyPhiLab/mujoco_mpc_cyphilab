@@ -40,6 +40,40 @@ optimized and will be used.
 - **Rotations:** every rate ladder ended at its 0.8 rad/s rung (x: 0.6 met,
   −0.6 missed; y: 0.6 met).
 
+### Mirrors (`mirror_primitives.py --polish 4` with the source's weights)
+
+| mirror | run | after polish |
+|---|---|---|
+| roll right | `v2_rotYm` | −0.623 rad/s about body y |
+| right arc | `v2_arcR_mY` | 0.156 m/s at −0.142 rad/s |
+| tight right arc (wobbles) | `v2_arcR2_mY` | 0.150 m/s at −0.295 rad/s |
+| right helix up / down (wobble) | `v2_helixR_up`, `v2_helixR_down` | 0.100 / 0.103 m/s at −0.195 rad/s |
+
+### Economy up (`v2_up_global`)
+
+All legs free, energy weight 4, pitch-rate weight 8, a global search (384
+seeds: random strokes plus 7 library gaits and their mirrors).
+- Met 0.077 m/s straight up at cot 4.59 (step 13); `max` reached 0.082 at
+  cot 4.39. Sprint up is 0.109 m/s at cot 6.84.
+- Holds level: 4–9° tilt over 30 s, 1.5–1.6 m up in 20 s, 0.2 m sideways.
+- Walking-leg stroke amplitude 0.37 rad against sprint up's 0.59, with the
+  paddles about the same (0.37 vs 0.41).
+- It sits between sprint and cruise; there is still no held-leg climb.
+
+### QD map (`qd_map.py`, not in the repo: `~/runs/mujoco_mpc_cyphilab/*v2_qd_sprint`)
+
+100k gaits, 4354 cells. `qd_map.py pick` takes the best cell per kind of
+motion (which body axes it clearly moves along or turns about): 30 kinds.
+- Half are gentler versions of library primitives: still, straight swims,
+  arcs.
+- The other 14 (swim or climb while rotating, tumbles about diagonal axes)
+  are all slow tumbles: 0.1–0.15 rad/s, under 0.5 m in 20 s.
+- The repertoire is translation in any direction, rotation about any axis,
+  and gentle mixtures. Two mixtures are being promoted to full strength:
+  `v2_corkscrew_mY` (roll about body y while swimming −Y, from the roll) and
+  `v2_tumble_diag` (rotation about body (1, −1, 0), `--rate_dir`, from cell
+  3,3,3,4,2,3 in `runs/qd_seeds/`).
+
 ## Work, but wobble
 
 - **Tight arc** (`v2_arcL2_mY`: 0.149 m/s at 0.30 rad/s, ≈ 0.5 m radius):

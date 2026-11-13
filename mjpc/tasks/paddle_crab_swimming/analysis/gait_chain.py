@@ -108,7 +108,11 @@ class Chain:
     self.x0 = None          # None: start from rest; else a steady state
     self.rotating = bool(args.rate_ladder)
     self.turning = bool(args.yaw_ladder) or self.rotating
-    self.axis = 'xyz'.index(args.rate_axis)
+    if args.rate_dir:              # any body axis, e.g. 1 -1 0
+      self.axis_vec = np.asarray(args.rate_dir, float)
+      self.axis_vec /= np.linalg.norm(self.axis_vec)
+    else:
+      self.axis_vec = np.eye(3)['xyz'.index(args.rate_axis)]
     if self.rotating and (args.yaw_ladder or not args.from_rest):
       raise SystemExit('--rate_ladder needs --from_rest and no --yaw_ladder')
     model = C.load_model(ground=False, ctrl_limit=args.ctrl_limit,
@@ -139,7 +143,7 @@ class Chain:
     yaw = a.yaw_rate if yaw is None else yaw
     body_rate = None
     if self.rotating:             # yaw carries the rate about the axis
-      body_rate, yaw = np.eye(3)[self.axis] * yaw, 0.0
+      body_rate, yaw = self.axis_vec * yaw, 0.0
     warm = a.warm if x0 is None else a.warm_steady
     if x0 is None and self.start is not None:
       x0 = self.start
@@ -158,12 +162,12 @@ class Chain:
   def rate(self, metrics):
     """The rate the ladder targets: body rate about the axis, or yaw."""
     if self.rotating:
-      return float(metrics['body_rate'][self.axis])
+      return float(np.dot(metrics['body_rate'], self.axis_vec))
     return float(metrics['yaw_rate'])
 
   def target_rate(self, problem):
     if self.rotating:
-      return float(problem.body_rate[self.axis])
+      return float(np.dot(problem.body_rate, self.axis_vec))
     return problem.yaw_rate
 
   def straight(self, metrics):
@@ -189,8 +193,9 @@ class Chain:
       ok = ok and abs(self.rate(metrics) - yaw) <= max(
           a.yaw_tol, a.speed_rtol * abs(yaw))
     if self.rotating:   # no rotation about the other two axes
-      off = np.delete(np.asarray(metrics['body_rate']), self.axis)
-      ok = ok and bool(np.all(np.abs(off) <= a.off_axis_tol))
+      w = np.asarray(metrics['body_rate'])
+      off = w - np.dot(w, self.axis_vec) * self.axis_vec
+      ok = ok and bool(np.linalg.norm(off) <= a.off_axis_tol)
     return bool(ok)
 
   def steady_state(self, path):
@@ -359,7 +364,8 @@ class Chain:
     """Rungs as (name, speed, yaw rate)."""
     a = self.args
     if self.rotating:
-      return [(f'w{a.rate_axis}{w:g}', a.turn_speed, w)
+      axis = a.rate_axis if not a.rate_dir else 'd'
+      return [(f'w{axis}{w:g}', a.turn_speed, w)
               for w in a.rate_ladder]
     if self.turning:
       return [(f'w{w:g}', a.turn_speed, w) for w in a.yaw_ladder]
@@ -603,6 +609,9 @@ def main():
   p.add_argument('--rate_ladder', type=float, nargs='*', default=[],
                  help='rotation primitives: ladder over these body-frame '
                  'angular rates (rad/s) about --rate_axis; needs --from_rest')
+  p.add_argument('--rate_dir', type=float, nargs=3, default=None,
+                 help='body axis of a --rate_ladder as a direction (e.g. 1 -1 0 '
+                 'for a diagonal tumble); overrides --rate_axis')
   p.add_argument('--off_axis_tol', type=float, default=0.05,
                  help='body rate allowed about the other axes of a '
                  '--rate_ladder rung (rad/s)')

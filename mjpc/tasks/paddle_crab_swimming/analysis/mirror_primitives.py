@@ -25,7 +25,7 @@ import gait_opt as G
 from gait_opt import step_design, step_half, step_tau
 
 
-def load_problem(z, dt=None):
+def load_problem(z, dt=None, weights=None, hold=None):
   """The Problem a step npz was scored on (or at another dt), mirrored."""
   metrics = json.loads(str(z['metrics']))
   half = step_half(z)
@@ -37,7 +37,8 @@ def load_problem(z, dt=None):
       dt=float(z['dt']) if dt is None else dt, k=int(z['k']),
       warm=int(z['warm']), measure=int(z['measure']),
       speed=float(z['speed_target']), direction=direction,
-      x0=mirror_state(z['x0']), ctrl_limit=limit,
+      x0=mirror_state(z['x0']), ctrl_limit=limit, weights=weights,
+      hold=hold,
       design=step_design(z), tau=step_tau(z),
       yaw_rate=-float(metrics.get('yaw_rate_target', 0.0)),
       # Angular velocity is a pseudovector: reflecting x keeps its x
@@ -98,10 +99,18 @@ def main():
   p.add_argument('--polish', type=int, default=0,
                  help='LM iterations on the mirrored problem')
   p.add_argument('--processes', type=int, default=2)
+  p.add_argument('--weights', default='',
+                 help="the source run's --weights, for the polish "
+                 '(e.g. yaw=8 for a rotation)')
+  p.add_argument('--hold_legs', default='',
+                 help="the source run's --hold_legs (the mirror holds the "
+                 'mirrored legs, the same set for R1,R2,L1,L2)')
   a = p.parse_args()
+  from gait_chain import held_actuators, parse_weights
   z = np.load(a.src, allow_pickle=True)
   C.set_robot(C.step_robot(z))
-  problem = load_problem(z)
+  problem = load_problem(z, weights=parse_weights(a.weights),
+                         hold=held_actuators(a.hold_legs))
   layout = problem.layout
   theta = G.mirror_theta(layout, z['theta'])
   source = json.loads(str(z['metrics']))

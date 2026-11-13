@@ -1,0 +1,82 @@
+[
+  {
+    "file": "step9_max_dt0.001_mirror.npz",
+    "source": "runs/v2_helixL_up/step9_max_dt0.001.npz",
+    "polish": 0,
+    "period": 1.2714631989565535,
+    "speed": 0.09923818210586617,
+    "lateral_rate": -0.0005863834392800257,
+    "yaw_rate": -0.1957824498301764,
+    "yaw_rate_target": -0.2,
+    "depth_rate": 0.00599629142915846,
+    "heading": 0.0,
+    "tilt_mean": 0.6572076919682067,
+    "body_rate": [
+      0.111320582446047,
+      0.03389770195051241,
+      -0.14787826600029153
+    ],
+    "body_velocity": [
+      -0.06347455196093578,
+      -0.009387413685312939,
+      0.07602104083485511
+    ],
+    "velocity": [
+      0.003599366575494026,
+      0.00483155427336561,
+      0.09923818210586617
+    ],
+    "heading_frame": true,
+    "body_rate_target": null,
+    "attitude_target": null,
+    "tilt_rms": 0.04681569228116566,
+    "cycle_error": 1.15224701569514,
+    "effort": 0.5650372921748874,
+    "saturated": 0.14278848254467602,
+    "command_clipped": 0.0634858216454756,
+    "work_per_cycle": 70.94437935737128,
+    "cot": 6.447406937630453,
+    "track_rms": null,
+    "cost": 27.445930907161955
+  },
+  {
+    "file": "step9_max_dt0.001_mirror_polish.npz",
+    "source": "runs/v2_helixL_up/step9_max_dt0.001.npz",
+    "polish": 4,
+    "period": 1.2486926752924545,
+    "speed": 0.0995886413789805,
+    "lateral_rate": -0.0006407803863808713,
+    "yaw_rate": -0.19519296429614036,
+    "yaw_rate_target": -0.2,
+    "depth_rate": 0.004210298566193739,
+    "heading": 0.0,
+    "tilt_mean": 0.6580483308414343,
+    "body_rate": [
+      0.1114963967498531,
+      0.034277733563470046,
+      -0.14707705120647643
+    ],
+    "body_velocity": [
+      -0.06379822469331949,
+      -0.011039533880333368,
+      0.0759012686576847
+    ],
+    "velocity": [
+      0.0023036750874606835,
+      0.0035819400625187025,
+      0.0995886413789805
+    ],
+    "heading_frame": true,
+    "body_rate_target": null,
+    "attitude_target": null,
+    "tilt_rms": 0.048160497460167845,
+    "cycle_error": 1.138230661528816,
+    "effort": 0.564768059391333,
+    "saturated": 0.1516486450407155,
+    "command_clipped": 0.05833667067147243,
+    "work_per_cycle": 69.55130732590446,
+    "cot": 6.413418923856653,
+    "track_rms": null,
+    "cost": 26.92266657754497
+  }
+]
