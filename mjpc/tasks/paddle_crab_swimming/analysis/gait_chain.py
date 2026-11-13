@@ -223,6 +223,7 @@ class Chain:
              warm=problem.warm, measure=problem.measure,
              metrics=json.dumps(metrics), joints=np.array(C.JOINTS),
              actuators=np.array(C.ACTUATORS), residual=res[0],
+             **({} if self.start is None else {'start': self.start}),
              **{key: cycle[key] for key in
                 ('phase', 'time', 'qpos', 'qvel', 'act', 'ctrl', 'state')})
     np.save(os.path.join(self.out, tag + '_controls.npy'), ctrl)

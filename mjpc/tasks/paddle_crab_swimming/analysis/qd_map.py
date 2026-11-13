@@ -5,7 +5,9 @@ Every gait (gait_opt's Fourier stroke, theta) is rolled out from rest and
 placed in a cell by what it does: its mean body-frame linear velocity and
 angular velocity over cycles warm+1..warm+measure, each binned coarsely
 (--vel_edges, --rate_edges). A cell keeps its best gait: the most periodic
-(lowest cycle error), with saturation and cost of transport as tie-breaks.
+(lowest cycle error), with saturation and effort (RMS supply fraction) as
+tie-breaks. (Cost of transport is no tie-break: it blows up for the slow
+gaits, hovering and rotating in place, that the map is meant to keep.)
 New gaits are mutations of archive members (iso+line variation: Gaussian
 noise plus a random step along the line to another member). The archive
 starts from the library gaits (and their mirror images) and random strokes.
@@ -56,7 +58,7 @@ def fitness(m):
   if not np.all(np.isfinite(descriptor(m))) or not np.isfinite(
       m['cycle_error']):
     return -np.inf
-  return -(m['cycle_error'] + 2.0 * m['saturated'] + 0.02 * m['cot'])
+  return -(m['cycle_error'] + 2.0 * m['saturated'] + 0.5 * m['effort'])
 
 
 def library_thetas(paths, layout, half):
@@ -101,9 +103,9 @@ class Archive:
   def load(cls, path):
     z = np.load(path, allow_pickle=True)
     self = cls(z['vel_edges'], z['rate_edges'])
-    for c, f, t, m in zip(z['cells'], z['fitness'], z['theta'],
-                          json.loads(str(z['metrics']))):
-      self.cells[tuple(int(i) for i in c)] = (float(f), t, m)
+    for c, t, m in zip(z['cells'], z['theta'], json.loads(str(z['metrics']))):
+      # Re-scored on load, so a changed fitness() applies to old archives.
+      self.cells[tuple(int(i) for i in c)] = (fitness(m), t, m)
     self.evals = int(z['evals'])
     return self
 

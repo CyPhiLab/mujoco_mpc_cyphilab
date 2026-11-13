@@ -43,10 +43,19 @@ def design_of(z):
 
 def render(path, theta, k, dt=C.SIM_DT, cycles=6, camera='track',
            fps=30, slow=1.0, width=640, height=480, half=None, design=None,
-           tau=C.TAU):
+           tau=C.TAU, attitude=None):
   import imageio
   m, d, ctrl = rollout_states(theta, k, dt, cycles, half=half, design=design,
                               tau=tau)
+  if attitude is not None:
+    # Start from rest turned about world x, then world y (gait_chain
+    # --start_attitude).
+    hx, hy = 0.5 * attitude[0], 0.5 * attitude[1]
+    q, q2 = np.zeros(4), np.zeros(4)
+    mujoco.mju_mulQuat(q, [np.cos(hy), 0, np.sin(hy), 0],
+                       [np.cos(hx), np.sin(hx), 0, 0])
+    mujoco.mju_mulQuat(q2, q, d.qpos[3:7].copy())
+    d.qpos[3:7] = q2
   renderer = mujoco.Renderer(m, height, width)
   plate = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, 'plate')
   cam = mujoco.MjvCamera()
@@ -125,13 +134,16 @@ def main():
   p.add_argument('--camera', default='track',
                  help="'track' (follows the body) or a model camera name")
   p.add_argument('--slow', type=float, default=1.0)
+  p.add_argument('--start_attitude', type=float, nargs=2, default=None,
+                 help='start turned about world x, then y (rad), e.g. '
+                 'upside down or vertical (the plots still start level)')
   args = p.parse_args()
   z = np.load(args.npz, allow_pickle=True)
   C.set_robot(C.step_robot(z))
   base = os.path.splitext(args.npz)[0]
   render(base + '.mp4', z['theta'], int(z['k']), args.dt, args.cycles,
          args.camera, slow=args.slow, half=z['half'] if 'half' in z else None,
-         **design_of(z))
+         attitude=args.start_attitude, **design_of(z))
   plot(base + '_plots.png', args.npz)
   print('wrote', base + '.mp4', base + '_plots.png')
 

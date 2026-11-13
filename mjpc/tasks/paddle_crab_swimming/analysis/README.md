@@ -587,9 +587,16 @@ New targets (all off by default; existing gaits re-score bit-identically):
 - New metrics in every step: `body_rate`, `body_velocity` (body frame) and
   `velocity` (world). `primitive_report.py` adds the body rotation over the
   20 s path (`path.body_angle`).
+- **Starting tilted.** A run with `--start_attitude` saves its start state
+  (`start` in the step npz); `primitive_report.py` uses it, or takes
+  `NAME=STEP.npz@AX,AY`, and `render_gait.py --start_attitude AX AY` renders
+  from it.
+- **Results:** `runs/v2_behaviours_notes.md`: hover, somersaults and roll in
+  place, arcs, helices, upside-down swimming, cruise down; up in cruise is a sequence (pitch to
+  vertical, then cruise −Y).
 - **`qd_map.py`**: MAP-Elites over gaits. It bins each gait by mean
-  body-frame linear and angular velocity and keeps the most periodic gait per
-  cell. `run` (resumable), `report` (projections, `cells.json`) and `export`
+  body-frame linear and angular velocity and keeps the most periodic, lowest-effort gait
+  per cell. `run` (resumable), `report` (projections, `cells.json`) and `export`
   (cells as step npz for `gait_chain.py --init` and `render_gait.py`).
 
 ## Kinematic swimming reference (`kinematic_ref.py`, `crab_reference.json`)

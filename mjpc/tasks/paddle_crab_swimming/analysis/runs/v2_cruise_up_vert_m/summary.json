@@ -1,0 +1,847 @@
+[
+  {
+    "step": 1,
+    "name": "v0.06_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.06,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.34975182886761885,
+    "seconds": 604.5,
+    "file": "step1_v0.06_dt0.002.npz",
+    "period": 0.515144987150004,
+    "speed": 0.06020772495052314,
+    "lateral_rate": -0.0007647415213367877,
+    "yaw_rate": 0.001143709287034935,
+    "yaw_rate_target": 0.0,
+    "depth_rate": -0.0003270510823103714,
+    "heading": -0.027626338586690193,
+    "tilt_mean": 0.046716616536805845,
+    "body_rate": [
+      -0.0002896687641432092,
+      0.00012089998079925287,
+      0.016236397619229556
+    ],
+    "body_velocity": [
+      -0.0020197595197758164,
+      -0.0601452048477178,
+      0.0017805443445048498
+    ],
+    "velocity": [
+      -0.0007647415213367877,
+      -0.0003270510823103714,
+      0.06020772495052314
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.012693864405339903,
+    "cycle_error": 0.004179481030332893,
+    "effort": 0.43158289265681316,
+    "saturated": 0.14441211337428603,
+    "command_clipped": 0.11644573768725078,
+    "work_per_cycle": 15.95566751346194,
+    "cot": 5.899062070259624,
+    "track_rms": null,
+    "cost": 11.515621120330424
+  },
+  {
+    "step": 2,
+    "name": "v0.069_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.069,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.29873195251803414,
+    "seconds": 453.9,
+    "file": "step2_v0.069_dt0.002.npz",
+    "period": 0.5111452141478889,
+    "speed": 0.06884024529314295,
+    "lateral_rate": 4.4605496819281614e-05,
+    "yaw_rate": 0.0008289989230921472,
+    "yaw_rate_target": 0.0,
+    "depth_rate": -0.0014870250402514889,
+    "heading": 0.023826748962950086,
+    "tilt_mean": 0.04556561904970974,
+    "body_rate": [
+      -0.0003335412058842835,
+      0.00044555113090193207,
+      0.021540406636932272
+    ],
+    "body_velocity": [
+      0.00035272082235411926,
+      -0.06885070093195833,
+      0.0011371846715379865
+    ],
+    "velocity": [
+      4.4605496819281614e-05,
+      -0.0014870250402514889,
+      0.06884024529314295
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.01158667089131179,
+    "cycle_error": 0.00279266776321801,
+    "effort": 0.39944448846563707,
+    "saturated": 0.12045183012924948,
+    "command_clipped": 0.05984576952318888,
+    "work_per_cycle": 13.487657003332137,
+    "cot": 4.395410974744186,
+    "track_rms": null,
+    "cost": 9.749631305064517
+  },
+  {
+    "step": 3,
+    "name": "v0.0793_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.0793,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.3054304394633634,
+    "seconds": 533.7,
+    "file": "step3_v0.0793_dt0.002.npz",
+    "period": 0.5118571567791572,
+    "speed": 0.0792904409419726,
+    "lateral_rate": -0.0012735593377290184,
+    "yaw_rate": -0.0008990057619104912,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.0014007845001120657,
+    "heading": -0.021725213054799963,
+    "tilt_mean": 0.032384592907000215,
+    "body_rate": [
+      -0.0005967638673900704,
+      0.0006850924107046255,
+      0.018063212655236117
+    ],
+    "body_velocity": [
+      -0.0010847215108048954,
+      -0.0793094370507994,
+      -0.0005577483229863261
+    ],
+    "velocity": [
+      -0.0012735593377290184,
+      0.0014007845001120657,
+      0.0792904409419726
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.011351755942073737,
+    "cycle_error": 0.0023450874883630137,
+    "effort": 0.38636744516344296,
+    "saturated": 0.10498046875,
+    "command_clipped": 0.1134982638888889,
+    "work_per_cycle": 12.627107253214193,
+    "cot": 3.5676639453376686,
+    "track_rms": null,
+    "cost": 9.059962425974694
+  },
+  {
+    "step": 4,
+    "name": "v0.0913_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.0913,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.3371789585132744,
+    "seconds": 501.2,
+    "file": "step4_v0.0913_dt0.002.npz",
+    "period": 0.49794004364227695,
+    "speed": 0.09094849288944389,
+    "lateral_rate": -0.00024147325269494754,
+    "yaw_rate": -0.0005575773733849519,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.0012146136511255112,
+    "heading": 0.008034823703853453,
+    "tilt_mean": 0.029448775753512343,
+    "body_rate": [
+      0.0016032668383658827,
+      0.00030226513290304227,
+      0.015387665616625868
+    ],
+    "body_velocity": [
+      7.4392293021979e-05,
+      -0.09095252504572326,
+      -0.0013953098625377619
+    ],
+    "velocity": [
+      -0.00024147325269494754,
+      0.0012146136511255112,
+      0.09094849288944389
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.010645916201906745,
+    "cycle_error": 0.0008041399094880284,
+    "effort": 0.39555680419157124,
+    "saturated": 0.11479250334672021,
+    "command_clipped": 0.16912092815707275,
+    "work_per_cycle": 12.878914765975312,
+    "cot": 3.2610420003003133,
+    "track_rms": null,
+    "cost": 9.447382990450011
+  },
+  {
+    "step": 5,
+    "name": "v0.1049_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1049,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.3508978273029578,
+    "seconds": 555.9,
+    "file": "step5_v0.1049_dt0.002.npz",
+    "period": 0.5369505390106746,
+    "speed": 0.10436520994805958,
+    "lateral_rate": -0.00030626200812954957,
+    "yaw_rate": -0.0002955763106050977,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.00019829143821092733,
+    "heading": -0.00462096852934433,
+    "tilt_mean": 0.02503337423232308,
+    "body_rate": [
+      0.00029889108499956844,
+      0.00020736936548856056,
+      0.017698060652469844
+    ],
+    "body_velocity": [
+      0.0039059058211508217,
+      -0.10427595081213277,
+      -0.002364573999192716
+    ],
+    "velocity": [
+      -0.00030626200812954957,
+      0.00019829143821092733,
+      0.10436520994805958
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.011513221703118772,
+    "cycle_error": 0.002037757617524245,
+    "effort": 0.3750396093287575,
+    "saturated": 0.09176494930684875,
+    "command_clipped": 0.05721084212704324,
+    "work_per_cycle": 12.522822599546199,
+    "cot": 2.562488220378884,
+    "track_rms": null,
+    "cost": 8.221022130506777
+  },
+  {
+    "step": 6,
+    "name": "v0.1207_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1207,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.34087350549039275,
+    "seconds": 557.9,
+    "file": "step6_v0.1207_dt0.002.npz",
+    "period": 0.53375963016603,
+    "speed": 0.11960026863715932,
+    "lateral_rate": -0.001194886476191942,
+    "yaw_rate": -0.001100114097697298,
+    "yaw_rate_target": 0.0,
+    "depth_rate": -0.0008150358276003328,
+    "heading": -0.004351689222873954,
+    "tilt_mean": 0.015400056780364437,
+    "body_rate": [
+      0.00022195678557354823,
+      0.00118891281601264,
+      0.01575186234194137
+    ],
+    "body_velocity": [
+      0.00368166733144766,
+      -0.11953317621669823,
+      -0.0025657300276794638
+    ],
+    "velocity": [
+      -0.001194886476191942,
+      -0.0008150358276003328,
+      0.11960026863715932
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.01245006731134194,
+    "cycle_error": 0.004198938714929019,
+    "effort": 0.3761237388244182,
+    "saturated": 0.08130461922596754,
+    "command_clipped": 0.05555555555555555,
+    "work_per_cycle": 12.549045755673422,
+    "cot": 2.254148415462256,
+    "track_rms": null,
+    "cost": 8.241368713496708
+  },
+  {
+    "step": 7,
+    "name": "v0.1388_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1388,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.35772391102802686,
+    "seconds": 546.1,
+    "file": "step7_v0.1388_dt0.002.npz",
+    "period": 0.5340538025379853,
+    "speed": 0.13771655786608655,
+    "lateral_rate": 2.6288169715122913e-05,
+    "yaw_rate": -0.00021338400785038576,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.0005654419012103966,
+    "heading": 0.01667822634844184,
+    "tilt_mean": 0.032097629745932395,
+    "body_rate": [
+      0.0009086251672398351,
+      0.00014646585809222808,
+      0.010206154752247839
+    ],
+    "body_velocity": [
+      0.006773454034403232,
+      -0.13750378697907192,
+      -0.003331704424372075
+    ],
+    "velocity": [
+      2.6288169715122913e-05,
+      0.0005654419012103966,
+      0.13771655786608655
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.01446412478800758,
+    "cycle_error": 8.606825250051026e-05,
+    "effort": 0.3954169743493831,
+    "saturated": 0.08978360382854765,
+    "command_clipped": 0.0,
+    "work_per_cycle": 13.799916353120745,
+    "cot": 2.1515674535054665,
+    "track_rms": null,
+    "cost": 8.925309994982275
+  },
+  {
+    "step": 8,
+    "name": "v0.1596_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1596,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.3268335782392572,
+    "seconds": 576.4,
+    "file": "step8_v0.1596_dt0.002.npz",
+    "period": 0.5518502560482659,
+    "speed": 0.15364324663939455,
+    "lateral_rate": 0.0015690934838604599,
+    "yaw_rate": 0.0006128640860673872,
+    "yaw_rate_target": 0.0,
+    "depth_rate": -5.43533764106963e-05,
+    "heading": 0.026966009113690518,
+    "tilt_mean": 0.033068550583346755,
+    "body_rate": [
+      -0.0006881808232966069,
+      -0.0006367325887716352,
+      0.005824584036504876
+    ],
+    "body_velocity": [
+      0.006394248594345373,
+      -0.15345439360703977,
+      -0.0031697524749480614
+    ],
+    "velocity": [
+      0.0015690934838604599,
+      -5.43533764106963e-05,
+      0.15364324663939455
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.01792324728016112,
+    "cycle_error": 0.002353270332652439,
+    "effort": 0.4350368038364511,
+    "saturated": 0.1355898055807394,
+    "command_clipped": 0.0626070313286995,
+    "work_per_cycle": 17.168269374618117,
+    "cot": 2.3218891273690025,
+    "track_rms": null,
+    "cost": 13.918218330723736
+  },
+  {
+    "step": 9,
+    "name": "v0.1835_dt0.002",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1835,
+    "feasible": false,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.3057023389486357,
+    "seconds": 437.1,
+    "file": "step9_v0.1835_dt0.002.npz",
+    "period": 0.556749325672269,
+    "speed": 0.16064736375733743,
+    "lateral_rate": -0.0007580325277920139,
+    "yaw_rate": -0.011735796200050498,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.0026030283674333683,
+    "heading": -0.10005925107001686,
+    "tilt_mean": 0.10807141838286834,
+    "body_rate": [
+      0.009823840798150185,
+      0.01229221574129594,
+      0.011077499633318291
+    ],
+    "body_velocity": [
+      0.005115219371700752,
+      -0.16054950974473273,
+      -0.003413421099838352
+    ],
+    "velocity": [
+      -0.0007580325277920139,
+      0.0026030283674333683,
+      0.16064736375733743
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.022437702970037415,
+    "cycle_error": 0.04758403062959729,
+    "effort": 0.46856403174386413,
+    "saturated": 0.159934171154997,
+    "command_clipped": 0.0670756034310792,
+    "work_per_cycle": 20.128724657780104,
+    "cot": 2.5806709876244085,
+    "track_rms": null,
+    "cost": 58.209247840395484
+  },
+  {
+    "step": 10,
+    "name": "v0.1835_dt0.002_r1",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1835,
+    "feasible": false,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.2963471645122073,
+    "seconds": 480.8,
+    "file": "step10_v0.1835_dt0.002_r1.npz",
+    "period": 0.5429848352918466,
+    "speed": 0.16352874192179187,
+    "lateral_rate": -0.0023427500064689528,
+    "yaw_rate": -0.003064208034557285,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.004518030698535309,
+    "heading": -0.031008390232137722,
+    "tilt_mean": 0.056718609186424365,
+    "body_rate": [
+      0.005764381554995098,
+      0.0036184744891298113,
+      0.006195908848487712
+    ],
+    "body_velocity": [
+      0.003703236625254469,
+      -0.16351495143138858,
+      -0.0031268088053118736
+    ],
+    "velocity": [
+      -0.0023427500064689528,
+      0.004518030698535309,
+      0.16352874192179187
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.021243631964697137,
+    "cycle_error": 0.011850356766013237,
+    "effort": 0.47495473842842095,
+    "saturated": 0.1780744833231021,
+    "command_clipped": 0.12354205033763045,
+    "work_per_cycle": 20.1547304843383,
+    "cot": 2.602824475168938,
+    "track_rms": null,
+    "cost": 46.44047978496835
+  },
+  {
+    "step": 11,
+    "name": "v0.1835_dt0.002_r2",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1835,
+    "feasible": false,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.28603487110279663,
+    "seconds": 249.7,
+    "file": "step11_v0.1835_dt0.002_r2.npz",
+    "period": 0.5295337369015124,
+    "speed": 0.16713097024631518,
+    "lateral_rate": -0.004779963021861589,
+    "yaw_rate": -0.0011336109946982278,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.01103442417068893,
+    "heading": -0.029727744554746582,
+    "tilt_mean": 0.08760832029104347,
+    "body_rate": [
+      0.0016596095622425184,
+      0.0010691546371905025,
+      0.007807757712332088
+    ],
+    "body_velocity": [
+      0.0035722767675577713,
+      -0.16747472239797784,
+      -0.0026681278583853964
+    ],
+    "velocity": [
+      -0.004779963021861589,
+      0.01103442417068893,
+      0.16713097024631518
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.02182741951274485,
+    "cycle_error": 0.0037907113942009163,
+    "effort": 0.4847715515846304,
+    "saturated": 0.19258210051411184,
+    "command_clipped": 0.12459343195887106,
+    "work_per_cycle": 20.416001496923883,
+    "cot": 2.645268760268714,
+    "track_rms": null,
+    "cost": 38.91701115993245
+  },
+  {
+    "step": 12,
+    "name": "v0.1835_dt0.002_r3",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1835,
+    "feasible": false,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.28603487110279663,
+    "seconds": 37.4,
+    "file": "step12_v0.1835_dt0.002_r3.npz",
+    "period": 0.5295337369015124,
+    "speed": 0.16713097024631518,
+    "lateral_rate": -0.004779963021861589,
+    "yaw_rate": -0.0011336109946982278,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.01103442417068893,
+    "heading": -0.029727744554746582,
+    "tilt_mean": 0.08760832029104347,
+    "body_rate": [
+      0.0016596095622425184,
+      0.0010691546371905025,
+      0.007807757712332088
+    ],
+    "body_velocity": [
+      0.0035722767675577713,
+      -0.16747472239797784,
+      -0.0026681278583853964
+    ],
+    "velocity": [
+      -0.004779963021861589,
+      0.01103442417068893,
+      0.16713097024631518
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.02182741951274485,
+    "cycle_error": 0.0037907113942009163,
+    "effort": 0.4847715515846304,
+    "saturated": 0.19258210051411184,
+    "command_clipped": 0.12459343195887106,
+    "work_per_cycle": 20.416001496923883,
+    "cot": 2.645268760268714,
+    "track_rms": null,
+    "cost": 38.91701115993245
+  },
+  {
+    "step": 13,
+    "name": "v0.1835_dt0.002_r4",
+    "stage": "speed",
+    "dt": 0.002,
+    "speed_target": 0.1835,
+    "feasible": false,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.28603487110279663,
+    "seconds": 32.7,
+    "file": "step13_v0.1835_dt0.002_r4.npz",
+    "period": 0.5295337369015124,
+    "speed": 0.16713097024631518,
+    "lateral_rate": -0.004779963021861589,
+    "yaw_rate": -0.0011336109946982278,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.01103442417068893,
+    "heading": -0.029727744554746582,
+    "tilt_mean": 0.08760832029104347,
+    "body_rate": [
+      0.0016596095622425184,
+      0.0010691546371905025,
+      0.007807757712332088
+    ],
+    "body_velocity": [
+      0.0035722767675577713,
+      -0.16747472239797784,
+      -0.0026681278583853964
+    ],
+    "velocity": [
+      -0.004779963021861589,
+      0.01103442417068893,
+      0.16713097024631518
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.02182741951274485,
+    "cycle_error": 0.0037907113942009163,
+    "effort": 0.4847715515846304,
+    "saturated": 0.19258210051411184,
+    "command_clipped": 0.12459343195887106,
+    "work_per_cycle": 20.416001496923883,
+    "cot": 2.645268760268714,
+    "track_rms": null,
+    "cost": 38.91701115993245
+  },
+  {
+    "step": 14,
+    "name": "v0.1596_dt0.001",
+    "stage": "dt",
+    "dt": 0.001,
+    "speed_target": 0.1596,
+    "feasible": true,
+    "straight": true,
+    "from_rest": true,
+    "symmetry_index": 0.32521026156859356,
+    "seconds": 221.0,
+    "file": "step14_v0.1596_dt0.001.npz",
+    "period": 0.5187638800543888,
+    "speed": 0.1571107407664424,
+    "lateral_rate": -5.67630594781152e-06,
+    "yaw_rate": 0.0007593746072880488,
+    "yaw_rate_target": 0.0,
+    "depth_rate": -0.0007649708039279068,
+    "heading": 0.04745247792332393,
+    "tilt_mean": 0.049179771912134435,
+    "body_rate": [
+      -0.0015890492399982777,
+      -0.00063544945833708,
+      -0.0049334702253356275
+    ],
+    "body_velocity": [
+      0.004982417355116551,
+      -0.15696505677867034,
+      -0.0030574935013012875
+    ],
+    "velocity": [
+      -5.67630594781152e-06,
+      -0.0007649708039279068,
+      0.1571107407664424
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.016755864391587428,
+    "cycle_error": 0.0028348752101158064,
+    "effort": 0.43709924191055827,
+    "saturated": 0.1328781793842035,
+    "command_clipped": 0.06254350736278447,
+    "work_per_cycle": 16.367701133822496,
+    "cot": 2.3028293891051983,
+    "track_rms": null,
+    "cost": 11.477033148292426,
+    "plan_dt_check": {
+      "period": 0.5187638800543888,
+      "speed": NaN,
+      "lateral_rate": NaN,
+      "yaw_rate": NaN,
+      "yaw_rate_target": 0.0,
+      "depth_rate": NaN,
+      "heading": NaN,
+      "tilt_mean": NaN,
+      "body_rate": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "body_velocity": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "velocity": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "heading_frame": false,
+      "body_rate_target": null,
+      "attitude_target": [
+        -1.5708,
+        0.0
+      ],
+      "tilt_rms": NaN,
+      "cycle_error": NaN,
+      "effort": NaN,
+      "saturated": 0.1111111111111111,
+      "command_clipped": 0.06356837606837606,
+      "work_per_cycle": NaN,
+      "cot": NaN,
+      "track_rms": null,
+      "cost": NaN
+    }
+  },
+  {
+    "step": 15,
+    "name": "max_dt0.001",
+    "stage": "dt",
+    "dt": 0.001,
+    "speed_target": 0.1835,
+    "feasible": false,
+    "straight": false,
+    "from_rest": true,
+    "symmetry_index": 0.2593099367542226,
+    "seconds": 212.5,
+    "file": "step15_max_dt0.001.npz",
+    "period": 0.4849536727254127,
+    "speed": 0.1733923863201326,
+    "lateral_rate": 0.0005295767283241764,
+    "yaw_rate": -0.0010213702188892973,
+    "yaw_rate_target": 0.0,
+    "depth_rate": 0.005294985527583263,
+    "heading": 0.036276771063132866,
+    "tilt_mean": 0.05553476786293178,
+    "body_rate": [
+      0.0024992636216867752,
+      0.001263434981140791,
+      0.0002694640391937168
+    ],
+    "body_velocity": [
+      0.0021863739733956546,
+      -0.1734122175055451,
+      -0.002078509647077909
+    ],
+    "velocity": [
+      0.0005295767283241764,
+      0.005294985527583263,
+      0.1733923863201326
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": [
+      -1.5708,
+      0.0
+    ],
+    "tilt_rms": 0.02022767257134849,
+    "cycle_error": 0.0036693501990837855,
+    "effort": 0.4906301313881676,
+    "saturated": 0.2049541809851088,
+    "command_clipped": 0.125,
+    "work_per_cycle": 19.162042549277167,
+    "cot": 2.613131149243066,
+    "track_rms": null,
+    "cost": 23.015794130041446,
+    "plan_dt_check": {
+      "period": 0.4849536727254127,
+      "speed": NaN,
+      "lateral_rate": NaN,
+      "yaw_rate": NaN,
+      "yaw_rate_target": 0.0,
+      "depth_rate": NaN,
+      "heading": NaN,
+      "tilt_mean": NaN,
+      "body_rate": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "body_velocity": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "velocity": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "heading_frame": false,
+      "body_rate_target": null,
+      "attitude_target": [
+        -1.5708,
+        0.0
+      ],
+      "tilt_rms": NaN,
+      "cycle_error": NaN,
+      "effort": NaN,
+      "saturated": 0.1111111111111111,
+      "command_clipped": 0.12485681557846506,
+      "work_per_cycle": NaN,
+      "cot": NaN,
+      "track_rms": null,
+      "cost": NaN
+    }
+  }
+]

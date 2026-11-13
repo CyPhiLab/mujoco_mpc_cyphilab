@@ -1,0 +1,208 @@
+search: 256 seeds at dt 0.002
+ start 0: seed 200 cost 20.07 v -0.0040 T 1.130
+  lm    1 cost    15.2745 mu  3.3e-03 v -0.0033 T 1.158 lat -0.0002 yaw +0.001 cyc 0.000 eff 0.411 sat 0.039
+  lm    2 cost    12.7027 mu  1.1e-03 v -0.0027 T 1.166 lat -0.0009 yaw +0.001 cyc 0.000 eff 0.402 sat 0.022
+  lm    3 cost    12.4277 mu  3.7e-04 v -0.0025 T 1.166 lat +0.0000 yaw -0.000 cyc 0.002 eff 0.412 sat 0.023
+  lm    4 cost    12.1419 mu  1.2e-02 v -0.0022 T 1.165 lat -0.0015 yaw +0.001 cyc 0.004 eff 0.416 sat 0.032
+  lm    5 cost    11.9838 mu  4.1e-03 v -0.0023 T 1.167 lat -0.0020 yaw +0.002 cyc 0.001 eff 0.417 sat 0.039
+  lm    6 cost    11.8445 mu  1.4e-02 v -0.0018 T 1.184 lat -0.0050 yaw +0.002 cyc 0.001 eff 0.394 sat 0.030
+ start 1: seed 138 cost 20.70 v +0.0036 T 1.511
+  lm    1 cost    17.6051 mu  3.3e-03 v +0.0024 T 1.534 lat -0.0012 yaw +0.000 cyc 0.002 eff 0.362 sat 0.000
+  lm    2 cost    16.3260 mu  1.1e-03 v +0.0022 T 1.522 lat -0.0012 yaw +0.000 cyc 0.002 eff 0.359 sat 0.000
+  lm    3 cost    15.8676 mu  3.7e-04 v +0.0023 T 1.519 lat -0.0031 yaw -0.001 cyc 0.003 eff 0.389 sat 0.004
+  lm    4 cost    13.2362 mu  1.2e-04 v +0.0018 T 1.519 lat -0.0015 yaw -0.002 cyc 0.002 eff 0.389 sat 0.003
+  lm    5 cost    11.2273 mu  4.1e-05 v +0.0015 T 1.520 lat -0.0008 yaw -0.001 cyc 0.002 eff 0.388 sat 0.001
+  lm    6 cost     9.6371 mu  1.4e-05 v +0.0012 T 1.522 lat -0.0005 yaw -0.002 cyc 0.001 eff 0.382 sat 0.001
+ start 2: seed 120 cost 33.18 v +0.0144 T 1.447
+  lm    1 cost    27.6143 mu  3.3e-03 v +0.0112 T 1.540 lat +0.0001 yaw -0.000 cyc 0.000 eff 0.413 sat 0.049
+  lm    2 cost    27.4527 mu  1.1e-03 v +0.0108 T 1.547 lat +0.0003 yaw -0.001 cyc 0.000 eff 0.455 sat 0.047
+  lm    3 cost    24.7075 mu  3.7e-04 v +0.0100 T 1.546 lat -0.0008 yaw +0.001 cyc 0.000 eff 0.456 sat 0.038
+  lm    4 cost    20.8096 mu  1.2e-04 v +0.0089 T 1.547 lat -0.0015 yaw +0.002 cyc 0.000 eff 0.442 sat 0.027
+  lm    5 cost    18.0423 mu  4.1e-05 v +0.0079 T 1.547 lat -0.0017 yaw +0.003 cyc 0.000 eff 0.433 sat 0.022
+  lm    6 cost    17.0959 mu  1.4e-05 v +0.0072 T 1.547 lat -0.0028 yaw +0.005 cyc 0.000 eff 0.435 sat 0.018
+ polishing the best start (cost 9.64)
+  es    0 cost      9.637 v +0.0012 T 1.522 lat -0.0005 yaw -0.002 cyc 0.00 eff 0.38 sigma 0.043
+  es    9 cost      8.498 v +0.0003 T 1.531 lat +0.0007 yaw -0.002 cyc 0.00 eff 0.40 sigma 0.010
+  lm    1 cost     7.8953 mu  3.3e-03 v -0.0001 T 1.541 lat +0.0015 yaw -0.001 cyc 0.000 eff 0.385 sat 0.021
+  lm    2 cost     7.0304 mu  1.1e-03 v -0.0004 T 1.557 lat +0.0022 yaw -0.001 cyc 0.001 eff 0.359 sat 0.013
+  lm    3 cost     6.9857 mu  3.7e-04 v -0.0005 T 1.559 lat +0.0028 yaw -0.001 cyc 0.001 eff 0.353 sat 0.009
+  lm    4 cost     6.9566 mu  1.2e-04 v -0.0006 T 1.559 lat +0.0033 yaw -0.001 cyc 0.001 eff 0.346 sat 0.006
+  lm    5 cost     6.5479 mu  4.1e-01 v -0.0005 T 1.559 lat +0.0032 yaw -0.001 cyc 0.001 eff 0.339 sat 0.000
+  lm    6 cost     6.4247 mu  1.4e-01 v -0.0006 T 1.553 lat +0.0032 yaw -0.001 cyc 0.001 eff 0.335 sat 0.000
+  lm    7 cost     6.0721 mu  4.6e-02 v -0.0007 T 1.566 lat +0.0034 yaw -0.001 cyc 0.001 eff 0.318 sat 0.000
+  lm    8 cost     5.8015 mu  1.5e-02 v -0.0007 T 1.565 lat +0.0032 yaw -0.001 cyc 0.001 eff 0.312 sat 0.000
+  lm    9 cost     5.3801 mu  5.1e-03 v -0.0007 T 1.565 lat +0.0032 yaw -0.000 cyc 0.001 eff 0.297 sat 0.000
+  lm   10 cost     5.0921 mu  1.7e-03 v -0.0006 T 1.566 lat +0.0029 yaw -0.000 cyc 0.001 eff 0.293 sat 0.000
+  lm   11 cost     4.9596 mu  5.6e-04 v -0.0006 T 1.569 lat +0.0027 yaw -0.000 cyc 0.001 eff 0.292 sat 0.000
+  lm   12 cost     4.8548 mu  1.9e-04 v -0.0005 T 1.569 lat +0.0025 yaw -0.000 cyc 0.001 eff 0.291 sat 0.000
+[step1_wx-0.1_dt0.002_search] v -0.0005 T 1.569 lat +0.0025 yaw -0.000 wx -0.096 eff 0.291 cot 338.10 cyc 0.001 feasible True
+  lm    1 cost     4.7403 mu  3.3e-03 v -0.0005 T 1.572 lat +0.0024 yaw -0.000 cyc 0.001 eff 0.288 sat 0.000
+  lm    2 cost     4.2071 mu  1.1e+01 v -0.0004 T 1.572 lat +0.0012 yaw +0.000 cyc 0.001 eff 0.284 sat 0.000
+  lm    3 cost     4.0999 mu  3.7e+00 v -0.0003 T 1.577 lat +0.0004 yaw +0.000 cyc 0.001 eff 0.285 sat 0.000
+  lm    4 cost     3.9459 mu  1.2e+01 v -0.0002 T 1.579 lat +0.0003 yaw +0.000 cyc 0.001 eff 0.280 sat 0.000
+  lm    5 cost     3.9234 mu  4.1e+01 v -0.0002 T 1.579 lat +0.0002 yaw +0.000 cyc 0.001 eff 0.279 sat 0.000
+  lm    6 cost     3.8949 mu  1.4e+01 v -0.0002 T 1.579 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.279 sat 0.000
+  lm    7 cost     3.8180 mu  4.6e+00 v -0.0001 T 1.584 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.276 sat 0.000
+  lm    8 cost     3.7918 mu  1.5e+01 v -0.0001 T 1.586 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.275 sat 0.000
+  lm    9 cost     3.7374 mu  5.1e+00 v -0.0001 T 1.591 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.273 sat 0.000
+  lm   10 cost     3.7291 mu  1.7e+01 v -0.0001 T 1.593 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.273 sat 0.000
+  lm   11 cost     3.6457 mu  5.6e+00 v -0.0001 T 1.597 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.270 sat 0.000
+  lm   12 cost     3.6410 mu  1.9e+02 v -0.0001 T 1.597 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.269 sat 0.000
+[step2_wx-0.1_dt0.002] v -0.0001 T 1.597 lat +0.0001 yaw -0.000 wx -0.099 eff 0.269 cot 1707.15 cyc 0.001 feasible True
+  lm    1 cost   103.3925 mu  3.3e-03 v -0.0005 T 1.604 lat +0.0010 yaw +0.000 cyc 0.001 eff 0.307 sat 0.004
+  lm    2 cost    77.1759 mu  1.1e-03 v -0.0011 T 1.550 lat +0.0018 yaw +0.003 cyc 0.001 eff 0.286 sat 0.005
+  lm    3 cost    65.6801 mu  3.7e-04 v -0.0015 T 1.549 lat +0.0015 yaw +0.004 cyc 0.001 eff 0.305 sat 0.004
+  lm    4 cost    47.0798 mu  1.2e-04 v -0.0023 T 1.549 lat +0.0004 yaw +0.003 cyc 0.001 eff 0.290 sat 0.002
+  lm    5 cost    38.3577 mu  4.1e-05 v -0.0023 T 1.550 lat -0.0030 yaw +0.000 cyc 0.006 eff 0.311 sat 0.004
+  lm    6 cost    34.1301 mu  1.4e-05 v -0.0019 T 1.549 lat -0.0029 yaw -0.003 cyc 0.001 eff 0.332 sat 0.015
+  lm    7 cost    26.0946 mu  4.6e-06 v -0.0020 T 1.549 lat +0.0009 yaw -0.001 cyc 0.001 eff 0.329 sat 0.005
+  lm    8 cost    23.4749 mu  1.5e-06 v -0.0026 T 1.549 lat +0.0017 yaw +0.002 cyc 0.003 eff 0.335 sat 0.020
+  lm    9 cost    21.0730 mu  1.0e-06 v -0.0023 T 1.549 lat +0.0020 yaw +0.001 cyc 0.001 eff 0.318 sat 0.006
+  lm   10 cost    19.4534 mu  1.0e-06 v -0.0019 T 1.549 lat +0.0034 yaw +0.002 cyc 0.007 eff 0.307 sat 0.008
+  lm   11 cost    18.1632 mu  3.3e-02 v -0.0014 T 1.549 lat +0.0032 yaw +0.003 cyc 0.006 eff 0.334 sat 0.009
+  lm   12 cost    17.2916 mu  1.1e-02 v -0.0006 T 1.549 lat +0.0019 yaw +0.002 cyc 0.003 eff 0.319 sat 0.008
+[step3_wx-0.2_dt0.002] v -0.0006 T 1.549 lat +0.0019 yaw +0.002 wx -0.166 eff 0.319 cot 324.88 cyc 0.003 feasible False
+ wx-0.2 not met (reached v -0.0006 yaw -0.1656), retry 1
+  es    0 cost     17.292 v -0.0006 T 1.549 lat +0.0019 yaw +0.002 cyc 0.00 eff 0.32 sigma 0.043
+  es    9 cost      8.443 v +0.0014 T 1.575 lat +0.0005 yaw +0.000 cyc 0.00 eff 0.38 sigma 0.010
+  lm    1 cost     7.3330 mu  3.3e-03 v +0.0003 T 1.577 lat +0.0009 yaw +0.002 cyc 0.004 eff 0.357 sat 0.016
+  lm    2 cost     6.5532 mu  1.1e-03 v -0.0000 T 1.578 lat +0.0016 yaw +0.003 cyc 0.004 eff 0.339 sat 0.014
+  lm    3 cost     5.5960 mu  3.7e-01 v -0.0006 T 1.580 lat +0.0006 yaw +0.003 cyc 0.002 eff 0.320 sat 0.004
+  lm    4 cost     5.4180 mu  1.2e-01 v -0.0001 T 1.580 lat +0.0004 yaw +0.002 cyc 0.004 eff 0.321 sat 0.004
+  lm    5 cost     4.8659 mu  4.1e-02 v -0.0000 T 1.582 lat +0.0002 yaw +0.002 cyc 0.005 eff 0.307 sat 0.004
+  lm    6 cost     4.7449 mu  1.4e+01 v +0.0000 T 1.583 lat +0.0000 yaw +0.001 cyc 0.005 eff 0.304 sat 0.004
+  lm    7 cost     4.6457 mu  4.6e+00 v -0.0001 T 1.584 lat +0.0004 yaw +0.001 cyc 0.003 eff 0.302 sat 0.004
+  lm    8 cost     4.5137 mu  1.5e+00 v +0.0000 T 1.589 lat +0.0003 yaw +0.001 cyc 0.002 eff 0.298 sat 0.003
+  lm    9 cost     4.5003 mu  5.1e+01 v +0.0000 T 1.589 lat +0.0002 yaw +0.001 cyc 0.002 eff 0.298 sat 0.003
+  lm   10 cost     4.4809 mu  1.7e+01 v +0.0001 T 1.589 lat +0.0002 yaw +0.001 cyc 0.002 eff 0.297 sat 0.003
+  lm   11 cost     4.4509 mu  5.6e+00 v +0.0001 T 1.589 lat -0.0001 yaw +0.001 cyc 0.003 eff 0.297 sat 0.003
+  lm   12 cost     4.3817 mu  1.9e+00 v -0.0000 T 1.591 lat +0.0002 yaw +0.001 cyc 0.002 eff 0.294 sat 0.003
+[step4_wx-0.2_dt0.002_r1] v -0.0000 T 1.591 lat +0.0002 yaw +0.001 wx -0.199 eff 0.294 cot 11198.95 cyc 0.002 feasible True
+  lm    1 cost    93.2834 mu  3.3e-03 v -0.0013 T 1.610 lat +0.0011 yaw +0.002 cyc 0.001 eff 0.322 sat 0.014
+  lm    2 cost    91.1947 mu  1.1e-03 v -0.0006 T 1.613 lat -0.0013 yaw -0.001 cyc 0.003 eff 0.360 sat 0.021
+  lm    3 cost    70.0801 mu  3.7e-04 v -0.0013 T 1.612 lat -0.0000 yaw +0.001 cyc 0.003 eff 0.351 sat 0.015
+  lm    4 cost    60.4587 mu  1.2e-04 v -0.0011 T 1.611 lat +0.0008 yaw +0.001 cyc 0.003 eff 0.342 sat 0.013
+  lm    5 cost    54.2803 mu  4.1e-05 v -0.0016 T 1.610 lat +0.0014 yaw +0.002 cyc 0.003 eff 0.350 sat 0.008
+  lm    6 cost    47.7305 mu  1.4e-05 v -0.0023 T 1.610 lat +0.0012 yaw +0.002 cyc 0.003 eff 0.359 sat 0.024
+  lm    7 cost    45.5799 mu  4.6e-06 v -0.0032 T 1.610 lat +0.0001 yaw -0.002 cyc 0.003 eff 0.366 sat 0.012
+  lm    8 cost    40.0604 mu  1.5e-06 v -0.0034 T 1.610 lat +0.0010 yaw -0.001 cyc 0.001 eff 0.345 sat 0.013
+  lm    9 cost    34.2330 mu  5.1e-03 v -0.0048 T 1.612 lat +0.0025 yaw -0.002 cyc 0.002 eff 0.364 sat 0.006
+  lm   10 cost    25.3007 mu  1.7e-03 v -0.0036 T 1.611 lat +0.0021 yaw -0.002 cyc 0.002 eff 0.361 sat 0.003
+  lm   11 cost    20.6661 mu  5.6e-04 v -0.0033 T 1.612 lat +0.0013 yaw -0.003 cyc 0.002 eff 0.349 sat 0.002
+  lm   12 cost    19.1815 mu  1.9e-04 v -0.0035 T 1.614 lat -0.0001 yaw -0.004 cyc 0.002 eff 0.333 sat 0.002
+[step5_wx-0.3_dt0.002] v -0.0035 T 1.614 lat -0.0001 yaw -0.004 wx -0.265 eff 0.333 cot 65.02 cyc 0.002 feasible False
+ wx-0.3 not met (reached v -0.0035 yaw -0.2652), retry 1
+  es    0 cost     19.181 v -0.0035 T 1.614 lat -0.0001 yaw -0.004 cyc 0.00 eff 0.33 sigma 0.043
+  es    9 cost     10.658 v -0.0013 T 1.642 lat -0.0003 yaw -0.006 cyc 0.00 eff 0.40 sigma 0.010
+  lm    1 cost     9.1806 mu  3.3e-01 v +0.0004 T 1.642 lat +0.0010 yaw -0.001 cyc 0.001 eff 0.398 sat 0.031
+  lm    2 cost     9.1156 mu  1.1e-01 v +0.0002 T 1.647 lat +0.0010 yaw +0.002 cyc 0.001 eff 0.402 sat 0.031
+  lm    3 cost     8.8110 mu  3.7e-02 v +0.0007 T 1.647 lat +0.0002 yaw +0.002 cyc 0.001 eff 0.396 sat 0.026
+  lm    4 cost     8.1253 mu  1.2e-02 v +0.0004 T 1.650 lat -0.0004 yaw -0.001 cyc 0.001 eff 0.381 sat 0.022
+  lm    5 cost     7.0326 mu  4.1e-01 v -0.0003 T 1.666 lat -0.0003 yaw -0.001 cyc 0.001 eff 0.366 sat 0.014
+  lm    6 cost     6.6212 mu  1.4e+00 v +0.0004 T 1.665 lat -0.0003 yaw -0.002 cyc 0.001 eff 0.357 sat 0.014
+  lm    7 cost     6.2548 mu  4.6e+00 v +0.0002 T 1.666 lat -0.0002 yaw -0.001 cyc 0.001 eff 0.347 sat 0.014
+  lm    8 cost     6.1467 mu  1.5e+00 v +0.0001 T 1.667 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.345 sat 0.014
+  lm    9 cost     6.0729 mu  5.1e+00 v +0.0000 T 1.667 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.343 sat 0.014
+  lm   10 cost     6.0023 mu  1.7e+00 v -0.0000 T 1.669 lat +0.0000 yaw -0.000 cyc 0.001 eff 0.341 sat 0.014
+  lm   11 cost     5.9619 mu  5.6e+00 v +0.0000 T 1.669 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.340 sat 0.014
+  lm   12 cost     5.9079 mu  1.9e+00 v +0.0000 T 1.670 lat +0.0001 yaw -0.000 cyc 0.001 eff 0.338 sat 0.014
+[step6_wx-0.3_dt0.002_r1] v 0.0000 T 1.670 lat +0.0001 yaw -0.000 wx -0.298 eff 0.338 cot 55704.92 cyc 0.001 feasible True
+  lm    1 cost   224.6227 mu  3.3e-03 v +0.0001 T 1.670 lat +0.0002 yaw -0.001 cyc 0.001 eff 0.365 sat 0.013
+  lm    2 cost   179.8955 mu  1.1e-03 v +0.0001 T 1.667 lat -0.0001 yaw -0.003 cyc 0.001 eff 0.362 sat 0.010
+  lm    3 cost   158.9692 mu  3.7e-04 v -0.0003 T 1.666 lat +0.0008 yaw -0.004 cyc 0.001 eff 0.384 sat 0.012
+  lm    4 cost   142.1293 mu  1.2e-04 v -0.0018 T 1.660 lat +0.0027 yaw -0.004 cyc 0.001 eff 0.389 sat 0.013
+  lm    5 cost   116.5526 mu  4.1e-05 v -0.0016 T 1.659 lat +0.0030 yaw -0.009 cyc 0.001 eff 0.405 sat 0.017
+  lm    6 cost   101.5914 mu  1.4e-05 v -0.0018 T 1.659 lat +0.0040 yaw -0.010 cyc 0.001 eff 0.416 sat 0.021
+  lm    7 cost    90.0799 mu  4.6e-06 v -0.0022 T 1.659 lat +0.0056 yaw -0.010 cyc 0.001 eff 0.421 sat 0.022
+  lm    8 cost    82.6682 mu  1.5e-06 v -0.0024 T 1.659 lat +0.0049 yaw -0.011 cyc 0.001 eff 0.432 sat 0.023
+  lm    9 cost    70.7063 mu  1.0e-06 v -0.0020 T 1.659 lat +0.0060 yaw -0.014 cyc 0.001 eff 0.437 sat 0.018
+  lm   10 cost    63.8606 mu  1.0e-06 v -0.0020 T 1.659 lat +0.0077 yaw -0.017 cyc 0.001 eff 0.442 sat 0.013
+  lm   11 cost    56.2930 mu  1.0e-06 v -0.0015 T 1.659 lat +0.0084 yaw -0.019 cyc 0.001 eff 0.448 sat 0.011
+  lm   12 cost    51.1702 mu  1.0e-06 v -0.0008 T 1.659 lat +0.0094 yaw -0.021 cyc 0.001 eff 0.444 sat 0.007
+[step7_wx-0.45_dt0.002] v -0.0008 T 1.659 lat +0.0094 yaw -0.021 wx -0.396 eff 0.444 cot 491.11 cyc 0.001 feasible False
+ wx-0.45 not met (reached v -0.0008 yaw -0.3960), retry 1
+  es    0 cost     44.243 v +0.0031 T 1.489 lat +0.0045 yaw -0.032 cyc 0.00 eff 0.55 sigma 0.043
+  es    9 cost     25.602 v +0.0012 T 1.428 lat +0.0012 yaw -0.014 cyc 0.00 eff 0.65 sigma 0.010
+  lm    1 cost    24.3856 mu  3.3e-03 v +0.0011 T 1.431 lat +0.0010 yaw -0.015 cyc 0.001 eff 0.634 sat 0.247
+  lm    2 cost    22.9668 mu  1.1e-03 v +0.0012 T 1.432 lat +0.0010 yaw -0.015 cyc 0.000 eff 0.616 sat 0.220
+  lm    3 cost    22.5525 mu  3.7e-04 v +0.0012 T 1.427 lat +0.0010 yaw -0.015 cyc 0.000 eff 0.610 sat 0.212
+  lm    4 cost    21.6609 mu  1.2e-04 v +0.0012 T 1.431 lat +0.0008 yaw -0.014 cyc 0.001 eff 0.596 sat 0.194
+  lm    5 cost    21.2818 mu  4.1e-05 v +0.0012 T 1.431 lat +0.0006 yaw -0.013 cyc 0.000 eff 0.589 sat 0.181
+  lm    6 cost    20.7235 mu  1.4e-05 v +0.0013 T 1.433 lat -0.0001 yaw -0.011 cyc 0.000 eff 0.579 sat 0.166
+  lm    7 cost    20.7025 mu  4.6e-04 v +0.0013 T 1.435 lat -0.0001 yaw -0.009 cyc 0.000 eff 0.574 sat 0.157
+  lm    8 cost    20.3009 mu  1.5e-04 v +0.0013 T 1.436 lat -0.0004 yaw -0.008 cyc 0.000 eff 0.565 sat 0.143
+  lm    9 cost    19.8119 mu  5.1e-01 v +0.0015 T 1.436 lat -0.0001 yaw -0.007 cyc 0.000 eff 0.561 sat 0.133
+  lm   10 cost    19.3931 mu  1.7e-01 v +0.0016 T 1.436 lat -0.0005 yaw -0.007 cyc 0.000 eff 0.560 sat 0.130
+  lm   11 cost    18.9965 mu  5.6e-01 v +0.0016 T 1.436 lat -0.0002 yaw -0.006 cyc 0.000 eff 0.556 sat 0.123
+  lm   12 cost    18.6584 mu  1.9e-01 v +0.0018 T 1.436 lat -0.0006 yaw -0.006 cyc 0.000 eff 0.555 sat 0.120
+[step8_wx-0.45_dt0.002_r1] v 0.0018 T 1.436 lat -0.0006 yaw -0.006 wx -0.440 eff 0.555 cot 341.10 cyc 0.000 feasible True
+  lm    1 cost   264.0318 mu  3.3e-03 v +0.0019 T 1.435 lat -0.0006 yaw -0.005 cyc 0.001 eff 0.556 sat 0.117
+  lm    2 cost   251.5898 mu  1.1e-03 v +0.0019 T 1.436 lat -0.0006 yaw -0.003 cyc 0.000 eff 0.553 sat 0.111
+  lm    3 cost   242.9805 mu  3.7e-04 v +0.0020 T 1.434 lat -0.0007 yaw -0.002 cyc 0.001 eff 0.554 sat 0.108
+  lm    4 cost   232.1861 mu  1.2e-04 v +0.0020 T 1.434 lat -0.0006 yaw +0.001 cyc 0.002 eff 0.552 sat 0.103
+  lm    5 cost   223.9274 mu  4.1e-05 v +0.0023 T 1.435 lat -0.0003 yaw +0.001 cyc 0.000 eff 0.552 sat 0.099
+  lm    6 cost   216.8398 mu  1.4e-05 v +0.0032 T 1.435 lat -0.0019 yaw +0.003 cyc 0.001 eff 0.551 sat 0.093
+  lm    7 cost   209.1796 mu  4.6e-06 v +0.0034 T 1.435 lat -0.0018 yaw +0.003 cyc 0.001 eff 0.550 sat 0.086
+  lm    8 cost   201.7598 mu  1.5e-06 v +0.0033 T 1.435 lat -0.0020 yaw +0.003 cyc 0.000 eff 0.549 sat 0.082
+  lm    9 cost   194.1128 mu  1.0e-06 v +0.0037 T 1.435 lat -0.0019 yaw +0.003 cyc 0.001 eff 0.548 sat 0.077
+  lm   10 cost   187.6024 mu  1.0e-06 v +0.0038 T 1.435 lat -0.0019 yaw +0.005 cyc 0.001 eff 0.546 sat 0.072
+  lm   11 cost   179.9032 mu  1.0e-06 v +0.0041 T 1.435 lat -0.0021 yaw +0.005 cyc 0.001 eff 0.544 sat 0.068
+  lm   12 cost   172.8747 mu  1.0e-06 v +0.0048 T 1.435 lat -0.0017 yaw +0.006 cyc 0.002 eff 0.543 sat 0.065
+[step9_wx-0.6_dt0.002] v 0.0048 T 1.435 lat -0.0017 yaw +0.006 wx -0.477 eff 0.543 cot 123.20 cyc 0.002 feasible False
+ wx-0.6 not met (reached v 0.0048 yaw -0.4767), retry 1
+  es    0 cost    172.875 v +0.0048 T 1.435 lat -0.0017 yaw +0.006 cyc 0.00 eff 0.54 sigma 0.043
+  es    9 cost     47.090 v +0.0042 T 1.252 lat +0.0022 yaw -0.010 cyc 0.00 eff 0.72 sigma 0.014
+  lm    1 cost    45.1226 mu  3.3e-03 v +0.0040 T 1.249 lat +0.0026 yaw -0.005 cyc 0.001 eff 0.699 sat 0.328
+  lm    2 cost    45.0632 mu  1.1e-03 v +0.0050 T 1.249 lat +0.0015 yaw -0.003 cyc 0.001 eff 0.696 sat 0.325
+  lm    3 cost    44.2002 mu  3.7e-02 v +0.0060 T 1.251 lat +0.0012 yaw -0.002 cyc 0.001 eff 0.680 sat 0.295
+  lm    4 cost    42.6464 mu  1.2e-02 v +0.0060 T 1.252 lat +0.0006 yaw -0.000 cyc 0.001 eff 0.669 sat 0.287
+  lm    5 cost    41.4287 mu  4.1e-02 v +0.0063 T 1.255 lat +0.0003 yaw +0.001 cyc 0.001 eff 0.663 sat 0.274
+  lm    6 cost    40.4478 mu  1.4e-01 v +0.0064 T 1.258 lat +0.0002 yaw +0.004 cyc 0.000 eff 0.659 sat 0.272
+  lm    7 cost    39.5626 mu  4.6e-02 v +0.0064 T 1.256 lat +0.0007 yaw +0.005 cyc 0.001 eff 0.659 sat 0.269
+  lm    8 cost    38.9949 mu  1.5e-02 v +0.0061 T 1.256 lat +0.0016 yaw +0.007 cyc 0.001 eff 0.660 sat 0.270
+  lm    9 cost    38.1929 mu  5.1e-03 v +0.0065 T 1.257 lat +0.0013 yaw +0.004 cyc 0.001 eff 0.656 sat 0.267
+  lm   10 cost    37.0879 mu  1.7e-01 v +0.0066 T 1.256 lat -0.0011 yaw +0.009 cyc 0.000 eff 0.658 sat 0.258
+  lm   11 cost    36.1524 mu  5.6e-02 v +0.0066 T 1.260 lat +0.0003 yaw +0.007 cyc 0.000 eff 0.645 sat 0.248
+  lm   12 cost    34.4496 mu  1.9e-02 v +0.0062 T 1.265 lat +0.0008 yaw +0.007 cyc 0.000 eff 0.636 sat 0.234
+[step10_wx-0.6_dt0.002_r1] v 0.0062 T 1.265 lat +0.0008 yaw +0.007 wx -0.576 eff 0.636 cot 130.79 cyc 0.000 feasible False
+ wx-0.6 not met (reached v 0.0062 yaw -0.5764), retry 2
+  lm    1 cost    33.7931 mu  3.3e-02 v +0.0058 T 1.265 lat +0.0003 yaw +0.007 cyc 0.001 eff 0.648 sat 0.247
+  lm    2 cost    33.5514 mu  1.1e-02 v +0.0060 T 1.267 lat +0.0002 yaw +0.007 cyc 0.001 eff 0.638 sat 0.239
+  lm    3 cost    32.9041 mu  3.7e-02 v +0.0061 T 1.270 lat +0.0001 yaw +0.007 cyc 0.000 eff 0.629 sat 0.224
+  lm    4 cost    32.0831 mu  1.2e-02 v +0.0060 T 1.272 lat +0.0002 yaw +0.007 cyc 0.007 eff 0.621 sat 0.217
+  lm    5 cost    31.2363 mu  4.1e-02 v +0.0057 T 1.273 lat +0.0003 yaw +0.006 cyc 0.008 eff 0.621 sat 0.212
+  lm    6 cost    30.9163 mu  1.4e-02 v +0.0056 T 1.273 lat +0.0006 yaw +0.006 cyc 0.002 eff 0.616 sat 0.208
+  lm    7 cost    25.9501 mu  4.6e-01 v +0.0036 T 1.273 lat +0.0020 yaw -0.001 cyc 0.001 eff 0.626 sat 0.220
+  lm    8 cost    23.7863 mu  1.5e+00 v +0.0035 T 1.273 lat -0.0006 yaw -0.003 cyc 0.001 eff 0.623 sat 0.224
+  lm    9 cost    23.1294 mu  5.1e+00 v +0.0027 T 1.273 lat -0.0001 yaw -0.003 cyc 0.000 eff 0.623 sat 0.224
+  lm   10 cost    22.4164 mu  1.7e+00 v +0.0017 T 1.276 lat +0.0000 yaw -0.003 cyc 0.000 eff 0.621 sat 0.224
+  lm   11 cost    22.2693 mu  5.6e+00 v +0.0015 T 1.276 lat +0.0000 yaw -0.003 cyc 0.000 eff 0.621 sat 0.224
+  lm   12 cost    21.9358 mu  1.9e+00 v +0.0012 T 1.279 lat -0.0001 yaw -0.003 cyc 0.000 eff 0.618 sat 0.223
+[step11_wx-0.6_dt0.002_r2] v 0.0012 T 1.279 lat -0.0001 yaw -0.003 wx -0.595 eff 0.618 cot 637.56 cyc 0.000 feasible False
+ wx-0.6 not met (reached v 0.0012 yaw -0.5947), retry 3
+  lm    1 cost    21.3938 mu  3.3e-01 v +0.0013 T 1.295 lat +0.0003 yaw -0.003 cyc 0.000 eff 0.611 sat 0.216
+  lm    2 cost    21.1556 mu  1.1e+00 v +0.0011 T 1.301 lat -0.0001 yaw -0.003 cyc 0.000 eff 0.610 sat 0.213
+  lm    3 cost    20.8334 mu  3.7e+00 v +0.0011 T 1.301 lat -0.0003 yaw -0.003 cyc 0.000 eff 0.606 sat 0.213
+  lm    4 cost    20.8241 mu  1.2e+00 v +0.0011 T 1.303 lat -0.0003 yaw -0.003 cyc 0.000 eff 0.606 sat 0.212
+  lm    5 cost    20.7213 mu  4.1e+00 v +0.0011 T 1.303 lat -0.0001 yaw -0.003 cyc 0.000 eff 0.605 sat 0.211
+  lm    6 cost    20.6444 mu  1.4e+00 v +0.0010 T 1.305 lat -0.0002 yaw -0.002 cyc 0.000 eff 0.604 sat 0.211
+  lm    7 cost    20.6366 mu  4.6e+00 v +0.0012 T 1.305 lat -0.0002 yaw -0.003 cyc 0.001 eff 0.604 sat 0.211
+  lm    8 cost    20.5433 mu  1.5e+00 v +0.0009 T 1.307 lat -0.0000 yaw -0.003 cyc 0.000 eff 0.603 sat 0.209
+  lm    9 cost    20.3699 mu  5.1e-01 v +0.0008 T 1.310 lat -0.0000 yaw -0.003 cyc 0.000 eff 0.602 sat 0.206
+  lm   10 cost    20.3664 mu  1.7e+00 v +0.0008 T 1.313 lat -0.0000 yaw -0.003 cyc 0.001 eff 0.601 sat 0.204
+  lm   11 cost    20.2806 mu  5.6e+00 v +0.0007 T 1.314 lat -0.0000 yaw -0.003 cyc 0.000 eff 0.600 sat 0.204
+  lm   12 cost    20.2524 mu  1.9e+00 v +0.0008 T 1.315 lat -0.0001 yaw -0.003 cyc 0.000 eff 0.600 sat 0.204
+[step12_wx-0.6_dt0.002_r3] v 0.0008 T 1.315 lat -0.0001 yaw -0.003 wx -0.596 eff 0.600 cot 949.47 cyc 0.000 feasible False
+ wx-0.6 missed (reached v 0.0008 yaw -0.5958); ending the ladder
+  lm    1 cost    18.5121 mu  3.3e-01 v +0.0016 T 1.437 lat -0.0009 yaw -0.005 cyc 0.000 eff 0.552 sat 0.115
+  lm    2 cost    17.6091 mu  1.1e-01 v +0.0014 T 1.440 lat -0.0006 yaw -0.004 cyc 0.000 eff 0.541 sat 0.103
+  lm    3 cost    17.2804 mu  3.7e-01 v +0.0013 T 1.440 lat -0.0006 yaw -0.004 cyc 0.000 eff 0.537 sat 0.095
+  lm    4 cost    16.4088 mu  1.2e-01 v +0.0012 T 1.443 lat -0.0002 yaw -0.003 cyc 0.000 eff 0.526 sat 0.086
+[step13_wx-0.45_dt0.001] v 0.0012 T 1.443 lat -0.0002 yaw -0.003 wx -0.440 eff 0.526 cot 478.47 cyc 0.000 feasible True
+ wx-0.45: at the planner dt 0.02 it swims +nan m/s (sim 0.0012)
+  lm    1 cost   164.0173 mu  3.3e-03 v +0.0049 T 1.437 lat -0.0021 yaw +0.007 cyc 0.001 eff 0.544 sat 0.062
+  lm    2 cost   154.8831 mu  1.1e-03 v +0.0049 T 1.434 lat -0.0021 yaw +0.007 cyc 0.000 eff 0.540 sat 0.057
+  lm    3 cost   151.8674 mu  3.7e-04 v +0.0050 T 1.432 lat -0.0025 yaw +0.008 cyc 0.000 eff 0.547 sat 0.055
+  lm    4 cost   143.5202 mu  1.2e-04 v +0.0050 T 1.434 lat -0.0024 yaw +0.009 cyc 0.000 eff 0.542 sat 0.052
+[step14_max_dt0.001] v 0.0050 T 1.434 lat -0.0024 yaw +0.009 wx -0.490 eff 0.542 cot 119.92 cyc 0.000 feasible False
+ max: at the planner dt 0.02 it swims +nan m/s (sim 0.0050)

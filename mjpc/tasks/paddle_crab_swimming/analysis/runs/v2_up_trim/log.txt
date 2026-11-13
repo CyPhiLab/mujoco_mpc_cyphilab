@@ -1,0 +1,23 @@
+init from runs/v2_cruise_up_hold/step2_v0.06_dt0.002_r1.npz (v2 gait)
+  lm    1 cost   195.8673 mu  1.0e+06 v +0.0499 T 0.583 lat +0.0074 yaw +0.009 cyc 0.264 eff 0.425 sat 0.134
+[step1_v0.05_dt0.002] v 0.0499 T 0.583 lat +0.0074 yaw +0.009 eff 0.425 cot 6.62 cyc 0.264 feasible False
+ v0.05 not met (reached v 0.0499 yaw +0.0087), retry 1
+  es    0 cost    195.867 v +0.0499 T 0.583 lat +0.0074 yaw +0.009 cyc 0.26 eff 0.42 sigma 0.043
+  es    9 cost    195.470 v +0.0512 T 0.584 lat -0.0029 yaw +0.003 cyc 0.24 eff 0.44 sigma 0.010
+  lm    1 cost   195.0808 mu  3.3e+03 v +0.0513 T 0.584 lat -0.0028 yaw +0.003 cyc 0.238 eff 0.440 sat 0.134
+  lm    2 cost   193.1448 mu  1.1e+03 v +0.0517 T 0.584 lat -0.0049 yaw +0.003 cyc 0.237 eff 0.440 sat 0.134
+  lm    3 cost   190.9720 mu  3.7e+03 v +0.0523 T 0.584 lat -0.0064 yaw +0.003 cyc 0.234 eff 0.440 sat 0.134
+  lm    4 cost   187.5053 mu  1.2e+04 v +0.0536 T 0.584 lat -0.0095 yaw +0.004 cyc 0.229 eff 0.440 sat 0.134
+  lm    5 cost   183.8197 mu  4.1e+04 v +0.0543 T 0.584 lat -0.0087 yaw +0.004 cyc 0.226 eff 0.440 sat 0.134
+  lm    6 cost   183.8197 mu  4.1e+06 v +0.0543 T 0.584 lat -0.0087 yaw +0.004 cyc 0.226 eff 0.440 sat 0.134
+[step2_v0.05_dt0.002_r1] v 0.0543 T 0.584 lat -0.0087 yaw +0.004 eff 0.440 cot 6.56 cyc 0.226 feasible False
+ v0.05 not met (reached v 0.0543 yaw +0.0038), retry 2
+  lm    1 cost   183.8197 mu  1.0e+06 v +0.0543 T 0.584 lat -0.0087 yaw +0.004 cyc 0.226 eff 0.440 sat 0.134
+[step3_v0.05_dt0.002_r2] v 0.0543 T 0.584 lat -0.0087 yaw +0.004 eff 0.440 cot 6.56 cyc 0.226 feasible False
+ v0.05 not met (reached v 0.0543 yaw +0.0038), retry 3
+  lm    1 cost   183.8197 mu  1.0e+06 v +0.0543 T 0.584 lat -0.0087 yaw +0.004 cyc 0.226 eff 0.440 sat 0.134
+[step4_v0.05_dt0.002_r3] v 0.0543 T 0.584 lat -0.0087 yaw +0.004 eff 0.440 cot 6.56 cyc 0.226 feasible False
+ v0.05 not met (reached v 0.0543 yaw +0.0038), retry 4
+  lm    1 cost   183.8197 mu  1.0e+06 v +0.0543 T 0.584 lat -0.0087 yaw +0.004 cyc 0.226 eff 0.440 sat 0.134
+[step5_v0.05_dt0.002_r4] v 0.0543 T 0.584 lat -0.0087 yaw +0.004 eff 0.440 cot 6.56 cyc 0.226 feasible False
+ v0.05 missed (reached v 0.0543 yaw +0.0038); ending the ladder

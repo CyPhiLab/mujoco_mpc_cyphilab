@@ -3,6 +3,10 @@
 
   primitive_report.py NAME=STEP.npz ... --out runs/primitives_report
 
+NAME=STEP.npz@AX,AY starts every rollout from rest turned about world x by
+AX, then world y by AY (gait_chain --start_attitude: upside down, vertical);
+steps that saved their start state (a 'start' field) use it by default.
+
 For each primitive, at the 1 ms simulation timestep unless noted:
   steady   the limit cycle: 12 cycles from rest, then 2 scored
   rest     cycles 5-6 from rest (what the optimizer's search scores)
@@ -26,8 +30,10 @@ STEADY_WARM = 12
 PATH_SECONDS = 20.0
 
 
-def problem_for(z, dt, warm, measure=2):
+def problem_for(z, dt, warm, measure=2, start=None):
   C.set_robot(C.step_robot(z))
+  if start is None and 'start' in z:
+    start = z['start']
   metrics = json.loads(str(z['metrics']))
   half = step_half(z)
   stock = C.load_model(ground=False).actuator_ctrlrange[:, 1]
@@ -39,12 +45,13 @@ def problem_for(z, dt, warm, measure=2):
                    yaw_rate=float(metrics.get('yaw_rate_target', 0.0)),
                    body_rate=metrics.get('body_rate_target'),
                    attitude=metrics.get('attitude_target'),
-                   heading_frame=metrics.get('heading_frame', False))
+                   heading_frame=metrics.get('heading_frame', False),
+                   x0=start)
 
 
-def path(z, seconds=PATH_SECONDS, dt=C.SIM_DT):
+def path(z, seconds=PATH_SECONDS, dt=C.SIM_DT, start=None):
   """Open-loop rollout from rest: time, base position, yaw (unwrapped)."""
-  p = problem_for(z, dt, warm=1)
+  p = problem_for(z, dt, warm=1, start=start)
   theta = p.fix(z['theta'])
   n = int(round(seconds / dt))
   ctrl, _ = G.controls(p.layout, theta, p.half, n, dt)
@@ -60,16 +67,28 @@ def path(z, seconds=PATH_SECONDS, dt=C.SIM_DT):
   return t, qpos[:, :3] - qpos[0, :3], yaw - yaw[0]
 
 
-def check(name, file):
+def start_state(z, attitude):
+  """Rest turned to attitude (about world x, then y), as gait_chain's
+  --start_attitude does."""
+  from gait_chain import turned_state
+  C.set_robot(C.step_robot(z))
+  m = C.load_model(ground=False)
+  return turned_state(C.initial_state(m), C.StateLayout(m), attitude)
+
+
+def check(name, file, attitude=None):
   z = np.load(file, allow_pickle=True)
+  start = None if attitude is None else start_state(z, attitude)
   out = dict(name=name, file=file, direction=np.round(
       z['direction'], 3).tolist(), design=step_design(z))
   for key, dt, warm in (('steady', C.SIM_DT, STEADY_WARM),
                         ('rest', C.SIM_DT, 4),
                         ('plan', C.PLAN_DT, STEADY_WARM)):
-    _, info = problem_for(z, dt, warm).evaluate(z['theta'][None])
+    _, info = problem_for(z, dt, warm, start=start).evaluate(z['theta'][None])
     out[key] = info[0]
-  t, pos, yaw = path(z)
+  if attitude is not None:
+    out['start_attitude'] = list(attitude)
+  t, pos, yaw = path(z, start=start)
   d = np.asarray(z['direction'], float)
   d /= np.linalg.norm(d)
   lateral, vertical = G.drift_axes(d)
@@ -137,7 +156,11 @@ def main():
   rows, paths = [], []
   for item in a.gaits:
     name, file = item.split('=')
-    row, pth = check(name, file)
+    attitude = None
+    if '@' in file:
+      file, att = file.split('@')
+      attitude = [float(x) for x in att.split(',')]
+    row, pth = check(name, file, attitude)
     rows.append(row)
     paths.append(pth)
     s = row['steady']
