@@ -1,0 +1,45 @@
+init from runs/v2_rotYp/step15_max_dt0.001.npz (v2 gait)
+  lm    1 cost   739.0705 mu  3.3e-03 v -0.0005 T 1.944 lat -0.0013 yaw -0.801 cyc 0.000 eff 0.542 sat 0.086
+  lm    2 cost   686.7993 mu  1.1e-03 v +0.0009 T 1.948 lat -0.0016 yaw -0.796 cyc 0.000 eff 0.535 sat 0.084
+  lm    3 cost   597.9760 mu  3.7e-04 v +0.0046 T 1.960 lat -0.0016 yaw -0.794 cyc 0.000 eff 0.516 sat 0.071
+  lm    4 cost   573.7596 mu  1.2e-04 v +0.0053 T 1.963 lat -0.0017 yaw -0.790 cyc 0.000 eff 0.515 sat 0.068
+  lm    5 cost   526.2457 mu  4.1e-05 v +0.0071 T 1.967 lat -0.0016 yaw -0.789 cyc 0.000 eff 0.504 sat 0.064
+  lm    6 cost   505.7128 mu  1.4e-05 v +0.0077 T 1.967 lat -0.0016 yaw -0.786 cyc 0.000 eff 0.504 sat 0.061
+  lm    7 cost   463.4799 mu  4.6e-06 v +0.0096 T 1.968 lat -0.0017 yaw -0.783 cyc 0.000 eff 0.499 sat 0.056
+  lm    8 cost   413.1759 mu  1.5e-06 v +0.0117 T 1.968 lat -0.0017 yaw -0.774 cyc 0.000 eff 0.496 sat 0.051
+  lm    9 cost   354.3611 mu  1.0e-06 v +0.0142 T 1.968 lat -0.0015 yaw -0.745 cyc 0.000 eff 0.485 sat 0.044
+  lm   10 cost   321.9790 mu  1.0e-06 v +0.0159 T 1.969 lat -0.0015 yaw -0.718 cyc 0.000 eff 0.480 sat 0.040
+  lm   11 cost   293.7316 mu  1.0e-06 v +0.0174 T 1.969 lat -0.0007 yaw -0.614 cyc 0.000 eff 0.477 sat 0.036
+  lm   12 cost   265.8111 mu  1.0e-06 v +0.0191 T 1.969 lat -0.0006 yaw -0.341 cyc 0.000 eff 0.473 sat 0.031
+[step1_wy0.4_dt0.002] v 0.0191 T 1.969 lat -0.0006 yaw -0.341 wy +0.509 eff 0.473 cot 23.49 cyc 0.000 feasible False
+ wy0.4 not met (reached v 0.0191 yaw +0.5091), retry 1
+  es    0 cost     61.311 v +0.0422 T 1.853 lat +0.0026 yaw -0.545 cyc 0.00 eff 0.57 sigma 0.060
+  es    9 cost     29.223 v +0.0585 T 1.726 lat -0.0006 yaw -0.866 cyc 0.00 eff 0.65 sigma 0.014
+  lm    1 cost    27.8464 mu  3.3e-03 v +0.0568 T 1.721 lat +0.0043 yaw -0.908 cyc 0.001 eff 0.615 sat 0.205
+  lm    2 cost    26.0770 mu  1.1e-01 v +0.0546 T 1.726 lat +0.0013 yaw -0.919 cyc 0.000 eff 0.574 sat 0.160
+  lm    3 cost    23.6749 mu  3.7e-02 v +0.0548 T 1.724 lat +0.0017 yaw -0.918 cyc 0.001 eff 0.553 sat 0.150
+  lm    4 cost    22.6465 mu  1.2e-02 v +0.0550 T 1.723 lat +0.0016 yaw -0.877 cyc 0.000 eff 0.551 sat 0.142
+  lm    5 cost    22.5491 mu  4.1e-03 v +0.0547 T 1.725 lat +0.0020 yaw -0.903 cyc 0.000 eff 0.547 sat 0.138
+  lm    6 cost    21.4880 mu  1.4e-03 v +0.0545 T 1.730 lat +0.0025 yaw -0.900 cyc 0.000 eff 0.532 sat 0.129
+  lm    7 cost    21.1728 mu  4.6e-04 v +0.0543 T 1.732 lat +0.0005 yaw -0.897 cyc 0.000 eff 0.532 sat 0.124
+  lm    8 cost    20.1433 mu  1.5e-04 v +0.0542 T 1.735 lat +0.0005 yaw -0.882 cyc 0.000 eff 0.520 sat 0.115
+  lm    9 cost    18.6603 mu  5.1e-01 v +0.0551 T 1.735 lat +0.0000 yaw -0.889 cyc 0.000 eff 0.521 sat 0.107
+  lm   10 cost    17.2515 mu  1.7e-01 v +0.0554 T 1.747 lat -0.0012 yaw -0.857 cyc 0.000 eff 0.509 sat 0.101
+  lm   11 cost    16.9678 mu  5.6e-01 v +0.0556 T 1.747 lat -0.0001 yaw -0.876 cyc 0.000 eff 0.511 sat 0.100
+  lm   12 cost    15.9834 mu  1.9e-01 v +0.0559 T 1.751 lat -0.0013 yaw -0.851 cyc 0.000 eff 0.501 sat 0.096
+[step2_wy0.4_dt0.002_r1] v 0.0559 T 1.751 lat -0.0013 yaw -0.851 wy +0.399 eff 0.501 cot 8.91 cyc 0.000 feasible False
+ wy0.4 missed (reached v 0.0559 yaw +0.3993); ending the ladder
+  lm    1 cost   235.8630 mu  3.3e-03 v +0.0210 T 1.974 lat -0.0008 yaw -0.151 cyc 0.000 eff 0.469 sat 0.026
+  lm    2 cost   210.6348 mu  1.1e-03 v +0.0228 T 1.979 lat -0.0006 yaw -0.105 cyc 0.000 eff 0.465 sat 0.024
+  lm    3 cost   189.5003 mu  3.7e-04 v +0.0244 T 1.983 lat -0.0003 yaw -0.091 cyc 0.000 eff 0.463 sat 0.021
+  lm    4 cost   168.6360 mu  1.2e-04 v +0.0261 T 1.986 lat -0.0001 yaw -0.077 cyc 0.000 eff 0.459 sat 0.017
+[step3_max_dt0.001] v 0.0261 T 1.986 lat -0.0001 yaw -0.077 wy +0.480 eff 0.459 cot 16.17 cyc 0.000 feasible False
+WARNING: Inertia matrix is too close to singular, or the effective-metric solve failed to converge, at DOF 21. Check model. Time = 0.0200.
+
+/home/zach/projects/mujoco_mpc_cyphilab-paddle/mjpc/tasks/paddle_crab_swimming/analysis/gait_opt.py:267: RuntimeWarning: invalid value encountered in subtract
+  disp = p1 - p0
+/home/zach/projects/mujoco_mpc_cyphilab-paddle/mjpc/tasks/paddle_crab_swimming/analysis/gait_opt.py:301: RuntimeWarning: invalid value encountered in subtract
+  body_rate = (at(np.cumsum(ang_body, 0) * dt, t1)
+/home/zach/projects/mujoco_mpc_cyphilab-paddle/mjpc/tasks/paddle_crab_swimming/analysis/gait_opt.py:314: RuntimeWarning: invalid value encountered in subtract
+  cycle = cycle_state(t1) - cycle_state(tl)
+ max: at the planner dt 0.02 it swims +nan m/s (sim 0.0261)

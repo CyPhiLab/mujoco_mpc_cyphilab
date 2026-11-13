@@ -247,7 +247,7 @@ class Chain:
       json.dump(self.summary, f, indent=2)
     self.log(f'[{tag}] v {metrics["speed"]:.4f} T {metrics["period"]:.3f} '
              f'lat {metrics["lateral_rate"]:+.4f} yaw {metrics["yaw_rate"]:+.3f}'
-             + (f' w{self.args.rate_axis} {self.rate(metrics):+.3f}'
+             + (f' w{"d" if self.args.rate_dir else self.args.rate_axis} {self.rate(metrics):+.3f}'
                 if self.rotating else '') +
              f' eff {metrics["effort"]:.3f} cot {metrics["cot"]:.2f} '
              f'cyc {metrics["cycle_error"]:.3f} feasible {row["feasible"]}')

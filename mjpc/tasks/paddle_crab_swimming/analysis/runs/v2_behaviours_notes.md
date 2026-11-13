@@ -69,10 +69,16 @@ motion (which body axes it clearly moves along or turns about): 30 kinds.
 - The other 14 (swim or climb while rotating, tumbles about diagonal axes)
   are all slow tumbles: 0.1–0.15 rad/s, under 0.5 m in 20 s.
 - The repertoire is translation in any direction, rotation about any axis,
-  and gentle mixtures. Two mixtures are being promoted to full strength:
-  `v2_corkscrew_mY` (roll about body y while swimming −Y, from the roll) and
-  `v2_tumble_diag` (rotation about body (1, −1, 0), `--rate_dir`, from cell
-  3,3,3,4,2,3 in `runs/qd_seeds/`).
+  and gentle mixtures. Two mixtures were promoted to full strength:
+  - **Diagonal tumble** (`v2_tumble_diag`, rotation about body (1, −1, 0)
+    with `--rate_dir`, from cell 3,3,3,4,2,3 in `runs/qd_seeds/`): `max`
+    0.57 rad/s (8 rad about x and −8 about y in 20 s), position held ±6 cm
+    over 30 s; step 10 does 0.45 rad/s.
+  - **Corkscrew swim** (`v2_corkscrew_mY`, roll about body y while swimming
+    −Y, from the roll): step 2 (2 ms solve) rolls 0.39 rad/s while swimming
+    1.0 m in 20 s at 1 ms. Its ladder stopped at the first rung (target
+    0.06 m/s at 0.4 rad/s), and the 1 ms polish of that miss (`max`) lost
+    speed (0.023 m/s), so step 2 is the one to use.
 
 ## Work, but wobble
 
