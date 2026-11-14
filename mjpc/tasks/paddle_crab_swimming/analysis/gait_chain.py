@@ -53,6 +53,9 @@ reset like a heading). Attitude-held swims: --attitude AX AY holds the body z
 axis at its direction after rotating about world x by AX, then world y by AY
 (rad), instead of level.
 
+Slower versions of a gait: --init FAST.npz --speeds 0.7v 0.4v --exact_speed
+(a rung is met within tolerance of its target, as turning rungs are).
+
 Seeds: --seed_style library adds the gaits in --seed_files (and their
 left/right mirror images) to the search batch, e.g. the -Y and +X gaits when
 searching a diagonal; splice adds every pairing of their right legs with
@@ -185,7 +188,7 @@ class Chain:
   def feasible(self, metrics, speed, yaw=0.0):
     a = self.args
     tol = max(a.speed_tol, a.speed_rtol * speed)
-    if self.turning:   # translation held near its target
+    if self.turning or a.exact_speed:   # translation held near its target
       ok = abs(metrics['speed'] - speed) <= tol and self.straight(metrics)
     else:              # a speed rung is met by swimming at least that fast
       ok = metrics['speed'] >= speed - tol and self.straight(metrics)
@@ -453,7 +456,7 @@ class Chain:
         # "max" is the best straight attempt at this rung (not the last).
         best = rungs[-1][5] if rungs else 0.0
         straight = [t for t in attempts if t[1]['straight']]
-        if straight:
+        if straight and not a.exact_speed:   # "max" is the fastest attempt
           th_b, row_b, x0_b = max(straight, key=lambda t: progress(t[1]))
           if progress(row_b) > best:
             best_effort = ('max', th_b, speed, x0_b, yaw, progress(row_b))
@@ -604,6 +607,10 @@ def main():
   p.add_argument('--hold_legs', default='',
                  help="legs held still, e.g. R1,R2,L1,L2: their joints' "
                       "oscillation is zero, their posture stays free")
+  p.add_argument('--exact_speed', action='store_true',
+                 help='a speed rung is met only within tolerance of its '
+                 'target (slower versions of a gait), not by swimming at '
+                 'least that fast; no "max" step')
   p.add_argument('--rate_axis', default='z', choices=('x', 'y', 'z'),
                  help='body axis of a --rate_ladder')
   p.add_argument('--rate_ladder', type=float, nargs='*', default=[],
