@@ -89,21 +89,28 @@ def leg_geom_pairs(m):
           for g1 in geoms(side, a) for g2 in geoms(side, b)]
 
 
-def leg_clearance(m, d, pairs, qpos):
-  """(n, 4) smallest distance (m; negative = penetration, capped at 2 x
-  CLEARANCE) between each pair of same-side neighbouring legs, for each row
-  of qpos. Kinematics only (contacts stay off in the dynamics); distal
-  meshes are their convex hulls, as in MuJoCo's collision."""
-  out = np.full((len(qpos), len(LEG_PAIRS)), 2 * CLEARANCE)
+def geom_distances(m, d, pairs, qpos):
+  """(n, len(pairs)) distance (m; negative = penetration, capped at 2 x
+  CLEARANCE) of every geom pair in pairs (leg_geom_pairs), for each row of
+  qpos. Kinematics only (contacts stay off in the dynamics); distal meshes
+  are their convex hulls, as in MuJoCo's collision."""
+  out = np.empty((len(qpos), len(pairs)))
   fromto = np.zeros(6)
   for i, q in enumerate(qpos):
     d.qpos[:] = q
     mujoco.mj_kinematics(m, d)
-    for p, g1, g2 in pairs:
-      dist = mujoco.mj_geomDistance(m, d, g1, g2, 2 * CLEARANCE, fromto)
-      if dist < out[i, p]:
-        out[i, p] = dist
+    for j, (_, g1, g2) in enumerate(pairs):
+      out[i, j] = mujoco.mj_geomDistance(m, d, g1, g2, 2 * CLEARANCE, fromto)
   return out
+
+
+def leg_clearance(m, d, pairs, qpos):
+  """(n, 4) smallest distance between each pair of same-side neighbouring
+  legs (LEG_PAIRS), for each row of qpos (see geom_distances)."""
+  dist = geom_distances(m, d, pairs, qpos)
+  owner = np.array([p for p, _, _ in pairs])
+  return np.stack([dist[:, owner == p].min(1)
+                   for p in range(len(LEG_PAIRS))], axis=1)
 
 
 class Layout:
@@ -418,14 +425,15 @@ class Problem:
       r = np.append(r, np.sqrt(w['energy']) * cot)
     clearance = None
     if w['clearance']:
-      # Leg clearance over the last cycle: the shortfall below CLEARANCE per
-      # neighbouring pair, RMS over the cycle and at its worst sample.
+      # Leg clearance over the last cycle: one residual per (sample, geom
+      # pair), the shortfall below CLEARANCE. Smooth in theta, unlike a
+      # min / max over pairs or samples, so Gauss-Newton can descend on it.
       ts = tl + np.arange(CLEARANCE_SAMPLES) / CLEARANCE_SAMPLES * period
-      dist = leg_clearance(self.m, self.clear_d, self.clear_pairs,
-                           np.array([at(qpos, t) for t in ts]))
+      dist = geom_distances(self.m, self.clear_d, self.clear_pairs,
+                            np.array([at(qpos, t) for t in ts]))
       short = np.maximum(CLEARANCE - dist, 0.0) / CLEARANCE
-      r = np.concatenate([r, np.sqrt(w['clearance']) * np.sqrt(
-          np.mean(short ** 2, axis=0)), np.sqrt(w['clearance']) * short.max(0)])
+      r = np.concatenate([r, np.sqrt(w['clearance'] / CLEARANCE_SAMPLES)
+                          * short.ravel()])
       clearance = float(dist.min())
     if w['attitude_rate'] and not rotating:
       # Mean pitch and roll rate (body x, y) over the scored cycles: with the

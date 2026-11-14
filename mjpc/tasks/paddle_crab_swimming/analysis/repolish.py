@@ -44,6 +44,9 @@ def main():
   p.add_argument('--hold_legs', default='')
   p.add_argument('--dts', type=float, nargs='+', default=[0.002, 0.001])
   p.add_argument('--iters', type=int, nargs='+', default=[15, 4])
+  p.add_argument('--es_iters', type=int, default=0,
+                 help='elitist ES iterations before LM at the first dt '
+                 '(gait_opt.es), to get out of a stalled start')
   p.add_argument('--keep_speed_target', action='store_true',
                  help='keep the saved speed target instead of the achieved '
                  'speed')
@@ -70,6 +73,9 @@ def main():
       problem.speed = float(before['speed'])
     tag = f'{base}_clear_dt{dt:g}'
     with G.Evaluator(problem, a.processes) as ev:
+      if a.es_iters and dt == a.dts[0]:
+        theta, _, _ = G.es(ev, problem.layout, theta, iters=a.es_iters,
+                           checkpoint=os.path.join(a.out, f'.ckpt_{tag}_es.pkl'))
       theta, _, history = G.lm(ev, problem.layout, theta, iters=iters,
                                checkpoint=os.path.join(a.out,
                                                        f'.ckpt_{tag}.pkl'))
