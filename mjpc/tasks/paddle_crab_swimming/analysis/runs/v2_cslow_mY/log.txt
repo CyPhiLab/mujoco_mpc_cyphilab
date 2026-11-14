@@ -1,0 +1,39 @@
+init from runs/v2_cruise_mY/step14_v0.1799_dt0.001.npz (v2 gait)
+  lm    1 cost    85.6079 mu  3.3e-03 v +0.1384 T 0.517 lat +0.0020 yaw -0.005 cyc 0.232 eff 0.449 sat 0.138
+  lm    2 cost    25.6138 mu  1.1e-02 v +0.1086 T 0.530 lat +0.0002 yaw +0.024 cyc 0.095 eff 0.420 sat 0.124
+  lm    3 cost    11.2718 mu  3.7e-01 v +0.1169 T 0.527 lat -0.0014 yaw -0.000 cyc 0.042 eff 0.410 sat 0.114
+  lm    4 cost     9.8380 mu  1.2e-01 v +0.1173 T 0.527 lat -0.0007 yaw -0.001 cyc 0.032 eff 0.397 sat 0.102
+  lm    5 cost     9.3467 mu  4.1e-02 v +0.1162 T 0.531 lat -0.0011 yaw -0.007 cyc 0.032 eff 0.383 sat 0.095
+  lm    6 cost     8.7272 mu  1.4e+00 v +0.1172 T 0.532 lat -0.0003 yaw -0.002 cyc 0.031 eff 0.381 sat 0.095
+  lm    7 cost     8.5809 mu  4.6e-01 v +0.1176 T 0.533 lat +0.0001 yaw +0.000 cyc 0.030 eff 0.379 sat 0.094
+  lm    8 cost     8.5536 mu  1.5e+00 v +0.1175 T 0.537 lat -0.0002 yaw -0.001 cyc 0.030 eff 0.379 sat 0.094
+  lm    9 cost     8.4708 mu  5.1e-01 v +0.1176 T 0.540 lat +0.0001 yaw +0.001 cyc 0.030 eff 0.378 sat 0.093
+  lm   10 cost     8.4118 mu  1.7e-01 v +0.1176 T 0.538 lat -0.0003 yaw -0.001 cyc 0.031 eff 0.377 sat 0.093
+  lm   11 cost     8.3528 mu  5.6e-01 v +0.1177 T 0.538 lat -0.0000 yaw -0.001 cyc 0.030 eff 0.376 sat 0.093
+  lm   12 cost     8.3196 mu  1.9e-01 v +0.1177 T 0.536 lat +0.0002 yaw +0.001 cyc 0.031 eff 0.376 sat 0.092
+[step1_v0.1177_dt0.002] v 0.1177 T 0.536 lat +0.0002 yaw +0.001 eff 0.376 cot 2.26 cyc 0.031 feasible True
+  lm    1 cost    87.9965 mu  3.3e-03 v +0.0721 T 0.515 lat +0.0016 yaw -0.038 cyc 0.305 eff 0.465 sat 0.172
+  lm    2 cost    33.6007 mu  1.1e-03 v +0.0763 T 0.514 lat -0.0012 yaw -0.026 cyc 0.118 eff 0.436 sat 0.141
+  lm    3 cost    30.5173 mu  3.7e-04 v +0.0798 T 0.514 lat -0.0033 yaw -0.020 cyc 0.080 eff 0.418 sat 0.120
+  lm    4 cost    23.8412 mu  1.2e-02 v +0.0749 T 0.514 lat -0.0026 yaw -0.005 cyc 0.116 eff 0.384 sat 0.095
+  lm    5 cost    10.8674 mu  4.1e-02 v +0.0689 T 0.505 lat -0.0001 yaw -0.003 cyc 0.067 eff 0.375 sat 0.088
+  lm    6 cost    10.2731 mu  1.4e-01 v +0.0705 T 0.503 lat +0.0000 yaw -0.010 cyc 0.047 eff 0.384 sat 0.098
+  lm    7 cost     8.3670 mu  4.6e-01 v +0.0677 T 0.505 lat +0.0003 yaw -0.002 cyc 0.048 eff 0.376 sat 0.091
+  lm    8 cost     7.7653 mu  1.5e-01 v +0.0672 T 0.516 lat -0.0000 yaw +0.003 cyc 0.050 eff 0.356 sat 0.082
+  lm    9 cost     6.6955 mu  5.1e-01 v +0.0679 T 0.522 lat -0.0001 yaw -0.002 cyc 0.045 eff 0.336 sat 0.070
+  lm   10 cost     6.5677 mu  1.7e+01 v +0.0678 T 0.522 lat -0.0000 yaw -0.001 cyc 0.045 eff 0.334 sat 0.069
+  lm   11 cost     6.4537 mu  5.6e+00 v +0.0676 T 0.521 lat -0.0000 yaw -0.000 cyc 0.045 eff 0.331 sat 0.070
+  lm   12 cost     6.3654 mu  1.9e+00 v +0.0673 T 0.532 lat -0.0000 yaw -0.000 cyc 0.044 eff 0.329 sat 0.069
+[step2_v0.0672_dt0.002] v 0.0673 T 0.532 lat -0.0000 yaw -0.000 eff 0.329 cot 3.11 cyc 0.044 feasible True
+  lm    1 cost     8.4667 mu  3.3e-02 v +0.1157 T 0.537 lat -0.0002 yaw -0.003 cyc 0.009 eff 0.377 sat 0.089
+  lm    2 cost     8.0353 mu  1.1e+00 v +0.1171 T 0.527 lat +0.0002 yaw -0.001 cyc 0.002 eff 0.375 sat 0.088
+  lm    3 cost     7.9774 mu  3.7e-01 v +0.1172 T 0.512 lat +0.0003 yaw -0.000 cyc 0.006 eff 0.373 sat 0.090
+  lm    4 cost     7.8691 mu  1.2e-01 v +0.1174 T 0.508 lat +0.0000 yaw -0.001 cyc 0.007 eff 0.371 sat 0.089
+[step3_v0.1177_dt0.001] v 0.1174 T 0.508 lat +0.0000 yaw -0.001 eff 0.371 cot 2.23 cyc 0.007 feasible True
+ v0.1177: at the planner dt 0.02 it swims +0.1224 m/s (sim 0.1174)
+  lm    1 cost     6.4037 mu  3.3e-02 v +0.0665 T 0.549 lat +0.0006 yaw +0.003 cyc 0.006 eff 0.333 sat 0.067
+  lm    2 cost     6.4007 mu  1.1e+00 v +0.0669 T 0.539 lat -0.0001 yaw +0.002 cyc 0.016 eff 0.330 sat 0.067
+  lm    3 cost     5.9094 mu  3.7e-01 v +0.0668 T 0.551 lat +0.0002 yaw +0.003 cyc 0.017 eff 0.314 sat 0.066
+  lm    4 cost     5.5992 mu  1.2e+00 v +0.0670 T 0.557 lat -0.0001 yaw +0.001 cyc 0.004 eff 0.313 sat 0.066
+[step4_v0.0672_dt0.001] v 0.0670 T 0.557 lat -0.0001 yaw +0.001 eff 0.313 cot 2.85 cyc 0.004 feasible True
+ v0.0672: at the planner dt 0.02 it swims +0.0867 m/s (sim 0.0670)

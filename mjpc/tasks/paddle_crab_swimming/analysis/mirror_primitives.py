@@ -25,28 +25,33 @@ import gait_opt as G
 from gait_opt import step_design, step_half, step_tau
 
 
-def load_problem(z, dt=None, weights=None, hold=None):
-  """The Problem a step npz was scored on (or at another dt), mirrored."""
+def load_problem(z, dt=None, weights=None, hold=None, mirror=True):
+  """The Problem a step npz was scored on (or at another dt), mirrored
+  (mirror=False: as it was, e.g. to re-polish it under another objective)."""
   metrics = json.loads(str(z['metrics']))
   half = step_half(z)
   stock = C.load_model(ground=False).actuator_ctrlrange[:, 1]
   limit = None if np.allclose(half, stock) else float(half[0])
   direction = np.array(z['direction'], float)
-  direction[0] *= -1
+  # Reflection x -> -x. Angular velocity is a pseudovector: reflecting x
+  # keeps its x component and flips y and z. An attitude's tilt about y
+  # flips, and so does a yaw rate.
+  flip_x, flip_w, flip_att, flip_yaw = (
+      ([-1, 1, 1], [1, -1, -1], [1, -1], -1) if mirror
+      else ([1, 1, 1], [1, 1, 1], [1, 1], 1))
+  body_rate = metrics.get('body_rate_target')
+  attitude = metrics.get('attitude_target')
   return G.Problem(
       dt=float(z['dt']) if dt is None else dt, k=int(z['k']),
       warm=int(z['warm']), measure=int(z['measure']),
-      speed=float(z['speed_target']), direction=direction,
-      x0=mirror_state(z['x0']), ctrl_limit=limit, weights=weights,
-      hold=hold,
+      speed=float(z['speed_target']), direction=direction * flip_x,
+      x0=mirror_state(z['x0']) if mirror else np.array(z['x0']),
+      ctrl_limit=limit, weights=weights, hold=hold,
       design=step_design(z), tau=step_tau(z),
-      yaw_rate=-float(metrics.get('yaw_rate_target', 0.0)),
-      # Angular velocity is a pseudovector: reflecting x keeps its x
-      # component and flips y and z. An attitude's tilt about y flips.
-      body_rate=None if metrics.get('body_rate_target') is None
-      else np.array(metrics['body_rate_target']) * [1, -1, -1],
-      attitude=None if metrics.get('attitude_target') is None
-      else np.array(metrics['attitude_target']) * [1, -1],
+      yaw_rate=flip_yaw * float(metrics.get('yaw_rate_target', 0.0)),
+      body_rate=None if body_rate is None
+      else np.array(body_rate) * flip_w,
+      attitude=None if attitude is None else np.array(attitude) * flip_att,
       heading_frame=metrics.get('heading_frame', False))
 
 

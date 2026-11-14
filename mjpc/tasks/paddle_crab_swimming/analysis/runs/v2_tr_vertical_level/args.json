@@ -1,0 +1,29 @@
+{
+  "target": [
+    0.0,
+    0.0
+  ],
+  "start_attitude": [
+    -1.5708,
+    0.0
+  ],
+  "segments": 4,
+  "k": 1,
+  "settle": 1.5,
+  "seed_gait": "runs/v2_rotXp/step15_wx0.6_dt0.001.npz",
+  "seed_segments": 2,
+  "period": 1.0,
+  "hold_legs": "",
+  "weights": "",
+  "dts": [
+    0.002,
+    0.001
+  ],
+  "iters": [
+    30,
+    6
+  ],
+  "robot": "v2",
+  "processes": 7,
+  "out": "runs/v2_tr_vertical_level"
+}

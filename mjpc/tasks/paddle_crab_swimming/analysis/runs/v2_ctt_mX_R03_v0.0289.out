@@ -1,0 +1,6 @@
+source  v +0.0301 lat +0.0008 yaw +0.2902 cost 8.941
+mirror  v +0.0301 lat -0.0009 yaw -0.2911 cost 8.940
+  lm    1 cost     8.7118 mu  3.3e+00 v +0.0298 T 0.668 lat -0.0008 yaw -0.291 cyc 0.022 eff 0.368 sat 0.080
+  lm    2 cost     8.4741 mu  1.1e+00 v +0.0295 T 0.644 lat -0.0013 yaw -0.293 cyc 0.024 eff 0.369 sat 0.082
+  lm    3 cost     8.3192 mu  3.7e-01 v +0.0295 T 0.624 lat -0.0005 yaw -0.290 cyc 0.024 eff 0.365 sat 0.080
+  lm    4 cost     8.0649 mu  1.2e+00 v +0.0293 T 0.625 lat -0.0008 yaw -0.293 cyc 0.024 eff 0.365 sat 0.079

@@ -234,6 +234,9 @@ def export(a):
   with open(os.path.join(a.dir, 'args.json')) as f:
     run_args = argparse.Namespace(**json.load(f))
   C.set_robot(run_args.robot)
+  if getattr(a, 'indices', None):
+    export_indices(a, archive, run_args)
+    return
   rs = rows(archive)
   if a.best:
     picks = rs[:a.best]
@@ -260,6 +263,35 @@ def export(a):
              **{key: cycle[key] for key in
                 ('phase', 'time', 'qpos', 'qvel', 'act', 'ctrl', 'state')})
     print(tag, ' '.join(f'{k} {r[k]:+.3f}' for k in AXES))
+
+
+def export_indices(a, archive, run_args):
+  """Archive rows by index (archive.npz order, as crab_mimic names them:
+  qd_<index>) as step npz cells/qd_<index>.npz. With --retarget the stored
+  problem targets the gait's own twist (speed along its world velocity, its
+  body rates), so repolish.py keeps what it does."""
+  z = np.load(os.path.join(a.dir, 'archive.npz'), allow_pickle=True)
+  from mirror_primitives import save
+  os.makedirs(os.path.join(a.dir, 'cells'), exist_ok=True)
+  base = make_problem(run_args, dt=a.dt)
+  for i in a.indices:
+    theta = z['theta'][i]
+    _, info = base.evaluate(theta[None])
+    m = info[0]
+    problem = base
+    if a.retarget:
+      v = np.array(m['velocity'])
+      problem = G.Problem(dt=a.dt, k=run_args.k, warm=run_args.warm,
+                          measure=run_args.measure,
+                          speed=float(np.linalg.norm(v)),
+                          direction=v / max(np.linalg.norm(v), 1e-9),
+                          body_rate=m['body_rate'],
+                          hold=held_actuators(run_args.hold_legs),
+                          robot=run_args.robot)
+    path = os.path.join(a.dir, 'cells', f'qd_{i}.npz')
+    m = save(path, problem, theta, [])
+    print(f'qd_{i}', 'v', np.round(m['velocity'], 3).tolist(), 'w',
+          np.round(m['body_rate'], 3).tolist(), path)
 
 
 def main():
@@ -296,6 +328,10 @@ def main():
   e.add_argument('--cells', nargs='*', default=[],
                  help='cells as comma-separated bin indices, e.g. 3,0,3,3,3,3')
   e.add_argument('--best', type=int, default=0)
+  e.add_argument('--indices', type=int, nargs='*', default=[],
+                 help='archive rows by index (crab_mimic qd_<index>)')
+  e.add_argument('--retarget', action='store_true',
+                 help='store each gait\'s own twist as its targets')
   e.add_argument('--dt', type=float, default=0.002)
   k = sub.add_parser('pick')
   k.add_argument('dir')

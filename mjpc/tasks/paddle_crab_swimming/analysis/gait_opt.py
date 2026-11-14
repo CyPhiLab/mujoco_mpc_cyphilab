@@ -54,6 +54,8 @@ S_LATERAL = 0.003     # m/s drift
 S_YAW = 0.02          # rad/s drift
 S_DEPTH = 0.003       # m/s drift
 S_HEADING = 0.1       # rad mean heading off the start heading
+CLEARANCE = 0.005     # m wanted between same-side neighbouring legs
+CLEARANCE_SAMPLES = 50
 S_TILT = 0.1          # rad steady tilt / tilt oscillation (wobble)
 S_CYCLE_Q = 0.02      # rad joint / filter state mismatch over one cycle
 S_CYCLE_V = 0.01      # m/s body velocity mismatch
@@ -65,7 +67,43 @@ TRACK_SAMPLES = 40    # reference phases compared per cycle
 DEFAULT_WEIGHTS = dict(speed=4.0, lateral=1.0, yaw=1.0, depth=0.3,
                        heading=0.3, tilt=0.3, wobble=0.3, cycle=0.3,
                        effort=1.0, energy=0.0,
-                       saturation=1.0, track=1.0, attitude_rate=0.0)
+                       saturation=1.0, track=1.0, attitude_rate=0.0,
+                       clearance=0.0)
+
+
+LEG_PAIRS = tuple((side, a, b) for side in ('right', 'left')
+                  for a, b in (('front', 'center'), ('center', 'back')))
+
+
+def leg_geom_pairs(m):
+  """(pair index, geom, geom) for every geom of one leg against every geom
+  of its same-side neighbour (LEG_PAIRS): the only legs that can touch."""
+  def geoms(side, leg):
+    out = []
+    for seg in ('proximal', 'mid', 'distal'):
+      b = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY,
+                            f'{seg} segment {leg} {side}')
+      out += [g for g in range(m.ngeom) if m.geom_bodyid[g] == b]
+    return out
+  return [(p, g1, g2) for p, (side, a, b) in enumerate(LEG_PAIRS)
+          for g1 in geoms(side, a) for g2 in geoms(side, b)]
+
+
+def leg_clearance(m, d, pairs, qpos):
+  """(n, 4) smallest distance (m; negative = penetration, capped at 2 x
+  CLEARANCE) between each pair of same-side neighbouring legs, for each row
+  of qpos. Kinematics only (contacts stay off in the dynamics); distal
+  meshes are their convex hulls, as in MuJoCo's collision."""
+  out = np.full((len(qpos), len(LEG_PAIRS)), 2 * CLEARANCE)
+  fromto = np.zeros(6)
+  for i, q in enumerate(qpos):
+    d.qpos[:] = q
+    mujoco.mj_kinematics(m, d)
+    for p, g1, g2 in pairs:
+      dist = mujoco.mj_geomDistance(m, d, g1, g2, 2 * CLEARANCE, fromto)
+      if dist < out[i, p]:
+        out[i, p] = dist
+  return out
 
 
 class Layout:
@@ -182,6 +220,9 @@ class Problem:
     # A reference stroke: joint angles (nphase, nu) at uniform phases.
     self.reference = None if reference is None else np.asarray(reference,
                                                                float)
+    if self.weights['clearance']:
+      self.clear_pairs = leg_geom_pairs(self.m)
+      self.clear_d = mujoco.MjData(self.m)
 
   def config(self):
     return dict(dt=self.dt, k=self.layout.k, warm=self.warm,
@@ -375,6 +416,17 @@ class Problem:
     ])
     if w['energy']:
       r = np.append(r, np.sqrt(w['energy']) * cot)
+    clearance = None
+    if w['clearance']:
+      # Leg clearance over the last cycle: the shortfall below CLEARANCE per
+      # neighbouring pair, RMS over the cycle and at its worst sample.
+      ts = tl + np.arange(CLEARANCE_SAMPLES) / CLEARANCE_SAMPLES * period
+      dist = leg_clearance(self.m, self.clear_d, self.clear_pairs,
+                           np.array([at(qpos, t) for t in ts]))
+      short = np.maximum(CLEARANCE - dist, 0.0) / CLEARANCE
+      r = np.concatenate([r, np.sqrt(w['clearance']) * np.sqrt(
+          np.mean(short ** 2, axis=0)), np.sqrt(w['clearance']) * short.max(0)])
+      clearance = float(dist.min())
     if w['attitude_rate'] and not rotating:
       # Mean pitch and roll rate (body x, y) over the scored cycles: with the
       # walking legs held, the attitude creeps (or loops) over many strokes
@@ -395,6 +447,7 @@ class Problem:
         effort=effort, saturated=saturated,
         command_clipped=float(np.mean(excess[window] > 0)),
         work_per_cycle=work / self.measure, cot=cot, track_rms=track_rms,
+        min_leg_clearance=clearance,
         cost=float(0.5 * r @ r))
     return r, metrics
 

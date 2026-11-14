@@ -1,0 +1,23 @@
+  lm    1 cost   947.0490 mu  3.3e-01 v +0.6858 T 1.434 lat +0.0000 yaw +0.025 cyc 0.044 eff 0.680 sat 0.018
+  lm    2 cost   878.1799 mu  1.1e+01 v +0.6611 T 1.433 lat +0.0000 yaw +0.028 cyc 0.046 eff 0.584 sat 0.020
+  lm    3 cost   700.5581 mu  3.7e+00 v +0.5899 T 1.432 lat +0.0000 yaw +0.032 cyc 0.051 eff 0.590 sat 0.020
+  lm    4 cost   609.4793 mu  1.2e+00 v +0.5334 T 1.430 lat +0.0000 yaw +0.033 cyc 0.040 eff 0.990 sat 0.025
+  lm    5 cost   526.0884 mu  4.1e-01 v +0.5083 T 1.430 lat +0.0000 yaw +0.032 cyc 0.068 eff 0.808 sat 0.022
+  lm    6 cost   359.9681 mu  1.4e-01 v +0.4185 T 1.427 lat +0.0000 yaw +0.033 cyc 0.076 eff 0.818 sat 0.027
+  lm    7 cost   335.3550 mu  4.6e-02 v +0.4027 T 1.427 lat +0.0000 yaw +0.032 cyc 0.081 eff 0.864 sat 0.027
+  lm    8 cost   329.4876 mu  1.5e-02 v +0.4000 T 1.427 lat +0.0000 yaw +0.031 cyc 0.082 eff 0.791 sat 0.027
+  lm    9 cost   277.9774 mu  5.1e-01 v +0.3479 T 1.431 lat +0.0000 yaw +0.032 cyc 0.108 eff 1.058 sat 0.038
+  lm   10 cost   255.5055 mu  1.7e-01 v +0.2781 T 1.431 lat +0.0000 yaw +0.032 cyc 0.093 eff 1.371 sat 0.043
+  lm   11 cost   179.1097 mu  5.6e+01 v +0.2208 T 1.431 lat +0.0000 yaw +0.035 cyc 0.092 eff 1.292 sat 0.041
+  lm   12 cost   179.0855 mu  1.9e+05 v +0.2208 T 1.431 lat +0.0000 yaw +0.035 cyc 0.092 eff 1.292 sat 0.041
+  lm   13 cost   179.0132 mu  6.3e+04 v +0.2207 T 1.431 lat +0.0000 yaw +0.035 cyc 0.092 eff 1.292 sat 0.041
+  lm   14 cost   178.9919 mu  2.1e+05 v +0.2206 T 1.431 lat +0.0000 yaw +0.035 cyc 0.092 eff 1.292 sat 0.041
+  lm   15 cost   178.9919 mu  2.1e+06 v +0.2206 T 1.431 lat +0.0000 yaw +0.035 cyc 0.092 eff 1.292 sat 0.041
+[transient_dt0.002] 5.73 s of strokes + 1.5 s settle: attitude error 0.221, end tilt 79 deg, rate end [-0.034, 0.007, 0.001], drift [-0.07, 0.0, -0.06] m, effort 1.29, 615 s
+  lm    1 cost   173.5162 mu  3.3e-03 v +0.2804 T 1.431 lat +0.0000 yaw +0.032 cyc 0.075 eff 0.739 sat 0.042
+  lm    2 cost   134.3083 mu  1.1e+00 v +0.2401 T 1.431 lat +0.0000 yaw +0.033 cyc 0.091 eff 0.753 sat 0.047
+  lm    3 cost    93.7008 mu  3.7e+00 v +0.1910 T 1.430 lat +0.0000 yaw +0.035 cyc 0.102 eff 0.739 sat 0.052
+  lm    4 cost    72.7092 mu  1.2e+00 v +0.1642 T 1.431 lat +0.0000 yaw +0.036 cyc 0.103 eff 0.724 sat 0.060
+  lm    5 cost    65.9751 mu  4.1e-01 v +0.1495 T 1.430 lat +0.0000 yaw +0.034 cyc 0.102 eff 0.743 sat 0.057
+  lm    6 cost    62.2046 mu  1.4e-01 v +0.1411 T 1.430 lat +0.0000 yaw +0.034 cyc 0.100 eff 0.749 sat 0.063
+[transient_dt0.001] 5.72 s of strokes + 1.5 s settle: attitude error 0.141, end tilt 84 deg, rate end [-0.033, 0.002, 0.003], drift [-0.03, 0.03, -0.09] m, effort 0.75, 502 s
