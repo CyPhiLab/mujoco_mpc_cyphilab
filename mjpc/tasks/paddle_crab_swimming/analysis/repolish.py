@@ -47,6 +47,9 @@ def main():
   p.add_argument('--es_iters', type=int, default=0,
                  help='elitist ES iterations before LM at the first dt '
                  '(gait_opt.es), to get out of a stalled start')
+  p.add_argument('--measure', type=int, default=None,
+                 help='cycles scored (and checked for clearance), instead of '
+                 'the gait\'s own')
   p.add_argument('--keep_speed_target', action='store_true',
                  help='keep the saved speed target instead of the achieved '
                  'speed')
@@ -69,6 +72,8 @@ def main():
         f'clearance {1000 * before["min_leg_clearance"]:+.1f} mm', flush=True)
   for dt, iters in zip(a.dts, a.iters):
     problem = load_problem(z, dt=dt, weights=weights, hold=hold, mirror=False)
+    if a.measure:
+      problem.measure = a.measure
     if not a.keep_speed_target and not problem.max_speed:
       problem.speed = float(before['speed'])
     tag = f'{base}_clear_dt{dt:g}'

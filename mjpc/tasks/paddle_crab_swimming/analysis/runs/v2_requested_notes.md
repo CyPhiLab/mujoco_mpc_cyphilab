@@ -21,3 +21,16 @@ How each run was made:
 The transients are not limit cycles. Their npz holds the whole control sequence (`ctrl` at `dt`) and the start and end states, so they need their own ingest path.
 
 Self-collision (crab_mimic `REQUEST_selfcollision.md`): these gaits were optimized with contacts off, and 20 of them pass same-side neighbouring legs through each other. `repolish.py --weights ...,clearance=100` re-solves those with ≥ 5 mm leg clearance (`gait_opt.leg_clearance`). Outputs go to `~/runs/mujoco_mpc_cyphilab/*-clear_*`.
+
+## Self-collision results (2026-11-15)
+
+- **Steady batch:** 10 of 11 re-polished to ≥ 0 mm; crab_mimic accepted 8. The cruise ±X+Y pair penetrates 5 mm over 3 re-simulated cycles.
+- **Requested:** 15 of 20.
+- **QD:** 18 of 27.
+- **Extra:** the corkscrew only.
+- **Clearance scoring:** now covers every measured cycle (a held-leg gait drifts a little from one cycle to the next). The delivery check also re-simulates 3 cycles from `state`, as crab_mimic's ingest does.
+- **From scratch, with the clearance term on** (`v2_scratch_*_clear`), better than re-polishing:
+  - sprint up: 0.098 m/s at cot 5.63, saturation 0.12, 9.4 mm (re-polished: cot 9.37; original: 6.77, −30 mm). A different, slower and longer stroke.
+  - turn left / right: 0.485 / −0.493 rad/s at 10 mm (re-polished: 1.2–1.9 mm).
+  - forward somersault: clean, but only reached 0.1 rad/s.
+- **Batch JSONs and outputs:** `~/runs/mujoco_mpc_cyphilab/clear2_*.json` and `*-clear2_*`. They are outside the repo.

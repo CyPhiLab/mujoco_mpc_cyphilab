@@ -425,14 +425,16 @@ class Problem:
       r = np.append(r, np.sqrt(w['energy']) * cot)
     clearance = None
     if w['clearance']:
-      # Leg clearance over the last cycle: one residual per (sample, geom
-      # pair), the shortfall below CLEARANCE. Smooth in theta, unlike a
-      # min / max over pairs or samples, so Gauss-Newton can descend on it.
-      ts = tl + np.arange(CLEARANCE_SAMPLES) / CLEARANCE_SAMPLES * period
+      # Leg clearance over every measured cycle (a held-leg gait drifts a
+      # little from cycle to cycle): one residual per (sample, geom pair),
+      # the shortfall below CLEARANCE. Smooth in theta, unlike a min / max
+      # over pairs or samples, so Gauss-Newton can descend on it.
+      n_clr = CLEARANCE_SAMPLES * self.measure
+      ts = t0 + np.arange(n_clr) / n_clr * duration
       dist = geom_distances(self.m, self.clear_d, self.clear_pairs,
                             np.array([at(qpos, t) for t in ts]))
       short = np.maximum(CLEARANCE - dist, 0.0) / CLEARANCE
-      r = np.concatenate([r, np.sqrt(w['clearance'] / CLEARANCE_SAMPLES)
+      r = np.concatenate([r, np.sqrt(w['clearance'] / n_clr)
                           * short.ravel()])
       clearance = float(dist.min())
     if w['attitude_rate'] and not rotating:
