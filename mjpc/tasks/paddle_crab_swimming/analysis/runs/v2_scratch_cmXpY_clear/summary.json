@@ -1,0 +1,84 @@
+[
+  {
+    "file": "step13_max_dt0.001_mirror.npz",
+    "source": "runs/v2_scratch_cpXpY_clear/step13_max_dt0.001.npz",
+    "polish": 0,
+    "period": 0.960779172565302,
+    "speed": 0.0712726648338368,
+    "lateral_rate": -0.0014206748924370126,
+    "yaw_rate": -0.0013737667623121245,
+    "yaw_rate_target": -0.0,
+    "depth_rate": -0.0022174636176272603,
+    "heading": -0.058973892146049194,
+    "tilt_mean": 0.15950069216855917,
+    "body_rate": [
+      0.0011066221661234835,
+      0.0011159605726476125,
+      -0.001694892470213568
+    ],
+    "body_velocity": [
+      -0.04871997765058559,
+      0.05223546034075098,
+      0.003645687907609572
+    ],
+    "velocity": [
+      -0.0493928157669383,
+      0.051401953467545655,
+      -0.0022174636176272603
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": null,
+    "tilt_rms": 0.03837330808108881,
+    "cycle_error": 0.06055853670903231,
+    "effort": 0.40718642001042893,
+    "saturated": 0.11116894132161308,
+    "command_clipped": 0.05555555555555555,
+    "work_per_cycle": 27.594259723489703,
+    "cot": 4.62084981694129,
+    "track_rms": null,
+    "min_leg_clearance": 0.01,
+    "cost": 11.796126095721853
+  },
+  {
+    "file": "step13_max_dt0.001_mirror_polish.npz",
+    "source": "runs/v2_scratch_cpXpY_clear/step13_max_dt0.001.npz",
+    "polish": 4,
+    "period": 0.9984892542032127,
+    "speed": 0.07144937063327286,
+    "lateral_rate": -0.0012603922802564603,
+    "yaw_rate": -0.0006860851554410055,
+    "yaw_rate_target": -0.0,
+    "depth_rate": -0.002128994915444846,
+    "heading": -0.05992705397311181,
+    "tilt_mean": 0.15892580782444252,
+    "body_rate": [
+      0.0021860622089771055,
+      0.0005270140394681485,
+      -0.001118588975741057
+    ],
+    "body_velocity": [
+      -0.04900787721992368,
+      0.05217961442656322,
+      0.003670140626580372
+    ],
+    "velocity": [
+      -0.0496311025579737,
+      0.05141356641462273,
+      -0.002128994915444846
+    ],
+    "heading_frame": false,
+    "body_rate_target": null,
+    "attitude_target": null,
+    "tilt_rms": 0.039076797362031776,
+    "cycle_error": 0.05517275742379923,
+    "effort": 0.4053006137580852,
+    "saturated": 0.11040646788310339,
+    "command_clipped": 0.05555555555555555,
+    "work_per_cycle": 28.433251473679437,
+    "cot": 4.570191584077707,
+    "track_rms": null,
+    "min_leg_clearance": 0.01,
+    "cost": 11.56679585840342
+  }
+]

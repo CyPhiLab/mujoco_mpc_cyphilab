@@ -34,3 +34,5 @@ Self-collision (crab_mimic `REQUEST_selfcollision.md`): these gaits were optimiz
   - turn left / right: 0.485 / −0.493 rad/s at 10 mm (re-polished: 1.2–1.9 mm).
   - forward somersault: clean, but only reached 0.1 rad/s.
 - **Batch JSONs and outputs:** `~/runs/mujoco_mpc_cyphilab/clear2_*.json` and `*-clear2_*`. They are outside the repo.
+- **Cruise ±X+Y from scratch** (`v2_scratch_cpXpY_clear`, mirror `v2_scratch_cmXpY_clear`; legs held, 3 measured cycles): 10 mm on the stored cycle and over 3 re-simulated cycles. 0.071 m/s at cot 4.6, against the original's 0.096 at 4.06. Slower clean rungs: 0.049 / 0.056 / 0.063 m/s. Re-polishing never cleared these over 3 cycles.
+- **Economy up from scratch** stalled at 0.041 m/s (cot 2.57, 2 ms only). The re-polished economy up (3.4 mm) stands.
