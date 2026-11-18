@@ -18,3 +18,12 @@
 | `ak45_diff_passive` AK45-10, differential + passive twist (4 motors) | 0.173 (0.27) | 1.03x | 0.21 | 0.55 | stroke 1.10:1 | 208 | 1201 | 13.58 | 7.0 / 4.2 | 1.67 | 13.9 | 9.01 |
 | `xw540_3s` baseline: XW540-T260, 3S (11.1 V), serial | 0.168 (0.26) | 1.00x | 0.21 | 1.31 | direct | 15 | 86 | 0.98 | 6.9 / 1.8 | n/a | 4.1 | 8.99 |
 
+## MPC (free body)
+
+| run | speed m/s (BL/s) | drift m/s | max tilt deg | elec W | elec J/m | mech J/m | peak / RMS motor torque N m | peak motor speed rad/s | strokes |
+|---|---|---|---|---|---|---|---|---|---|
+| current robot (XW540 3S) | 0.153 (0.24) | 0.021 | 24 | 22 | 145 | 98 | 7.4 / 1.8 | 4.0 | 8 |
+| XW540 + speed-up differential | 0.208 (0.32) | 0.015 | 8 | 86 | 412 | 162 | 8.8 / 4.0 | 4.0 | 11 |
+| AK45 serial + gears | 0.283 (0.44) | 0.071 | 20 | 102 | 362 | 232 | 7.0 / 2.8 | 19.2 | 16 |
+| AK45 differential + gears | 0.328 (0.50) | 0.013 | 14 | 160 | 489 | 356 | 7.0 / 2.7 | 20.1 | 19 |
+| AK45 differential + gears + flipper x1.38 | 0.337 (0.52) | 0.004 | 13 | 158 | 469 | 334 | 7.0 / 2.7 | 20.3 | 18 |

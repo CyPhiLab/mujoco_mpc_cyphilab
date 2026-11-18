@@ -1,0 +1,15 @@
+task TurtleCompliantSwimming, mode mpc, MuJoCo 3.2.3
+planner 0 (0 sampling, 2 iLQG, 6 sample-gradient), horizon 1 s, threads 2, nominal seeded from reference gait
+motor torque-speed envelope on 10 actuators, task /home/user/mujoco_mpc_cyphilab/mjpc/tasks/turtle_compliant_swimming/designs/xw540_3s_trajopt/task.xml
+weights: Speed=20 Slip=10 Heading=2 Upright=2 AngVel=0.2 Gait=0.1 Power=0.001
+params: Speed=0.6 Heading=0 Cadence=1.2142 Phase=0
+
+== mpc, 8 strokes, t = 3.15..15.74 s (stroke 1.574 s), wall 570.8 s ==
+COM displacement      [+0.036 -1.932 +0.267] m
+speed along heading   0.1534 m/s
+net speed |disp|/t    0.1549 m/s
+off-heading drift     0.0214 m/s (sideways + vertical)
+max tilt from upright 24.1 deg, max yaw error 1.9 deg, final pitch +8.7 deg
+positive mech. work   189.01 J, mean power 15.01 W
+energy per metre      97.8 J/m along heading (CoT 1.109)
+mean task cost        2.2156

@@ -103,4 +103,6 @@ The summary skips the first two strokes and averages over whole strokes after th
 
 ## Results
 
-See [RESULTS.md](RESULTS.md).
+See [RESULTS.md](RESULTS.md) (the current robot) and [DESIGN_STUDY.md](DESIGN_STUDY.md)
+(motor, transmission and articulation upgrades: `design_study.py`, `turtle_gait_opt.py`,
+`--task_xml` design variants with motor torque-speed envelopes).
