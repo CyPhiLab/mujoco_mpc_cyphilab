@@ -218,7 +218,7 @@ def mpc_metrics(path, design):
   log = np.genfromtxt(path, delimiter=",", names=True)
   xml = (ds.DESIGNS_DIR / design / "model.xml").read_text()
   gaitxml = (ds.DESIGNS_DIR / design / "reference_gait.xml").read_text()
-  cad = float(re.search(r"play at Cadence=([\d.]+)", gaitxml).group(1))
+  cad = float(re.search(r"play at Cadence=(\d+\.\d+)", gaitxml).group(1))
   period = ds.gs.BASE_PERIOD / cad
   acts = [n[len("force_"):] for n in log.dtype.names if n.startswith("force_")]
   par = {a: [float(v) for v in re.search(r'name="motor_' + a + r'" data="([^"]+)"', xml).group(1).split()]
