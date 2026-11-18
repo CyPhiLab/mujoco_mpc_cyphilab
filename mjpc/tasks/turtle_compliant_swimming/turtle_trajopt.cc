@@ -32,6 +32,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -80,6 +81,10 @@ ABSL_FLAG(std::string, motor, "",
           "stall torque as the force limit plus back-EMF joint damping "
           "stall torque / no-load speed");
 ABSL_FLAG(double, kp, 0, "servo position gain override [N m/rad] (0: keep)");
+ABSL_FLAG(std::string, task_xml, "",
+          "load this task file instead of task.xml (e.g. a design variant written "
+          "by design_study.py export: designs/<name>/task.xml); motor_<actuator> "
+          "numerics in it switch on the motor torque-speed envelope");
 ABSL_FLAG(std::string, out, "", "CSV log path (empty: no log)");
 ABSL_FLAG(double, log_dt, 0.01, "CSV log interval [s]");
 
@@ -189,6 +194,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  const std::string task_xml = absl::GetFlag(FLAGS_task_xml);
+  if (!task_xml.empty()) setenv("TURTLE_TASK_XML", task_xml.c_str(), 1);
+
   mjpc::Agent agent;
   agent.SetTaskList(mjpc::GetTasks());
   agent.gui_task_id = agent.GetTaskIdByName(kTaskName);
@@ -250,6 +258,13 @@ int main(int argc, char** argv) {
   agent.plan_enabled = true;
   g_agent = &agent;
   mjcb_sensor = SensorCallback;
+  int enveloped = mjpc::InitMotorEnvelope(model);
+  if (enveloped > 0) {
+    if (!motor.empty()) mju_error("--motor and motor_<actuator> numerics are exclusive");
+    // design variants set each actuator's gains in motor coordinates (kp / gear^2)
+    if (kp > 0) mju_error("--kp would overwrite the design's per-actuator servo gains");
+    mjcb_control = [](const mjModel* m, mjData* d) { mjpc::ClampToMotorEnvelope(m, d); };
+  }
 
   auto* task = dynamic_cast<mjpc::TurtleCompliantSwimming*>(agent.ActiveTask());
   for (const auto& [name, value] : ParseAssignments(absl::GetFlag(FLAGS_weight))) {
@@ -280,6 +295,10 @@ int main(int argc, char** argv) {
               << model->actuator_forcerange[1]
               << (motor.empty() ? "" : ", motor " + motor + " back-EMF damping")
               << "\n";
+  }
+  if (enveloped > 0) {
+    std::cout << "motor torque-speed envelope on " << enveloped << " actuators"
+              << (task_xml.empty() ? "" : ", task " + task_xml) << "\n";
   }
   std::cout << "weights:";
   for (int i = 0; i < task->num_term; i++) {
@@ -330,6 +349,12 @@ int main(int argc, char** argv) {
       std::fprintf(csv, ",ref_%s", mj_id2name(model, mjOBJ_ACTUATOR, i));
     }
     for (int i = 0; i < model->nq; i++) std::fprintf(csv, ",qpos_%d", i);
+    for (int i = 0; i < model->nu; i++) {
+      std::fprintf(csv, ",force_%s", mj_id2name(model, mjOBJ_ACTUATOR, i));
+    }
+    for (int i = 0; i < model->nu; i++) {
+      std::fprintf(csv, ",vel_%s", mj_id2name(model, mjOBJ_ACTUATOR, i));
+    }
     std::fprintf(csv, "\n");
   }
 
@@ -388,6 +413,8 @@ int main(int argc, char** argv) {
       for (int i = 0; i < model->nu; i++) std::fprintf(csv, ",%.6f", data->ctrl[i]);
       for (int i = 0; i < model->nu; i++) std::fprintf(csv, ",%.6f", ref[i]);
       for (int i = 0; i < model->nq; i++) std::fprintf(csv, ",%.6f", data->qpos[i]);
+      for (int i = 0; i < model->nu; i++) std::fprintf(csv, ",%.5f", data->actuator_force[i]);
+      for (int i = 0; i < model->nu; i++) std::fprintf(csv, ",%.5f", data->actuator_velocity[i]);
       std::fprintf(csv, "\n");
     }
 

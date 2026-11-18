@@ -28,6 +28,18 @@ namespace mjpc {
 // minus joint damping (back-EMF when the motor model is on), times velocity.
 double ShaftPower(const mjModel* model, const mjData* data, int actuator);
 
+// Motor torque-speed envelope for design variants (design_study.py). An actuator with a
+// numeric motor_<actuator> = "tau_peak tau_stall w0 eta [km]" (at the motor, before any
+// external stage of efficiency eta) gets its position-servo force limited to
+//   motoring:  |force| <= eta min(tau_peak, tau_stall (1 - |w| / w0))
+//   braking:   |force| <= eta tau_peak
+// with w the actuator velocity, by moving ctrl to the value that gives the limiting force
+// (MuJoCo cannot clip a position actuator's force by speed). InitMotorEnvelope caches the
+// numerics (returns how many actuators have one); ClampToMotorEnvelope is meant to run as
+// mjcb_control, so it applies in every planner rollout as well as in the simulation.
+int InitMotorEnvelope(const mjModel* model);
+void ClampToMotorEnvelope(const mjModel* model, mjData* data);
+
 // Straight, level swimming for the sea-turtle robot with compliant front
 // flippers (turtle_simulator's turtle_compliant.xml, default blade stiffness).
 //

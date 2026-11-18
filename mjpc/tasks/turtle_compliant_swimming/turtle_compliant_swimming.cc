@@ -14,8 +14,11 @@
 
 #include "mjpc/tasks/turtle_compliant_swimming/turtle_compliant_swimming.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <string>
+#include <vector>
 
 #include <mujoco/mujoco.h>
 #include "mjpc/task.h"
@@ -47,7 +50,55 @@ double ShaftPower(const mjModel* model, const mjData* data, int actuator) {
   return torque * velocity;
 }
 
+namespace {
+// numeric_adr of motor_<actuator> per actuator (-1: no envelope), see InitMotorEnvelope
+std::vector<int> g_motor_adr;
+}  // namespace
+
+int InitMotorEnvelope(const mjModel* model) {
+  g_motor_adr.assign(model->nu, -1);
+  int count = 0;
+  for (int i = 0; i < model->nu; i++) {
+    const char* name = mj_id2name(model, mjOBJ_ACTUATOR, i);
+    if (!name) continue;
+    std::string numeric = std::string("motor_") + name;
+    int id = mj_name2id(model, mjOBJ_NUMERIC, numeric.c_str());
+    if (id < 0) continue;
+    if (model->numeric_size[id] < 4) {
+      mju_error("%s needs tau_peak tau_stall w0 eta", numeric.c_str());
+    }
+    g_motor_adr[i] = model->numeric_adr[id];
+    count++;
+  }
+  return count;
+}
+
+void ClampToMotorEnvelope(const mjModel* model, mjData* data) {
+  if (static_cast<int>(g_motor_adr.size()) != model->nu) return;
+  for (int i = 0; i < model->nu; i++) {
+    if (g_motor_adr[i] < 0) continue;
+    const double* p = model->numeric_data + g_motor_adr[i];
+    double tau_peak = p[0], tau_stall = p[1], w0 = p[2], eta = p[3];
+    double w = data->actuator_velocity[i];
+    double length = data->actuator_length[i];
+    double kp = model->actuator_gainprm[i * mjNGAIN];
+    double kv = -model->actuator_biasprm[i * mjNBIAS + 2];
+    if (kp <= 0) continue;
+    // motoring: torque-speed line capped at the peak torque; braking: peak torque
+    double motoring = std::min(tau_peak, tau_stall * (1.0 - std::fabs(w) / w0));
+    double hi = (w >= 0 ? motoring : tau_peak) * eta;
+    double lo = -(w <= 0 ? motoring : tau_peak) * eta;
+    double force = kp * (data->ctrl[i] - length) - kv * w;
+    double clamped = mju_clip(force, lo, hi);
+    if (clamped != force) data->ctrl[i] = length + (clamped + kv * w) / kp;
+  }
+}
+
 std::string TurtleCompliantSwimming::XmlPath() const {
+  // design variants (design_study.py export) are loaded with turtle_trajopt --task_xml
+  if (const char* path = std::getenv("TURTLE_TASK_XML"); path && *path) {
+    return path;
+  }
   return GetModelPath("turtle_compliant_swimming/task.xml");
 }
 std::string TurtleCompliantSwimming::Name() const {
