@@ -697,6 +697,10 @@ def search(turtle_sim, d, budget, thermal=False, seed=1, x0=None, quiet=False):
   hi = np.array([k[2] for k in knobs])
   start = dict(cadence=1.5, yaw=0.2, roll=1.0, twist=1.0, shift=0.0, g_roll=1.5, g_twist=1.0,
                coupling=0.3, blade_scale=1.0)
+  for k in knobs:  # design knobs without a preset start at the design's own value
+    if k[0] not in start and hasattr(d, k[0]):
+      start[k[0]] = getattr(d, k[0])
+  start["flipper_scale"] = d.flipper_scale
   if x0:
     start.update(x0)
   u0 = np.clip((np.array([start[k[0]] for k in knobs]) - lo) / (hi - lo), 0.02, 0.98)
