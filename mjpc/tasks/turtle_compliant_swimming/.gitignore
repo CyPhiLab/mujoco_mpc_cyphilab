@@ -2,3 +2,4 @@ __pycache__/
 _design_*.xml
 *.tmp
 results/trajopt/*.pkl
+results/design_study/renders/*.mp4
