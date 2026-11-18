@@ -679,7 +679,7 @@ def evaluate(turtle_sim, d, x, cache, locked=True, strokes=5, log=False):
   dd = dataclasses.replace(d, **fields)
   key = tuple(sorted((k, round(v, 3)) for k, v in fields.items())) + (locked,)
   if key not in cache:
-    if len(cache) > 8:
+    if len(cache) >= 2:  # compiled models are ~150 MB each; continuous knobs rarely repeat
       cache.clear()
     cache[key] = make_model(dd, locked)
   model, acts = cache[key]
