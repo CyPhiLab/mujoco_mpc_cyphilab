@@ -227,6 +227,85 @@ def fig_work_split(plt, recs, names):
   plt.close(fig)
 
 
+PARETO = [  # (design, max-speed run, label, color, dashed)
+    ("xw540_3s", "xw540_3s", "current robot: XW540 3S", INK2, False),
+    ("xw540_3s_flip", None, "XW540 3S, flipper size free", INK2, True),
+    ("xw540_14v8", "xw540_14v8", "XW540 4S (14.8 V)", C3, False),
+    ("xw540_3s_diff_red", "xw540_3s_diff_red", "XW540 3S + differential + speed-up", C2, False),
+    ("ak45_serial_red", "ak45_serial_red_thermal", "AK45-10 serial + gears", "#eda100", False),
+    ("ak45_diff_red", "ak45_diff_red_thermal", "AK45-10 differential + gears", C1, False),
+    ("ak45_diff_bigflip", "ak45_diff_bigflip_thermal", "AK45-10 differential + gears, flipper free", C1, True),
+]
+HOTEL = 10.0  # W, electronics (Raspberry Pi 5, cameras, sensors, servo standby): ~24 W measured - motors
+
+
+def pareto_points(recs, design, endpoint):
+  pts = []
+  for n, r in recs.items():
+    m = re.fullmatch(re.escape(design) + r"(_thermal)?_e([\d.]+)", n)
+    if m and r.get("best"):
+      b = r["best"]
+      pts.append((b["speed"], b["elec_jpm"], b["elec_power"], b["x"], n))
+  if endpoint and endpoint in recs:
+    b = recs[endpoint]["best"]
+    pts.append((b["speed"], b["elec_jpm"], b["elec_power"], b["x"], endpoint))
+  pts.sort()
+  # keep the non-dominated points (a faster point that costs less replaces slower ones)
+  out, best = [], np.inf
+  for p in sorted(pts, key=lambda p: -p[0]):
+    if p[1] < best:
+      out.append(p)
+      best = p[1]
+  return out[::-1]
+
+
+def fig_pareto(plt, recs):
+  fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.2))
+  rows = []
+  for design, endpoint, label, color, dashed in PARETO:
+    pts = pareto_points(recs, design, endpoint)
+    if len(pts) < 2:
+      continue
+    v = np.array([p[0] for p in pts])
+    e = np.array([p[1] for p in pts])
+    tot = e + HOTEL / v
+    ls = "--" if dashed else "-"
+    lw = 1.5 if dashed else 2
+    axes[0].plot(v, e, ls, color=color, lw=lw, marker="o", ms=4, label=label)
+    axes[1].plot(v, tot, ls, color=color, lw=lw, marker="o", ms=4, label=label)
+    i = int(np.argmin(tot))
+    axes[1].plot(v[i], tot[i], "o", ms=9, color=color, mec="#fcfcfb", mew=2)
+    rows.append((label, pts, i))
+  axes[0].axvspan(*TURTLE, color="#e6e5e0", zorder=0)
+  axes[1].axvspan(*TURTLE, color="#e6e5e0", zorder=0)
+  axes[0].set_xlabel("speed, attitude locked [m/s]")
+  axes[0].set_ylabel("motor electrical energy per metre [J/m]")
+  axes[1].set_xlabel("speed, attitude locked [m/s]")
+  axes[1].set_ylabel(f"with {HOTEL:g} W electronics [J/m]")
+  axes[1].set_ylim(0, 600)
+  axes[0].set_ylim(bottom=0)
+  axes[0].legend(fontsize=7.5, loc="upper left")
+  for ax in axes:
+    ax.set_xlim(0, 0.37)
+  axes[1].set_title("large dots: most efficient (range-optimal) speed", fontsize=8, loc="left", color=INK2)
+  fig.suptitle("Speed-efficiency Pareto fronts (energy minimized at each speed; gait and gears re-optimized; "
+               "AK45 at RMS <= rated)", fontsize=10, x=0.01, ha="left")
+  fig.tight_layout()
+  fig.savefig(OUT / "pareto.png", dpi=150)
+  plt.close(fig)
+  md = ["## Speed-efficiency Pareto fronts (attitude locked)", "",
+        f"Electrical energy per metre of the motors, minimized at each speed; 'total' adds {HOTEL:g} W of electronics.",
+        "", "| design | speed m/s | motor J/m | motor W | total J/m | stroke s | knobs |", "|---|---|---|---|---|---|---|"]
+  for label, pts, i in rows:
+    for k, p in enumerate(pts):
+      x = p[3]
+      knobs = ", ".join(f"{a} {x[a]:.2f}" for a in ("g_roll", "g_twist", "flipper_scale") if a in x)
+      star = " **(range-optimal)**" if k == i else ""
+      md.append(f"| {label}{star} | {p[0]:.3f} | {p[1]:.0f} | {p[2]:.1f} | {p[1] + HOTEL / p[0]:.0f} | "
+                f"{ds.gs.BASE_PERIOD / x['cadence']:.2f} | {knobs} |")
+  return md
+
+
 # ----------------------------------------------------------------------------------------------
 def mpc_metrics(path, design):
   """Stroke-averaged metrics of a turtle_trajopt log of a design variant."""
@@ -303,7 +382,7 @@ def main():
   import matplotlib.pyplot as plt
   style(plt)
   recs = load_all()
-  names = args.ranking or [n for n in recs if "_g_roll" not in n and "_blade" not in n]
+  names = args.ranking or [n for n in recs if "_g_roll" not in n and "_blade" not in n and "_e0" not in n]
   fig_ranking(plt, recs, names)
   fig_reduction(plt, recs)
   fig_envelope(plt, args.turtle_sim, recs, [tuple(p.split(":")) for p in args.envelope])
@@ -321,6 +400,7 @@ def main():
                  f"{r['stroke']:.2f} | {r['gear']} | {r['elec_w']:.0f} | {r['elec_jpm']:.0f} | {r['cot']:.2f} | "
                  f"{r['tau_pk']:.1f} / {r['tau_rms']:.1f} | {rr} | {r['w_pk']:.1f} | {r['mass']:.2f} |")
   md = ["## Attitude-locked searches", "", *lines, ""]
+  md += fig_pareto(plt, recs) + [""]
 
   if args.mpc:
     runs = []

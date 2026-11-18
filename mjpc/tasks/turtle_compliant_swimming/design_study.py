@@ -152,6 +152,8 @@ _d(name="xw540_3s_diff_red", label="XW540 3S, differential with speed-up gear",
    front="XW540-11.1V", rear="XW540-11.1V", arch="diff", search=(("g_roll", 0.3, 1.5), ("g_twist", 0.4, 1.5)))
 _d(name="xw540_3s_bigflip", label="XW540 3S, serial, flipper x1.2 (span and chord)",
    front="XW540-11.1V", rear="XW540-11.1V", flipper_scale=1.2)
+_d(name="xw540_3s_flip", label="XW540 3S, serial, flipper scale optimized",
+   front="XW540-11.1V", rear="XW540-11.1V", search=(("flipper_scale", 0.8, 1.5),))
 # AK45-10 drop-in and with an external reduction
 _d(name="ak45_serial", label="AK45-10, serial, direct (drop-in)")
 _d(name="ak45_serial_red", label="AK45-10, serial, optimized reductions",
@@ -689,7 +691,9 @@ def evaluate(turtle_sim, d, x, cache, locked=True, strokes=5, log=False):
   return res, dd
 
 
-def search(turtle_sim, d, budget, thermal=False, seed=1, x0=None, quiet=False):
+def search(turtle_sim, d, budget, thermal=False, seed=1, x0=None, quiet=False, vmin=None):
+  """vmin: minimize electrical energy per metre subject to speed >= vmin (epsilon-constraint
+  point of the speed-efficiency Pareto front) instead of maximizing speed."""
   import cma
   knobs = [k for k in GAIT_KNOBS if not (d.twist_drive != "motor" and k[0] in ("twist", "shift"))]
   knobs = [(n, lo, d.max_cadence if hi is None else hi) for n, lo, hi in knobs] + list(d.search)
@@ -724,7 +728,11 @@ def search(turtle_sim, d, budget, thermal=False, seed=1, x0=None, quiet=False):
       print(" ".join(f"{k} {v:.3f}" for k, v in x.items()),
             f"-> {res['speed']:.4f} m/s, {res['elec_power']:.1f} W elec, rms/rated {res['rms_over_rated']}",
             flush=True)
-    return -res["speed"] + pen
+    if vmin is None:
+      return -res["speed"] + pen
+    short = max(vmin - res["speed"], 0.0) / vmin
+    jpm = res["elec_jpm"] if res["speed"] > 0 and np.isfinite(res["elec_jpm"]) else 1000.0
+    return jpm / 100.0 + 20.0 * short + pen
 
   es = cma.CMAEvolutionStrategy(u0, 0.2, {"bounds": [0, 1], "maxfevals": budget, "popsize": 10,
                                           "verbose": -9, "seed": seed})
@@ -734,7 +742,11 @@ def search(turtle_sim, d, budget, thermal=False, seed=1, x0=None, quiet=False):
   ok = history
   if thermal:
     ok = [h for h in history if h["rms_over_rated"] is None or h["rms_over_rated"] <= 1.02]
-  best = max(ok, key=lambda h: h["speed"]) if ok else None
+  if vmin is None:
+    best = max(ok, key=lambda h: h["speed"]) if ok else None
+  else:
+    ok = [h for h in ok if h["speed"] >= 0.99 * vmin and np.isfinite(h["elec_jpm"])]
+    best = min(ok, key=lambda h: h["elec_jpm"]) if ok else None
   return best, history
 
 
@@ -828,6 +840,8 @@ def main():
   s.add_argument("name")
   s.add_argument("--budget", type=int, default=200)
   s.add_argument("--thermal", action="store_true", help="penalize RMS motor torque above the rated torque")
+  s.add_argument("--vmin", type=float, default=None,
+                 help="minimize electrical energy per metre at speed >= vmin (Pareto point) instead of max speed")
   s.add_argument("--set", nargs="*", default=[], help="design field overrides, field=value")
   s.add_argument("--tag", default="")
   s.add_argument("--seed", type=int, default=1)
@@ -860,8 +874,8 @@ def main():
       over[k] = type(getattr(DESIGNS[args.name], k))(v) if not isinstance(getattr(DESIGNS[args.name], k), bool) \
           else v.lower() in ("1", "true", "yes")
     d = variant(args.name, **over)
-    best, hist = search(args.turtle_sim, d, args.budget, args.thermal, seed=args.seed)
-    tag = args.tag or ("_thermal" if args.thermal else "")
+    best, hist = search(args.turtle_sim, d, args.budget, args.thermal, seed=args.seed, vmin=args.vmin)
+    tag = args.tag or (("_thermal" if args.thermal else "") + (f"_e{args.vmin:g}" if args.vmin else ""))
     p = save(args.name, best, hist, d, tag)
     print("best:", json.dumps({k: v for k, v in best.items() if k in ("x", "speed", "bl_s", "elec_power",
                                                                       "elec_jpm", "rms_over_rated")}))

@@ -127,7 +127,8 @@ def clip_theta(layout, theta):
 class Problem:
   """Evaluates gaits on one design; one instance per process."""
 
-  def __init__(self, design, k=K_DEFAULT, warm=3, measure=2, thermal=False, weights=None, v0=0.1):
+  def __init__(self, design, k=K_DEFAULT, warm=3, measure=2, thermal=False, weights=None, v0=0.1,
+               speed=None, energy=0.0):
     self.d = ds.Design(**{**design, "search": tuple(map(tuple, design.get("search", ())))})
     self.design = design
     self.layout = Layout(k)
@@ -135,6 +136,8 @@ class Problem:
     self.thermal = thermal
     self.weights = dict(DEFAULT_WEIGHTS, **(weights or {}))
     self.v0 = v0
+    self.speed = speed    # target speed (cruise); None = maximize speed
+    self.energy = energy  # weight of the electrical cost of transport residual
     self.model, self.acts = ds.make_model(self.d, locked=False)
     self.env = ds.Envelope(self.model, self.acts)
     self.cmat = np.array([a["coef"] for a in self.acts])
@@ -154,7 +157,7 @@ class Problem:
 
   def config(self):
     return dict(design=self.design, k=self.layout.k, warm=self.warm, measure=self.measure,
-                thermal=self.thermal, weights=self.weights, v0=self.v0)
+                thermal=self.thermal, weights=self.weights, v0=self.v0, speed=self.speed, energy=self.energy)
 
   def fix(self, theta):
     theta = clip_theta(self.layout, theta)
@@ -294,7 +297,8 @@ class Problem:
     rms_over_rated = float(np.nanmax(rr_front)) if np.isfinite(rr_front).any() else None
 
     w = self.weights
-    r = [np.sqrt(w["speed"]) * (1.0 - speed) / S_SPEED * 0.05,
+    r_speed = (1.0 - speed) / S_SPEED * 0.05 if self.speed is None else (speed - self.speed) / S_SPEED
+    r = [np.sqrt(w["speed"]) * r_speed,
          np.sqrt(w["lateral"]) * lateral / S_LATERAL,
          np.sqrt(w["depth"]) * depth / S_DEPTH,
          np.sqrt(w["yaw"]) * yaw_rate / S_YAW,
@@ -304,6 +308,9 @@ class Problem:
     r += list(np.sqrt(w["cycle"] / cycle.size) * cycle)
     ex = sim["excess"][win]
     r += list(np.sqrt(w["range"]) * np.sqrt(np.mean(ex ** 2, axis=0)) / S_RANGE)
+    if self.energy:
+      dist_ = max(speed * T, 1e-3)
+      r += [np.sqrt(self.energy) * elec / (self.mass * 9.81 * dist_)]  # electrical CoT
     if self.thermal:
       over = np.where(np.isfinite(rr), np.maximum(rr - 1.0, 0.0), 0.0)[self.front]
       r += list(np.sqrt(w["thermal"]) * over / S_THERMAL)
@@ -478,9 +485,10 @@ def run(args):
   rec = json.loads((ds.OUT / f"{args.name}.json").read_text())
   design = design_of(rec)
   OUT.mkdir(parents=True, exist_ok=True)
-  tag = args.name + (args.tag or ("_thermal" if args.thermal and not args.name.endswith("_thermal") else ""))
+  tag = args.name + (args.tag or ("_thermal" if args.thermal and "_thermal" not in args.name else "")
+                     + (f"_cruise{args.speed:g}" if args.speed else ""))
   prob = Problem(design, k=args.k, warm=args.warm, measure=args.measure, thermal=args.thermal,
-                 v0=rec["best"]["speed"])
+                 v0=rec["best"]["speed"], speed=args.speed, energy=args.energy)
   lay = prob.layout
   theta0 = seed_theta(args.turtle_sim, rec, lay)
   ev = Evaluator(prob, args.processes)
@@ -493,7 +501,7 @@ def run(args):
     theta, cost, binfo, h_lm = lm(ev, lay, theta, iters=args.lm_iters, checkpoint=str(OUT / f"{tag}_lm.pkl"))
   finally:
     ev.close()
-  out = dict(name=args.name, design=design, thermal=args.thermal, k=args.k, warm=args.warm, measure=args.measure,
+  out = dict(name=args.name, design=design, thermal=args.thermal, speed_target=args.speed, energy=args.energy, k=args.k, warm=args.warm, measure=args.measure,
              theta=theta.tolist(), metrics=binfo, seed_metrics=info[0], es=h_es, lm=h_lm,
              locked_search=dict(speed=rec["best"]["speed"], x=rec["best"]["x"]))
   (OUT / f"{tag}.json").write_text(json.dumps(out, indent=1))
@@ -532,6 +540,10 @@ def main():
   r.add_argument("--lm-iters", type=int, default=15)
   r.add_argument("--processes", type=int, default=None)
   r.add_argument("--tag", default="")
+  r.add_argument("--speed", type=float, default=None,
+                 help="cruise: hold this speed (m/s) instead of maximizing speed; use with --energy")
+  r.add_argument("--energy", type=float, default=0.0,
+                 help="weight of the electrical cost-of-transport residual (e.g. 10)")
   e = sub.add_parser("export")
   e.add_argument("name", help="a result in results/trajopt/")
   args = ap.parse_args()
