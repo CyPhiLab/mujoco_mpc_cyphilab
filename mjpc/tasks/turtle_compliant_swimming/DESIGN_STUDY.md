@@ -33,6 +33,11 @@ pool at **24.0 W** (whole robot, arXiv:2602.21389).
 * **Not worth it:** passive twist from the silicone blade (0.17–0.18 m/s at any stiffness tried)
   or a twist linkage (0.25 m/s), both 4-motor layouts; moving the twist motor inboard (no gain).
   Bigger flippers help the speed-limited XW540 (+27 % at ×1.4) but add only ~3 % with the AK45.
+* **Optimizing for efficiency instead of speed** (Pareto fronts, *Speed vs efficiency*): at
+  cruise speeds (≤ 0.15 m/s) all designs are equally efficient (14 W, ~95 J/m at 0.15 m/s on the
+  free body), and every design's range-optimal speed with the electronics is 0.09–0.15 m/s. The
+  upgrades extend the top speed at 2–3× the energy per metre; they don't improve range. On the
+  current robot, an efficiency-optimized gait saves ~40 % of the motor power at the same speed.
 * The cheapest upgrade with the current hardware is the supply voltage: 4S (14.8 V) instead of
   3S, +24 % (0.168 → 0.208 m/s attitude-locked).
 
@@ -215,6 +220,50 @@ stroke motor is saturated.
   re-studied; the trajopt gaits use the rear hips for trim and stay within 11–17° of level open
   loop.
 
+## Speed vs efficiency (Pareto)
+
+The rankings above maximize speed. Optimizing for efficiency instead: for each design and each
+target speed (0.06–0.33 m/s), `design_study.py search --vmin V` minimizes the motors'
+electrical energy per metre subject to speed ≥ V (epsilon-constraint), re-optimizing the gait
+and the free design knobs (gear ratios, flipper scale) at every point; AK45 runs keep RMS torque
+≤ rated. 46 searches, attitude locked, 150 evaluations each.
+
+![pareto](results/design_study/pareto.png)
+
+Then a free-body check at a common cruise speed (`turtle_gait_opt.py run <name>_e0.15 --speed
+0.15 --energy 10`: hold 0.15 m/s exactly, minimize electrical cost of transport, straight and
+level, open loop):
+
+| design at 0.15 m/s, free body | stroke | motor electrical power | J/m | CoT (motors) | + 10 W electronics | RMS motor torque |
+|---|---|---|---|---|---|---|
+| current robot (XW540 3S) | 1.72 s | 14.6 W | 97 | 1.11 | 164 J/m | 1.8 N m |
+| XW540 3S + differential + gears | 1.43 s | 14.1 W | 94 | 1.05 | 160 J/m | 1.0 N m |
+| AK45-10 + differential + gears | 1.85 s | 14.0 W | 94 | 1.00 | 161 J/m | 0.7 N m (0.27× rated) |
+| *for comparison: current robot, speed-optimized gait at 0.154 m/s* | 1.57 s | 25.3 W | 164 | 1.86 | 229 J/m | 1.9 N m |
+
+* **At cruise speeds the designs are equally efficient.** Below ~0.15 m/s the fronts overlap: the
+  energy per metre is set by the hydrodynamics of the stroke, not by the motor or the
+  transmission. At 0.15 m/s on the free body all three designs need 14.0–14.6 W (94–97 J/m,
+  within 3 %). The attitude-locked fronts show the XW540 30–35 % cheaper at 0.12–0.15 m/s, but
+  that is search noise (150 evaluations per point, the fronts zig-zag by ±15 %); the free-body
+  trajopt does not reproduce it.
+* **The upgrades buy top speed, not range.** With ~10 W of electronics (24 W measured on the robot
+  minus the motors), every design's range-optimal speed is 0.09–0.15 m/s at 127–147 J/m
+  (attitude locked); the current robot's is 0.12 m/s. Faster swimming costs steeply: the AK45
+  differential needs ~180 J/m at 0.21 m/s, ~275 J/m at 0.30 m/s and ~390 J/m at 0.335 m/s
+  (motors only), 2.4–3.3× the minimum with the electronics included. Only the AK45 designs reach
+  more than ~0.21 m/s at all.
+* **The gait matters as much as the hardware for efficiency.** On the current robot, the
+  efficiency-optimized gait at 0.15 m/s uses 14.6 W; the speed-optimized gait at 0.154 m/s uses
+  25.3 W. Re-optimizing for efficiency saves ~40 % at the same speed, with no hardware change.
+  Efficient gaits stroke slowly (1.4–1.9 s) with large amplitude.
+* **Thermal margin at cruise.** At 0.15 m/s the AK45s run at 27 % of their rated torque; the
+  thermal limit only matters above ~0.25 m/s.
+* Caveats: gearbox friction and the motors' no-load losses are not modelled (only copper loss and
+  the external stages' efficiency). The XW540's 260:1 gearbox is likely the lossier of the two,
+  so the real comparison probably favours the AK45 a little more than shown. The 10 W
+  electronics figure is an estimate.
+
 ## Combined best design
 
 **AK45-10 at 24 V, yaw/roll differential with both stroke motors in the shell, ~1.7:1 on the
@@ -308,6 +357,9 @@ python design_study.py --turtle-sim $TS search ak45_serial --budget 200
 python design_study.py --turtle-sim $TS search ak45_diff_red --budget 300 --thermal
 python design_study.py --turtle-sim $TS search xw540_3s_diff_red --budget 300
 python design_study.py --turtle-sim $TS sweep ak45_serial --param g_roll --values 1.5 2 2.5 3
+# Pareto points: minimum energy per metre at speed >= V (repeat over V and designs)
+python design_study.py --turtle-sim $TS search ak45_diff_red --thermal --vmin 0.15 --budget 150
+python turtle_gait_opt.py --turtle-sim $TS run ak45_diff_red_thermal_e0.15 --thermal --speed 0.15 --energy 10
 # (all searches: see the design list; --thermal for the "[RMS <= rated]" runs)
 # periodic trajopt on the free body, then export for turtle_trajopt
 python turtle_gait_opt.py --turtle-sim $TS run ak45_diff_red_thermal --thermal
@@ -340,7 +392,8 @@ meshes), run `prepare_model.py` in a scratch directory and point `TURTLE_DESIGN_
 | `design_plots.py` | figures and `summary.md` |
 | `designs/<name>/` | exported design: `model.xml`, `task.xml`, `reference_gait.xml` (motor coordinates), `gait.csv` |
 | `results/design_study/*.json` | search results (best gait, motor demands, evaluation history) |
-| `results/trajopt/*.json` | trajopt results (theta, metrics, ES / LM history) |
+| `results/trajopt/*.json` | trajopt results (theta, metrics, ES / LM history); `*_cruise0.15` are the efficiency runs |
+| `results/design_study/*_e<V>.json` | Pareto points: minimum energy per metre at speed >= V |
 | `results/design_study/segments/` | blade-slicing check: searches on 4- and 12-segment models |
 | `results/mpc/*.log` | `turtle_trajopt` MPC summaries of the finalists (CSV logs not committed) |
 | `turtle_trajopt.cc` | `--task_xml`, motor envelope in `mjcb_control`, actuator force / velocity in the CSV |
