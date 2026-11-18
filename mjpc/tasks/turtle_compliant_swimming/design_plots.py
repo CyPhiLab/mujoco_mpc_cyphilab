@@ -31,6 +31,7 @@ C1, C2, C3 = "#2a78d6", "#eb6834", "#1baf7a"
 GRAY = "#a3a29c"
 INK, INK2 = "#0b0b0b", "#52514e"
 TURTLE = (0.27, 0.50)  # wild loggerhead / green turtle cruising, m/s
+POOL = 0.208  # measured pool speed of the robot as built (XW540-T260, 3S)
 
 
 def style(plt):
@@ -56,7 +57,18 @@ def front_idx(b):
   return [i for i, a in enumerate(b["actuators"]) if a not in ds.ACTUATORS[6:]]
 
 
-def describe(r):
+def label_of(name, r):
+  lab = r["design"]["label"]
+  m = re.search(r"_(flipper_scale|g_roll|blade_scale)([\d.]+)$", name)
+  if m:
+    what = {"flipper_scale": "flipper x", "g_roll": "stroke gear ", "blade_scale": "blade stiffness x"}[m.group(1)]
+    lab = lab.replace("baseline: ", "") + f", {what}{m.group(2)}"
+  if name.endswith("_thermal"):
+    lab += " [RMS <= rated]"
+  return lab
+
+
+def describe(r, name=""):
   b, d = r["best"], r["design"]
   fi = front_idx(b)
   x = b["x"]
@@ -70,7 +82,8 @@ def describe(r):
       elec_w=b["elec_power"], mech_w=b["mech_power"], cot=b["cot_elec"],
       tau_pk=max(b["tau_peak"][i] for i in fi), tau_rms=max(b["tau_rms"][i] for i in fi),
       w_pk=max(b["w_peak"][i] for i in fi), rms_rated=b["rms_over_rated"], mass=b["mass"],
-      stroke=b["period"], gear=", ".join(gear) or "direct", label=d["label"], front=d["front"],
+      stroke=b["period"], gear=", ".join(gear) or "direct", label=label_of(name, r) if name else d["label"],
+      front=d["front"],
   )
 
 
@@ -84,25 +97,27 @@ def calibration():
 
 # ----------------------------------------------------------------------------------------------
 def fig_ranking(plt, recs, names, base="xw540_3s"):
-  rows = [(n, describe(recs[n])) for n in names if n in recs]
+  rows = [(n, describe(recs[n], n)) for n in names if n in recs]
   rows.sort(key=lambda r: r[1]["speed"])
-  fig, ax = plt.subplots(figsize=(8.5, 0.42 * len(rows) + 1.4))
+  fig, ax = plt.subplots(figsize=(11, 0.42 * len(rows) + 1.6))
   ax.axvspan(*TURTLE, color="#e6e5e0", zorder=0)
-  ax.text(TURTLE[0] + 0.004, len(rows) - 0.45, "wild turtles cruise\n0.27-0.50 m/s", color=INK2, fontsize=8,
-          va="top")
+  ax.text(TURTLE[1] - 0.004, -0.9, "wild turtles cruise 0.27-0.50 m/s", color=INK2, fontsize=8, ha="right",
+          va="center")
   for i, (n, r) in enumerate(rows):
     color = GRAY if n.startswith("xw540") else C1
     if n == base:
       color = INK2
     ax.barh(i, r["speed"], height=0.62, color=color)
-    ax.text(r["speed"] + 0.004, i, f"{r['speed']:.3f} m/s  ({r['bl']:.2f} BL/s)  {r['elec_w']:.0f} W", va="center",
+    ax.text(r["speed"] + 0.004, i, f"{r['speed']:.3f} m/s  ({r['bl']:.2f} BL/s)  {r['elec_w']:.0f} W"
+            + (f"  RMS {r['rms_rated']:.1f}x rated" if r["rms_rated"] else ""), va="center",
             fontsize=8, color=INK)
   ax.set_yticks(range(len(rows)), [r[1]["label"] for r in rows], fontsize=8)
   ax.set_xlabel("speed, attitude locked, gait re-optimized [m/s]")
-  ax.set_xlim(0, max(r[1]["speed"] for r in rows) * 1.45)
+  ax.set_xlim(0, max(r[1]["speed"] for r in rows) * 1.75)
+  ax.set_ylim(-1.4, len(rows) - 0.5)
   ax.grid(axis="y", visible=False)
-  ax.set_title("Thrust-limited speed by design (gray: current XW540 motors; blue: AK45-10)", fontsize=10,
-               loc="left", color=INK)
+  ax.set_title("Attitude-locked speed, gait re-optimized per design (gray: XW540-T260, blue: AK45-10)",
+               fontsize=10, loc="left", color=INK)
   fig.tight_layout()
   fig.savefig(OUT / "ranking.png", dpi=150)
   plt.close(fig)
@@ -138,7 +153,7 @@ def fig_reduction(plt, recs):
     ax.set_xlim(left=0)
   axes[0].set_ylim(bottom=0)
   axes[1].set_ylim(bottom=0)
-  fig.suptitle("Reduction sweep (gait re-optimized at every ratio; twist gear optimized where free)",
+  fig.suptitle("Stroke-gear sweep, peak-limited (gait re-optimized at every ratio; twist motor direct)",
                fontsize=10, x=0.01, ha="left")
   fig.tight_layout()
   fig.savefig(OUT / "reduction.png", dpi=150)
@@ -202,7 +217,7 @@ def fig_work_split(plt, recs, names):
       ax.barh(i, frac, left=left, color=color, height=0.6, edgecolor="#fcfcfb", lw=2, label=lab if i == 0 else None)
       left += frac
     ax.text(1.01, i, f"stroke {100 * roll:.0f}%", va="center", fontsize=8, color=INK)
-  ax.set_yticks(range(len(rows)), [recs[n]["design"]["label"] for n, _ in rows], fontsize=8)
+  ax.set_yticks(range(len(rows)), [label_of(n, recs[n]) for n, _ in rows], fontsize=8)
   ax.set_xlim(0, 1.18)
   ax.set_xlabel("share of positive joint work, front limbs")
   ax.legend(fontsize=8, ncol=3, loc="lower left", bbox_to_anchor=(0, 1.0))
@@ -294,17 +309,17 @@ def main():
   fig_envelope(plt, args.turtle_sim, recs, [tuple(p.split(":")) for p in args.envelope])
   fig_work_split(plt, recs, args.work)
 
-  k = calibration()
-  lines = ["| design | speed m/s (BL/s) | x calibration | stroke s | gear | elec W | elec J/m | CoT | "
+  base = describe(recs["xw540_3s"], "xw540_3s")["speed"] if "xw540_3s" in recs else None
+  lines = ["| design | speed m/s (BL/s) | vs baseline | pool-scaled m/s | stroke s | gear | elec W | elec J/m | CoT | "
            "peak / RMS motor torque N m | RMS/rated | peak motor speed rad/s | mass kg |",
-           "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
   for n in sorted(names, key=lambda n: -recs[n]["best"]["speed"]):
-    r = describe(recs[n])
+    r = describe(recs[n], n)
     rr = f"{r['rms_rated']:.2f}" if r["rms_rated"] is not None else "n/a"
-    cal = f"{k * r['speed']:.2f}" if k else ""
-    lines.append(f"| `{n}` {r['label']} | {r['speed']:.3f} ({r['bl']:.2f}) | {cal} | {r['stroke']:.2f} | {r['gear']} | "
-                 f"{r['elec_w']:.0f} | {r['elec_jpm']:.0f} | {r['cot']:.2f} | {r['tau_pk']:.1f} / {r['tau_rms']:.1f} | "
-                 f"{rr} | {r['w_pk']:.1f} | {r['mass']:.2f} |")
+    ratio = r["speed"] / base if base else float("nan")
+    lines.append(f"| `{n}` {r['label']} | {r['speed']:.3f} ({r['bl']:.2f}) | {ratio:.2f}x | {POOL * ratio:.2f} | "
+                 f"{r['stroke']:.2f} | {r['gear']} | {r['elec_w']:.0f} | {r['elec_jpm']:.0f} | {r['cot']:.2f} | "
+                 f"{r['tau_pk']:.1f} / {r['tau_rms']:.1f} | {rr} | {r['w_pk']:.1f} | {r['mass']:.2f} |")
   md = ["## Attitude-locked searches", "", *lines, ""]
 
   if args.mpc:
