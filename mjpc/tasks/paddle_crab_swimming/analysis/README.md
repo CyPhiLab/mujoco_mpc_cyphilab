@@ -709,3 +709,87 @@ paddle_damping=0.1667`).
   the fix is in the leading paddle's raise (`runs/design05_changes.png`): its
   power stroke peaks at phase about 0.25, not the reference's 0.36. That
   matches clip 000014.
+
+## Periodic multiple-shooting trajopt (`periodic_trajopt.py`, robot v2)
+
+A gradient-based alternative to the Fourier search: one stroke is split into
+N shooting intervals of K steps; the decision variables are the state at
+every interval start and one servo command per interval boundary (linear in
+between, wrapping around, so periodic by construction). IPOPT (cyipopt)
+maximizes speed subject to continuity, periodicity (all but the body
+position), zero lateral and vertical displacement, the command range, and
+the servo limits. Interval Jacobians come from forward differences of whole
+intervals in one threaded `mujoco.rollout` batch (about 2.3 s per pass on
+4 cores). The design follows Direct Simulation-based Multiple Shooting
+("Shooting for Contact", Esteban et al.), written for this periodic,
+contact-free problem.
+
+What it took to make it converge:
+
+- **Euler base.** The free joint is replaced by x, y, z, yaw, pitch, roll
+  joints, so the state is a plain vector (same dynamics: 0.05 mm after three
+  strokes).
+- **No command clamp** in the optimizer's model; the command range is a
+  bound on the variables. A command sitting on MuJoCo's clamp reads zero
+  slope to a forward difference, which made the Jacobians ~10% wrong.
+- **Smooth servos** (`smooth_servos`). The v2 dcmotor is, measured,
+  `tau = clip(18 (u - q) - 1.0 qd, lo, hi)` with `hi = min(3.1, 3.1 -
+  0.955 qd)`, `lo = max(-3.1, -3.1 - 0.955 qd)` (torque limit and 12 V
+  supply). The fast gaits sit on that clip about 25% of the time, and Newton
+  steps oscillate across it. The optimizer uses the unclipped law (identical
+  inside the limits) with both limits as linear inequalities at every node.
+  Validation is on the real dcmotor model.
+- **Constrained Gauss-Newton Hessian** (`--hessian gn`): the objective's
+  exact Hessian, constraint curvature left out. L-BFGS stalled.
+- **Proximal stages** (`--prox_max`): each stage maximizes speed with a pull
+  `prox * |z - z_prev|^2` (a trust region) to the previous stage's solution.
+  A hard speed target as a constraint, or an unbounded maximization, did not
+  converge. Stage 0 uses a weak pull (`--prox0 0.01`) because the warm start
+  violates the servo limits.
+- **Keep-best**: the best feasible point (defects and limits below 1e-4)
+  seen at any constraint evaluation is returned when IPOPT stops early.
+
+Result for `paddles_lead` (−Y), from `runs/v2_mY/step6_v0.1458_dt0.001.npz`
+(1.08 s stroke, 108 intervals of 5 steps at 2 ms, 7125 variables):
+
+| run | stages | wall time | speed (2 ms) |
+|---|---|---|---|
+| `runs/tj_mY_smooth` (pull 1) | 0–6 | 8 min | 0.1406 → 0.1437 |
+| `runs/tj_mY_smooth2` (pull 0.3, resumed) | 0–10 | 31 min | 0.1437 → 0.1570 |
+
+On the real dcmotor (free-joint) model, 20 strokes open loop from the
+optimized start state:
+
+| gait | speed at 1 ms | lateral drift | yaw drift |
+|---|---|---|---|
+| Fourier ladder, accepted (`v2_mY` step6) | 0.1404 | −0.0024 m/s | +0.0010 rad/s |
+| Fourier ladder, best (missed) rung (`v2_mY` step5) | 0.1513 | −0.0030 m/s | +0.0009 rad/s |
+| **trajopt** (`runs/tj_mY_smooth2/best_stage10_v0.1570.npz`) | **0.1567** | −0.0007 m/s | −0.0002 rad/stroke |
+
+(Fourier rows from rest with 4 warm-up strokes; the trajopt row from its
+periodic start state.) +12% over the accepted gait in about 40 minutes on 4
+cores, and the servos are at their voltage limit 25% of the time, as in the
+Fourier ladder's best rung. The commands are piecewise linear at 10 ms
+knots (`P` in the npz, `X` the node states with the Euler base;
+`euler_to_free` converts them); they are not a Fourier theta, so the gait
+tools (`render_gait.py`, `export_gaits.py`) do not read them yet.
+
+Reproduce:
+
+```
+~/venvtj/bin/python periodic_trajopt.py --init runs/v2_mY/step6_v0.1458_dt0.001.npz \
+    --out runs/tj_mY_smooth --nodes 108 --substeps 5 --max_iter 60 \
+    --hessian gn --prox_max 20 --prox 1.0 --prox0 0.01 --smooth_servo
+~/venvtj/bin/python periodic_trajopt.py --init runs/v2_mY/step6_v0.1458_dt0.001.npz \
+    --resume runs/tj_mY_smooth/stage6_v0.1437.npz --out runs/tj_mY_smooth2 \
+    --nodes 108 --substeps 5 --max_iter 60 --hessian gn --prox_max 30 \
+    --prox 0.3 --smooth_servo
+```
+
+The environment needs MuJoCo 4 and cyipopt (IPOPT from
+`apt install coinor-libipopt-dev liblapack-dev libblas-dev`, then
+`pip install mujoco==4.0.1 numpy scipy cyipopt`). IPOPT 3.11 (Ubuntu's) has
+no `get_current_iterate`, hence the keep-best at constraint evaluations.
+Earlier attempts are kept in `runs/tj_mY*` (logs show each failure mode).
+The run stopped when stage 11 traded speed for smoothness; `--prox 0.1`, a
+free stroke period, and the other directions are the next things to try.

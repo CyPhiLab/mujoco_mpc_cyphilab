@@ -781,8 +781,11 @@ def main():
       print('stage failed; keeping the last good solution', flush=True)
       break
     gain = v - (best['speed'] if best else -np.inf)
-    z = zs
-    best = dict(z=zs, speed=v, stage=stage)
+    if gain > 0 or best is None:
+      best = dict(z=zs, speed=v, stage=stage)
+    # a stage that swims slower (the smoothness term traded speed away)
+    # does not move the reference: the next stage starts from the best
+    z = best['z']
     np.savez(os.path.join(args.out, f'stage{stage}_v{v:.4f}.npz'),
              X=prob.X(zs), P=prob.P(zs), z=zs, nodes=args.nodes,
              substeps=args.substeps, dt=args.dt, period=prob.T,
