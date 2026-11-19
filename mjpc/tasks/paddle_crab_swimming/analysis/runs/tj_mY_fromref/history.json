@@ -2,13 +2,13 @@
  {
   "stage": 0,
   "target": 0.0132,
-  "speed": 0.013660626556641395,
-  "max_defect": 0.0552272175835824,
+  "speed": 0.013201882728384082,
+  "max_defect": 0.02406810009998961,
   "status": "Maximum number of iterations exceeded (can be specified by an option).",
-  "wall_s": 165.4865152835846,
-  "fd_passes": 62,
+  "wall_s": 403.1162657737732,
+  "fd_passes": 152,
   "ok": false,
   "pull": 0.01,
-  "elapsed_s": 165.50550031661987
+  "elapsed_s": 403.1361744403839
  }
 ]

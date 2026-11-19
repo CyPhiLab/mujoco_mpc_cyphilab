@@ -206,7 +206,8 @@ class PeriodicShooting:
 
   def __init__(self, m, nodes, substeps, direction, smooth=1e-2,
                nthread=4, eps=1e-6, speed_target=None, prox=0.0,
-               z_ref=None, servo=None, limit_margin=0.0, feas_tol=1e-4):
+               z_ref=None, servo=None, limit_margin=0.0, feas_tol=1e-4,
+               tilt_max=None):
     self.m = m
     self.N, self.K = nodes, substeps
     self.dt = m.opt.timestep
@@ -255,6 +256,7 @@ class PeriodicShooting:
     self.evals = 0
     self.fd_time = 0.0
     self.feas_tol = feas_tol
+    self.tilt_max = tilt_max
     self._best_obj, self._best_z = np.inf, None
 
   # z layout
@@ -543,6 +545,11 @@ class PeriodicShooting:
     lb[0:3] = ub[0:3] = z0[0:3]
     lb[self.nX:] = np.tile(self.lo, self.N)
     ub[self.nX:] = np.tile(self.hi, self.N)
+    if self.tilt_max is not None:
+      for i in range(self.N):
+        for k in (4, 5):                       # pitch, roll
+          lb[self.xcol(i) + k] = -self.tilt_max
+          ub[self.xcol(i) + k] = self.tilt_max
     return lb, ub
 
   def solve(self, z0, max_iter=300, tol=1e-6, options=None, hessian='lbfgs'):
@@ -655,6 +662,29 @@ def warm_start_commands(prob, U, cycles=6):
   return np.concatenate([X.ravel(), U.ravel()])
 
 
+def warm_start_kinematic(prob, Q, speed=0.02):
+  """Kinematic warm start from joint angles Q (N, nu) alone: the body level
+  and gliding straight along the swim direction at `speed`, the joints on Q
+  (clipped to the command range) with their periodic finite-difference
+  rates, and commands Q + kd qd / kp. Periodic and straight by
+  construction; the dynamics defects are what the optimizer has to close."""
+  N, nv = prob.N, prob.nv
+  Q = np.clip(Q, prob.lo, prob.hi)
+  h = prob.K * prob.dt
+  Qd = (np.roll(Q, -1, axis=0) - np.roll(Q, 1, axis=0)) / (2 * h)
+  X = np.zeros((N, prob.nx))
+  t = np.arange(N) * h
+  X[:, :3] = np.outer(t, prob.direction) * speed
+  X[:, 6:nv] = Q
+  X[:, nv:nv + 3] = prob.direction * speed
+  X[:, nv + 6:] = Qd
+  U = Q.copy()
+  if prob.servo is not None:
+    U = Q + prob.servo['kd'] * Qd / prob.servo['kp']
+  U = np.clip(U, prob.lo, prob.hi)
+  return np.concatenate([X.ravel(), U.ravel()])
+
+
 def reference_commands(path, mode, N):
   """Commands = the kinematic reference stroke's joint angles
   (kinematic_ref.py, keyframed from crab footage) at the N node phases."""
@@ -754,6 +784,12 @@ def main():
   p.add_argument('--start_sine', action='store_true',
                  help='start from a hand-written paddle stroke')
   p.add_argument('--direction', type=float, nargs=3, default=[0, -1, 0])
+  p.add_argument('--kinematic', action='store_true',
+                 help='with --start_ref / --start_sine: a kinematic warm '
+                 'start (level body, joints on the stroke) instead of a '
+                 'simulated one')
+  p.add_argument('--tilt_max', type=float, default=None,
+                 help='bound on body pitch and roll at the nodes (rad)')
   p.add_argument('--out', required=True)
   p.add_argument('--nodes', type=int, default=54)
   p.add_argument('--substeps', type=int, default=10)
@@ -820,7 +856,8 @@ def main():
   def make(**kw):
     return PeriodicShooting(m, args.nodes, args.substeps, direction,
                             smooth=args.smooth, nthread=args.threads,
-                            servo=servo, limit_margin=args.limit_margin, **kw)
+                            servo=servo, limit_margin=args.limit_margin,
+                            tilt_max=args.tilt_max, **kw)
 
   prob = make()
   print(f'stroke {prob.T:.3f} s, {prob.n} variables, {prob.m_rows} '
@@ -831,9 +868,12 @@ def main():
         args.substeps and float(r['dt']) == args.dt, 'grid mismatch'
     z0 = r['z']
   elif args.start_ref:
-    z0 = warm_start_commands(prob, U_ref)
+    z0 = (warm_start_kinematic(prob, U_ref) if args.kinematic
+          else warm_start_commands(prob, U_ref))
   elif args.start_sine:
-    z0 = warm_start_commands(prob, sine_commands(args.nodes))
+    U_s = sine_commands(args.nodes)
+    z0 = (warm_start_kinematic(prob, U_s) if args.kinematic
+          else warm_start_commands(prob, U_s))
   else:
     z0 = warm_start(prob, gait)
   v0 = prob.speed(z0)

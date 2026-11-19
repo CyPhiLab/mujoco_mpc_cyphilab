@@ -1,0 +1,60 @@
+stroke 1.080 s, 7128 variables, 9071 constraints
+warm start: speed 0.0182 m/s, max defect 3.100e+00
+--- stage 0: speed target 0.0132, pull 0.01, cap 150
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3889
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0048 inf_pr 2.50e-01 inf_du 9.16e-02 | 2 FD passes, 5 s
+  iter   10 obj    6.8591 inf_pr 5.54e-03 inf_du 6.29e-01 | 12 FD passes, 28 s
+  iter   20 obj    0.4955 inf_pr 7.15e-02 inf_du 1.88e-01 | 22 FD passes, 52 s
+  iter   30 obj    0.3664 inf_pr 8.16e-02 inf_du 1.90e-01 | 32 FD passes, 75 s
+  iter   40 obj    0.4688 inf_pr 5.37e-02 inf_du 1.20e-01 | 42 FD passes, 98 s
+  iter   50 obj    0.5051 inf_pr 8.47e-02 inf_du 1.90e-01 | 52 FD passes, 121 s
+  iter   60 obj    0.5805 inf_pr 5.19e-02 inf_du 1.13e-01 | 62 FD passes, 144 s
+  iter   70 obj    0.6681 inf_pr 4.91e-02 inf_du 1.65e-01 | 72 FD passes, 167 s
+  iter   80 obj    0.6572 inf_pr 5.34e-02 inf_du 1.49e-01 | 82 FD passes, 190 s
+  iter   90 obj    0.7338 inf_pr 4.25e-02 inf_du 1.38e-01 | 92 FD passes, 213 s
+  iter  100 obj    0.8717 inf_pr 4.13e-02 inf_du 1.12e-01 | 102 FD passes, 235 s
+  iter  110 obj    0.8472 inf_pr 4.60e-02 inf_du 1.30e-01 | 112 FD passes, 258 s
+  iter  120 obj    1.0065 inf_pr 8.44e-03 inf_du 1.51e-01 | 122 FD passes, 281 s
+  iter  130 obj    0.6254 inf_pr 5.11e-02 inf_du 1.40e-01 | 132 FD passes, 303 s
+  iter  140 obj    0.6580 inf_pr 3.22e-02 inf_du 1.42e-01 | 142 FD passes, 326 s
+  iter  150 obj    0.6738 inf_pr 2.41e-02 inf_du 9.62e-02 | 152 FD passes, 349 s
+
+Number of Iterations....: 150
+
+                                   (scaled)                 (unscaled)
+Objective...............:   6.7379059331639701e-01    6.7379059331639701e-01
+Dual infeasibility......:   9.6208871589906528e-02    9.6208871589906528e-02
+Constraint violation....:   2.4068100099989609e-02    2.4068100099989609e-02
+Complementarity.........:   1.8047256634690166e-03    1.8047256634690166e-03
+Overall NLP error.......:   9.6208871589906528e-02    9.6208871589906528e-02
+
+
+Number of objective function evaluations             = 215
+Number of objective gradient evaluations             = 151
+Number of equality constraint evaluations            = 215
+Number of inequality constraint evaluations          = 215
+Number of equality constraint Jacobian evaluations   = 151
+Number of inequality constraint Jacobian evaluations = 151
+Number of Lagrangian Hessian evaluations             = 150
+Total CPU secs in IPOPT (w/o function evaluations)   =     49.434
+Total CPU secs in NLP function evaluations           =   1358.843
+
+EXIT: Maximum Number of Iterations Exceeded.
+stage 0: Maximum number of iterations exceeded (can be specified by an option). in 403 s, 152 FD passes; speed 0.0132 m/s, max defect 2.41e-02 (403 s total)
+stage failed; stopping with the best solution
