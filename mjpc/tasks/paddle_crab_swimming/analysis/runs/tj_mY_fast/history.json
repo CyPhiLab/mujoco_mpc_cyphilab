@@ -34,5 +34,17 @@
   "ok": true,
   "pull": 0.21,
   "elapsed_s": 252.72817373275757
+ },
+ {
+  "stage": 3,
+  "target": "max",
+  "speed": 0.14758685705052696,
+  "max_defect": 0.005981195574074533,
+  "status": "Maximum number of iterations exceeded (can be specified by an option).",
+  "wall_s": 38.18555974960327,
+  "fd_passes": 14,
+  "ok": false,
+  "pull": 0.147,
+  "elapsed_s": 290.93296122550964
  }
 ]
