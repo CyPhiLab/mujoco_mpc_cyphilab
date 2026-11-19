@@ -1,0 +1,12 @@
+[
+ {
+  "stage": 0,
+  "target": 0.1406,
+  "speed": 0.14059999859468644,
+  "max_defect": 5.949359690872458e-05,
+  "status": "kept best feasible iterate",
+  "wall_s": 171.79842901229858,
+  "fd_passes": 62,
+  "ok": true
+ }
+]
