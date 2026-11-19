@@ -8,5 +8,15 @@
   "wall_s": 171.79842901229858,
   "fd_passes": 62,
   "ok": true
+ },
+ {
+  "stage": 1,
+  "target": "max",
+  "speed": 0.14120822539102426,
+  "max_defect": 1.6333363683784796e-07,
+  "status": "Algorithm stopped at a point that was converged, not to \"desired\" tolerances, but to \"acceptable\" tolerances (see the acceptable-... options).",
+  "wall_s": 67.45169234275818,
+  "fd_passes": 24,
+  "ok": true
  }
 ]
