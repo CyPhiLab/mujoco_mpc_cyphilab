@@ -130,5 +130,29 @@
   "ok": true,
   "pull": 0.03,
   "elapsed_s": 389.10507106781006
+ },
+ {
+  "stage": 11,
+  "target": "max",
+  "speed": 0.13543111838471228,
+  "max_defect": 7.97449950018514e-06,
+  "status": "kept best feasible iterate",
+  "wall_s": 35.94018483161926,
+  "fd_passes": 13,
+  "ok": true,
+  "pull": 0.03,
+  "elapsed_s": 425.123676776886
+ },
+ {
+  "stage": 12,
+  "target": "max",
+  "speed": 0.13558950065556807,
+  "max_defect": 6.4207402723504e-06,
+  "status": "kept best feasible iterate",
+  "wall_s": 34.20904588699341,
+  "fd_passes": 13,
+  "ok": true,
+  "pull": 0.03,
+  "elapsed_s": 459.4056296348572
  }
 ]
