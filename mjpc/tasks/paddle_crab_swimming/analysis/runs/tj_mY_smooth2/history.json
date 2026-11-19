@@ -38,5 +38,15 @@
   "wall_s": 168.41487789154053,
   "fd_passes": 62,
   "ok": true
+ },
+ {
+  "stage": 4,
+  "target": "max",
+  "speed": 0.15034965126020947,
+  "max_defect": 1.4472834195550927e-05,
+  "status": "kept best feasible iterate",
+  "wall_s": 172.37237572669983,
+  "fd_passes": 62,
+  "ok": true
  }
 ]
