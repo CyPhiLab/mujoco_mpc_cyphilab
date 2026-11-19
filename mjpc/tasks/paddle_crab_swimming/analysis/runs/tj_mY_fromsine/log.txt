@@ -1,10 +1,2 @@
 stroke 1.080 s, 7128 variables, 9071 constraints
-warm start: speed 0.0200 m/s, max defect 3.331e+00
---- stage 0: speed target 0.015, pull 0.01, cap 150
-
-******************************************************************************
-This program contains Ipopt, a library for large-scale nonlinear optimization.
- Ipopt is released as open source code under the Eclipse Public License (EPL).
-         For more information visit http://projects.coin-or.org/Ipopt
-******************************************************************************
-
+  LM   0 max residual 2.31e-01 |r| 2.722e+00 mu 1.0e-03 (0 s)

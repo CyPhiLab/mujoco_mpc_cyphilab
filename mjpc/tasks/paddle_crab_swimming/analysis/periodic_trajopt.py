@@ -589,6 +589,71 @@ class PeriodicShooting:
     return z, info
 
 
+# ----- Feasibility by Levenberg-Marquardt ----- #
+
+def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3):
+  """Least squares on the equality constraints (continuity, periodicity,
+  straightness) and the servo-limit violations, with the command and tilt
+  bounds kept by projection and the start position fixed (gauge). Each
+  iteration is one Jacobian pass and a sparse solve of
+  (J'J + mu diag(J'J)) dz = -J'r. Robust from far-off warm starts, where
+  IPOPT with the Gauss-Newton Hessian stalls."""
+  import scipy.sparse as sp
+  import scipy.sparse.linalg as spl
+  lb, ub = prob.bounds(z)
+  free = np.ones(prob.n, bool)
+  free[0:3] = False
+
+  def residual(zz, c=None):
+    c = prob.constraints(zz) if c is None else c
+    r = [c[:prob.n_eq]]
+    if prob.n_lin:
+      lv = c[prob.row_lin:]
+      r.append(np.minimum(lv - prob.lin_lo, 0) + np.maximum(lv - prob.lin_hi,
+                                                            0))
+    return np.concatenate(r)
+
+  rows, cols = prob.jacobianstructure()
+  keep_rows = prob.n_eq + prob.n_lin
+  t0 = time.time()
+  r = residual(z)
+  for it in range(iters):
+    worst = float(np.abs(r).max())
+    print(f'  LM {it:3d} max residual {worst:.2e} |r| {np.linalg.norm(r):.3e}'
+          f' mu {mu:.1e} ({time.time() - t0:.0f} s)', flush=True)
+    if worst < tol:
+      break
+    vals = prob.jacobian(z)
+    J = sp.csr_matrix((vals, (rows, cols)), shape=(prob.m_rows, prob.n))
+    idx = np.r_[np.arange(prob.n_eq), prob.row_lin + np.arange(prob.n_lin)] \
+        if prob.n_lin else np.arange(prob.n_eq)
+    J = J[idx]
+    if prob.n_lin:
+      active = np.r_[np.ones(prob.n_eq, bool), r[prob.n_eq:] != 0]
+      J = sp.diags(active.astype(float)) @ J
+    J = J[:, free]
+    JtJ = (J.T @ J).tocsc()
+    g = J.T @ r
+    d = JtJ.diagonal() + 1e-9
+    improved = False
+    for _ in range(8):
+      A = JtJ + sp.diags(mu * d)
+      dz = np.zeros(prob.n)
+      dz[free] = -spl.spsolve(A, g)
+      z_new = np.clip(z + dz, lb, ub)
+      r_new = residual(z_new)
+      if np.linalg.norm(r_new) < np.linalg.norm(r):
+        z, r = z_new, r_new
+        mu = max(mu / 3, 1e-9)
+        improved = True
+        break
+      mu *= 4
+    if not improved:
+      print('  LM: no improving step', flush=True)
+      break
+  return z, float(np.abs(r).max())
+
+
 # ----- Warm start and validation ----- #
 
 def gait_from_npz(path):
@@ -788,6 +853,9 @@ def main():
                  help='with --start_ref / --start_sine: a kinematic warm '
                  'start (level body, joints on the stroke) instead of a '
                  'simulated one')
+  p.add_argument('--lm0', type=int, default=0,
+                 help='replace the feasibility stage by this many '
+                 'Levenberg-Marquardt iterations on the constraints')
   p.add_argument('--tilt_max', type=float, default=None,
                  help='bound on body pitch and roll at the nodes (rad)')
   p.add_argument('--out', required=True)
@@ -876,6 +944,16 @@ def main():
           else warm_start_commands(prob, U_s))
   else:
     z0 = warm_start(prob, gait)
+  if args.lm0:
+    t0 = time.time()
+    prob_lm = make(speed_target=None, prox=0.0)
+    z0, worst = feasibility_lm(prob_lm, z0, iters=args.lm0)
+    print(f'LM feasibility: max residual {worst:.2e} in {time.time() - t0:.0f}'
+          f' s, speed {prob_lm.speed(z0):.4f} m/s', flush=True)
+    np.savez(os.path.join(args.out, 'lm0.npz'), X=prob_lm.X(z0),
+             P=prob_lm.P(z0), z=z0, nodes=args.nodes, substeps=args.substeps,
+             dt=args.dt, period=prob_lm.T, direction=direction,
+             speed=prob_lm.speed(z0), robot='v2', max_residual=worst)
   v0 = prob.speed(z0)
   print(f'warm start: speed {v0:.4f} m/s, max defect '
         f'{np.abs(prob.constraints(z0)).max():.3e}', flush=True)
@@ -884,8 +962,8 @@ def main():
   if args.maximize:
     stages = [None]
   elif args.prox_max:
-    stages = ([] if args.resume else [round(v0 - args.step, 4)]) + [
-        'max'] * args.prox_max
+    stages = ([] if args.resume or args.lm0 else [round(v0 - args.step, 4)]
+              ) + ['max'] * args.prox_max
   elif args.ladder:
     stages = list(args.ladder)
   else:

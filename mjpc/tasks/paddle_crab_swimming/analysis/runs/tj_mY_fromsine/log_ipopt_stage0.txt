@@ -1,0 +1,31 @@
+stroke 1.080 s, 7128 variables, 9071 constraints
+warm start: speed 0.0200 m/s, max defect 3.331e+00
+--- stage 0: speed target 0.015, pull 0.01, cap 150
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     2160
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3889
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0035 inf_pr 2.31e-01 inf_du 2.51e-01 | 1 FD passes, 2 s
+  iter   10 obj    0.2959 inf_pr 7.24e-02 inf_du 1.13e-01 | 11 FD passes, 25 s
+  iter   20 obj    0.3452 inf_pr 5.38e-02 inf_du 6.86e-02 | 21 FD passes, 47 s
+  iter   30 obj    0.4289 inf_pr 3.14e-02 inf_du 9.34e-02 | 31 FD passes, 69 s
+  iter   40 obj    0.4743 inf_pr 7.18e-02 inf_du 1.20e-01 | 41 FD passes, 91 s
+  iter   50 obj    0.4029 inf_pr 2.35e-02 inf_du 1.09e-01 | 51 FD passes, 113 s
+  iter   60 obj    0.4645 inf_pr 4.99e-02 inf_du 1.05e-01 | 61 FD passes, 135 s
+  iter   70 obj    0.4713 inf_pr 9.54e-02 inf_du 1.06e-01 | 71 FD passes, 158 s
+  iter   80 obj    0.3418 inf_pr 3.93e-02 inf_du 1.26e-01 | 81 FD passes, 180 s
+  iter   90 obj    0.4119 inf_pr 5.56e-02 inf_du 1.23e-01 | 91 FD passes, 203 s
+  iter  100 obj    0.4516 inf_pr 2.11e-02 inf_du 1.36e-01 | 101 FD passes, 226 s
