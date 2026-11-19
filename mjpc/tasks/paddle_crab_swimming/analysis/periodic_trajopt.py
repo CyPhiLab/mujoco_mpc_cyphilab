@@ -98,6 +98,36 @@ def load_euler_model(dt, design=None):
   return m
 
 
+def smooth_servos(m):
+  """Replace the dcmotor servos by their unsaturated law, in place.
+
+  The v2 dcmotor (MuJoCo 4.0.1, checked numerically) applies
+    tau = clip(kp (u - q) - kd qd, lo, hi)
+    hi = min(tmax, vlim - c qd),  lo = max(-tmax, -vlim - c qd)
+  with kp, kd its controller gains, tmax its force range, vlim = (K/R) Vmax
+  the stall torque and c = K^2 / R the back-EMF slope. The clip is a kink
+  that Newton steps oscillate across, so the optimizer's model drops it
+  (an affine actuator, identical to the dcmotor inside its limits) and the
+  limits become linear inequalities on each node's command and state
+  (PeriodicShooting servo=...). Returns the servo parameters."""
+  R, K = m.actuator_gainprm[:, 0].copy(), m.actuator_gainprm[:, 1].copy()
+  kp, kd = m.actuator_gainprm[:, 4].copy(), m.actuator_gainprm[:, 6].copy()
+  vmax = m.actuator_gainprm[:, 7].copy()
+  servo = dict(kp=kp, kd=kd, tmax=m.actuator_forcerange[:, 1].copy(),
+               vlim=K / R * vmax, c=K * K / R)
+  m.actuator_gaintype[:] = mujoco.mjtGain.mjGAIN_FIXED
+  m.actuator_biastype[:] = mujoco.mjtBias.mjBIAS_AFFINE
+  m.actuator_dyntype[:] = mujoco.mjtDyn.mjDYN_NONE
+  m.actuator_gainprm[:] = 0
+  m.actuator_biasprm[:] = 0
+  m.actuator_dynprm[:] = 0
+  m.actuator_gainprm[:, 0] = kp
+  m.actuator_biasprm[:, 1] = -kp
+  m.actuator_biasprm[:, 2] = -kd
+  m.actuator_forcelimited[:] = 0
+  return servo
+
+
 def load_free_model(dt, design=None):
   return C.load_v2(dt=dt, ground=False, design=design)
 
@@ -168,7 +198,7 @@ class PeriodicShooting:
 
   def __init__(self, m, nodes, substeps, direction, smooth=1e-2,
                nthread=4, eps=1e-6, speed_target=None, prox=0.0,
-               z_ref=None):
+               z_ref=None, servo=None, limit_margin=0.0):
     self.m = m
     self.N, self.K = nodes, substeps
     self.dt = m.opt.timestep
@@ -196,8 +226,21 @@ class PeriodicShooting:
     # closure rows: every state component but the base position
     self.closed = np.arange(3, nx)
     self.m_rows = (N - 1) * nx + len(self.closed) + 2
+    self.n_eq = self.m_rows
+    self.row_speed = None
     if speed_target is not None:
+      self.row_speed = self.m_rows
       self.m_rows += 1
+    # Servo limits (smooth_servos) as constant linear rows at every node:
+    #   tau      = kp (p - q) - kd qd    in [-tmax, tmax]
+    #   tau + c qd                       in [-vlim, vlim]
+    # (tightened by limit_margin, a fraction, for the steps between nodes).
+    self.servo = servo
+    self.n_lin = 0
+    if servo is not None:
+      self._build_limits(servo, limit_margin)
+      self.row_lin = self.m_rows
+      self.m_rows += self.n_lin
     self._build_structure()
     self._cache_z = None
     self._cache_fd = None
@@ -332,7 +375,38 @@ class PeriodicShooting:
     out = [defects.ravel(), closure, straight]
     if self.speed_target is not None:
       out.append([self.speed(z, E) / S_SPEED])
+    if self.n_lin:
+      out.append(self.limit_values(z))
     return np.concatenate(out)
+
+  def _build_limits(self, servo, margin):
+    N, nx, nu, nv = self.N, self.nx, self.nu, self.nv
+    rows, cols, vals, lo, hi = [], [], [], [], []
+    r = 0
+    for i in range(N):
+      for a in range(nu):
+        q = self.xcol(i) + 6 + a
+        qd = self.xcol(i) + nv + 6 + a
+        p = self.pcol(i) + a
+        for slope, lim in ((0.0, servo['tmax'][a]),
+                           (servo['c'][a], servo['vlim'][a])):
+          rows += [r, r, r]
+          cols += [p, q, qd]
+          vals += [servo['kp'][a], -servo['kp'][a],
+                   -servo['kd'][a] + slope]
+          lo.append(-lim * (1 - margin))
+          hi.append(lim * (1 - margin))
+          r += 1
+    self.n_lin = r
+    self.lin_rows = np.array(rows)
+    self.lin_cols = np.array(cols)
+    self.lin_vals = np.array(vals)
+    self.lin_lo, self.lin_hi = np.array(lo), np.array(hi)
+
+  def limit_values(self, z):
+    out = np.zeros(self.n_lin)
+    np.add.at(out, self.lin_rows, self.lin_vals * z[self.lin_cols])
+    return out
 
   def _build_structure(self):
     N, nx, nu = self.N, self.nx, self.nu
@@ -368,6 +442,9 @@ class PeriodicShooting:
       block(r, 1, self.pcol(0), nu)
     self._rows = np.concatenate(rows)
     self._cols = np.concatenate(cols)
+    if self.n_lin:
+      self._rows = np.concatenate([self._rows, self.row_lin + self.lin_rows])
+      self._cols = np.concatenate([self._cols, self.lin_cols])
     # closure rows hit both p_{N-1} and p_0; with N > 2 these never overlap.
     assert N > 2
 
@@ -393,6 +470,8 @@ class PeriodicShooting:
       Sd = np.zeros((1, nx))
       Sd[0, :3] = d
       vals += [d @ Ax[-1, :3], -Sd, d @ B0[-1, :3], d @ B1[-1, :3]]
+    if self.n_lin:
+      vals.append(self.lin_vals)
     return np.concatenate([v.ravel() for v in vals])
 
   # --- Hessian (constrained Gauss-Newton: the objective's exact Hessian,
@@ -444,8 +523,11 @@ class PeriodicShooting:
     cl = np.zeros(self.m_rows)
     cu = np.zeros(self.m_rows)
     if self.speed_target is not None:
-      cl[-1] = self.speed_target / S_SPEED
-      cu[-1] = 1e19
+      cl[self.row_speed] = self.speed_target / S_SPEED
+      cu[self.row_speed] = 1e19
+    if self.n_lin:
+      cl[self.row_lin:] = self.lin_lo
+      cu[self.row_lin:] = self.lin_hi
     nlp = cyipopt.Problem(n=self.n, m=self.m_rows, problem_obj=self,
                           lb=lb, ub=ub, cl=cl, cu=cu)
     opts = dict(hessian_approximation='limited-memory' if hessian == 'lbfgs'
@@ -586,6 +668,11 @@ def main():
                  'solution (a trust region), stopping when the gain is '
                  'below --min_gain')
   p.add_argument('--min_gain', type=float, default=2e-4)
+  p.add_argument('--smooth_servo', action='store_true',
+                 help='optimize on the unsaturated servo law with the '
+                 'torque and voltage limits as constraints at the nodes '
+                 '(smooth_servos); validation stays on the real dcmotor')
+  p.add_argument('--limit_margin', type=float, default=0.0)
   p.add_argument('--prox', type=float, default=1.0)
   p.add_argument('--hessian', choices=('lbfgs', 'gn'), default='lbfgs',
                  help='IPOPT Hessian: limited-memory BFGS, or constrained '
@@ -597,10 +684,12 @@ def main():
   z_init = np.load(args.init)
   direction = z_init['direction']
   m = load_euler_model(args.dt)
+  servo = smooth_servos(m) if args.smooth_servo else None
 
   def make(**kw):
     return PeriodicShooting(m, args.nodes, args.substeps, direction,
-                            smooth=args.smooth, nthread=args.threads, **kw)
+                            smooth=args.smooth, nthread=args.threads,
+                            servo=servo, limit_margin=args.limit_margin, **kw)
 
   prob = make()
   print(f'stroke {prob.T:.3f} s (warm-start gait {gait["period"]:.4f} s, '
@@ -632,8 +721,11 @@ def main():
     zs, info = prob.solve(z, max_iter=args.max_iter, hessian=args.hessian)
     wall = time.time() - t0
     c = prob.constraints(zs)
-    eq = c[:-1] if prob.speed_target is not None else c
-    viol = float(np.abs(eq).max())
+    viol = float(np.abs(c[:prob.n_eq]).max())
+    if prob.n_lin:
+      lv = c[prob.row_lin:]
+      viol = max(viol, float(np.max(np.maximum(prob.lin_lo - lv,
+                                               lv - prob.lin_hi))))
     v = prob.speed(zs)
     ok = info['status'] in (0, 1) and viol < 1e-5
     row = dict(stage=stage, target=target, speed=v, max_defect=viol,
