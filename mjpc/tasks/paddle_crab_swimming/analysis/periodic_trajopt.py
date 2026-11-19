@@ -247,6 +247,7 @@ class PeriodicShooting:
     self.evals = 0
     self.fd_time = 0.0
     self.feas_tol = 1e-4
+    self._best_obj, self._best_z = np.inf, None
 
   # z layout
   def X(self, z):
@@ -337,12 +338,12 @@ class PeriodicShooting:
     X[:, self.nv:] = 0.1             # velocities: 1 rad/s counts as 0.1 rad
     return w
 
-  def objective(self, z):
+  def objective(self, z, E=None):
     P = self.P(z)
     dP = np.roll(P, -1, axis=0) - P
     f = self.smooth * float(np.sum(dP ** 2))
     if self.speed_target is None:
-      f -= self.speed(z) / S_SPEED
+      f -= self.speed(z, E) / S_SPEED
     if self.prox:
       f += self.prox * float(np.sum(self._prox_w() * (z - self.z_ref) ** 2))
     return f
@@ -378,7 +379,22 @@ class PeriodicShooting:
       out.append([self.speed(z, E) / S_SPEED])
     if self.n_lin:
       out.append(self.limit_values(z))
-    return np.concatenate(out)
+    out = np.concatenate(out)
+    # keep-best (as in shooting-for-contact): the feasible point with the
+    # lowest objective among those IPOPT evaluates, returned if it stops
+    # without converging (IPOPT 3.11 cannot hand back its iterate).
+    viol = float(np.abs(out[:self.n_eq]).max())
+    if self.n_lin:
+      lv = out[self.row_lin:]
+      viol = max(viol, float(np.max(np.maximum(self.lin_lo - lv,
+                                               lv - self.lin_hi))))
+    if self.speed_target is not None:
+      viol = max(viol, self.speed_target / S_SPEED - out[self.row_speed])
+    if viol < self.feas_tol:
+      f = self.objective(z, E)
+      if f < self._best_obj:
+        self._best_obj, self._best_z = f, z.copy()
+    return out
 
   def _build_limits(self, servo, margin):
     N, nx, nu, nv = self.N, self.nx, self.nu, self.nv
@@ -501,13 +517,6 @@ class PeriodicShooting:
   def intermediate(self, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
                    d_norm, regularization_size, alpha_du, alpha_pr,
                    ls_trials):
-    # keep-best (as in shooting-for-contact): the feasible iterate with the
-    # lowest objective, returned if IPOPT stops without converging.
-    if inf_pr < self.feas_tol and obj_value < self._best_obj:
-      it = self._nlp.get_current_iterate()
-      if it is not None and it.get('x') is not None:
-        self._best_obj = obj_value
-        self._best_z = np.array(it['x'], dtype=float, copy=True)
     if iter_count % 10 == 0:
       print(f'  iter {iter_count:4d} obj {obj_value:9.4f} inf_pr {inf_pr:.2e} '
             f'inf_du {inf_du:.2e} | {self.evals} FD passes, '
@@ -548,7 +557,6 @@ class PeriodicShooting:
     opts.update(options or {})
     for k, v in opts.items():
       nlp.add_option(k, v)
-    self._nlp = nlp
     self._best_obj, self._best_z = np.inf, None
     z, info = nlp.solve(z0)
     if info['status'] not in (0, 1) and self._best_z is not None:

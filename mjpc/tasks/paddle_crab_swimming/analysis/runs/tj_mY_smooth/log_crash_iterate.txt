@@ -1,0 +1,60 @@
+stroke 1.080 s (warm-start gait 1.0775 s, 0.1405 m/s), 7128 variables, 9071 constraints
+warm start: speed 0.1456 m/s, max defect 6.782e+00
+--- stage 0: speed target 0.1406
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3889
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0115 inf_pr 3.71e+00 inf_du 2.50e-02 | 2 FD passes, 5 s
+  iter   10 obj    0.2405 inf_pr 1.06e-02 inf_du 5.68e-03 | 12 FD passes, 29 s
+
+Number of Iterations....: 21
+
+                                   (scaled)                 (unscaled)
+Objective...............:   2.3906633426422913e-01    2.3906633426422913e-01
+Dual infeasibility......:   1.4932755547506203e-03    1.4932755547506203e-03
+Constraint violation....:   5.8194364000691001e-04    5.8194364000691001e-04
+Complementarity.........:   5.7866436010288731e-11    5.7866436010288731e-11
+Overall NLP error.......:   1.4932755547506203e-03    1.4932755547506203e-03
+
+
+Number of objective function evaluations             = 23
+Number of objective gradient evaluations             = 22
+Number of equality constraint evaluations            = 23
+Number of inequality constraint evaluations          = 23
+Number of equality constraint Jacobian evaluations   = 22
+Number of inequality constraint Jacobian evaluations = 22
+Number of Lagrangian Hessian evaluations             = 21
+Total CPU secs in IPOPT (w/o function evaluations)   =     15.343
+Total CPU secs in NLP function evaluations           =    203.075
+
+EXIT: Stopping optimization at current point as requested by user.
+Traceback (most recent call last):
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/periodic_trajopt.py", line 793, in <module>
+    main()
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/periodic_trajopt.py", line 744, in main
+    zs, info = prob.solve(z, max_iter=args.max_iter, hessian=args.hessian)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/periodic_trajopt.py", line 553, in solve
+    z, info = nlp.solve(z0)
+              ^^^^^^^^^^^^^
+  File "cyipopt/cython/ipopt_wrapper.pyx", line 735, in cyipopt.ipopt_wrapper.Problem.solve
+  File "cyipopt/cython/ipopt_wrapper.pyx", line 1339, in cyipopt.ipopt_wrapper.intermediate_cb
+  File "/home/user/mujoco_mpc_cyphilab/mjpc/tasks/paddle_crab_swimming/analysis/periodic_trajopt.py", line 507, in intermediate
+    it = self._nlp.get_current_iterate()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "cyipopt/cython/ipopt_wrapper.pyx", line 778, in cyipopt.ipopt_wrapper.Problem.get_current_iterate
+RuntimeError: get_current_iterate only supports Ipopt version >=3.14.0 CyIpopt is compiled with version 3.11.9
