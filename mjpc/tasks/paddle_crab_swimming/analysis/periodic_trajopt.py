@@ -673,6 +673,11 @@ def main():
                  'torque and voltage limits as constraints at the nodes '
                  '(smooth_servos); validation stays on the real dcmotor')
   p.add_argument('--limit_margin', type=float, default=0.0)
+  p.add_argument('--prox0', type=float, default=None,
+                 help='pull in stage 0 (default --prox). Keep it small when '
+                 'the warm start is far from feasible: the Gauss-Newton '
+                 'Hessian leaves out the constraint curvature, which is '
+                 'scaled by multipliers that grow with the pull')
   p.add_argument('--prox', type=float, default=1.0)
   p.add_argument('--hessian', choices=('lbfgs', 'gn'), default='lbfgs',
                  help='IPOPT Hessian: limited-memory BFGS, or constrained '
@@ -714,8 +719,9 @@ def main():
   z = z0
   best = None
   for stage, target in enumerate(stages):
+    pull = args.prox if stage or args.prox0 is None else args.prox0
     prob = make(speed_target=None if target in (None, 'max') else target,
-                prox=0.0 if target is None else args.prox, z_ref=z.copy())
+                prox=0.0 if target is None else pull, z_ref=z.copy())
     t0 = time.time()
     print(f'--- stage {stage}: speed target {target}', flush=True)
     zs, info = prob.solve(z, max_iter=args.max_iter, hessian=args.hessian)

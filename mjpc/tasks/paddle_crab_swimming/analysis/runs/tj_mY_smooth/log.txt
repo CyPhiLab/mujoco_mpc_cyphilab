@@ -18,4 +18,4 @@ Total number of inequality constraints...............:     3889
    inequality constraints with lower and upper bounds:     3888
         inequality constraints with only upper bounds:        0
 
-  iter    0 obj    0.0133 inf_pr 3.71e+00 inf_du 2.55e-02 | 2 FD passes, 5 s
+  iter    0 obj    0.0115 inf_pr 3.71e+00 inf_du 2.50e-02 | 2 FD passes, 5 s
