@@ -793,3 +793,17 @@ no `get_current_iterate`, hence the keep-best at constraint evaluations.
 Earlier attempts are kept in `runs/tj_mY*` (logs show each failure mode).
 The run stopped when stage 11 traded speed for smoothness; `--prox 0.1`, a
 free stroke period, and the other directions are the next things to try.
+
+**Energy** (`render_trajopt.py`, real v2 model at 1 ms, steady strokes;
+electrical energy V I with V = 12 u and I = (V - K qd) / R, positive part,
+no regeneration):
+
+| gait | speed | electrical power | energy per metre | CoT | at voltage limit |
+|---|---|---|---|---|---|
+| Fourier ladder (`v2_mY` step6) | 0.1405 m/s | 2.6 W | 18 J/m | 0.21 | 16% |
+| trajopt (`best_stage10`) | 0.1567 m/s | 3.5 W | 22 J/m | 0.25 | 25% |
+
+The trajopt objective is speed only (plus command smoothness), so it buys
+the 12% speed with 35% more power: 22% more energy per metre. An energy
+term, or minimum energy at a fixed speed, is not tried yet.
+`runs/tj_mY_compare/compare.mp4` shows the two side by side.

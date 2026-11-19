@@ -155,11 +155,19 @@ def _base_velocity_map(m_eul, d, qpos):
   return G6
 
 
+def _plate_pos(m_eul):
+  plate = mujoco.mj_name2id(m_eul, mujoco.mjtObj.mjOBJ_BODY, 'plate')
+  return m_eul.body_pos[plate].copy()
+
+
 def free_to_euler(m_eul, qpos_free, qvel_free):
   """Free-joint (qpos 25, qvel 24) -> Euler-base state x (48)."""
   d = mujoco.MjData(m_eul)
   R = C.quat_to_mat(np.asarray(qpos_free[3:7]))
-  q = np.concatenate([qpos_free[:3], euler_from_mat(R), qpos_free[7:]])
+  # slide joints measure from the plate's body position; a free joint's
+  # position is absolute
+  q = np.concatenate([qpos_free[:3] - _plate_pos(m_eul), euler_from_mat(R),
+                      qpos_free[7:]])
   # free qvel: world linear velocity of the body origin, body-frame angular
   target = np.concatenate([R @ qvel_free[3:6], qvel_free[:3]])
   G6 = _base_velocity_map(m_eul, d, q)
@@ -179,7 +187,7 @@ def euler_to_free(m_eul, x):
   R = d.xmat[plate].reshape(3, 3).copy()
   G6 = _base_velocity_map(m_eul, d, q)
   w = G6 @ v[:6]
-  qpos = np.concatenate([q[:3], quat, q[6:]])
+  qpos = np.concatenate([q[:3] + _plate_pos(m_eul), quat, q[6:]])
   qvel = np.concatenate([w[3:], R.T @ w[:3], v[6:]])
   return qpos, qvel
 
