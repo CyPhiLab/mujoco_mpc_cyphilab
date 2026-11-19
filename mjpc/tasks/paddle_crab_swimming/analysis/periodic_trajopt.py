@@ -591,7 +591,8 @@ class PeriodicShooting:
 
 # ----- Feasibility by Levenberg-Marquardt ----- #
 
-def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3):
+def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3, speed_w=0.0,
+                   quiet=False):
   """Least squares on the equality constraints (continuity, periodicity,
   straightness) and the servo-limit violations, with the command and tilt
   bounds kept by projection and the start position fixed (gauge). Each
@@ -604,6 +605,10 @@ def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3):
   free = np.ones(prob.n, bool)
   free[0:3] = False
 
+  # With speed_w (and prob.speed_target) the speed shortfall below the
+  # target is one more residual: speed_w (target - speed) / S_SPEED.
+  climb = speed_w > 0 and prob.speed_target is not None
+
   def residual(zz, c=None):
     c = prob.constraints(zz) if c is None else c
     r = [c[:prob.n_eq]]
@@ -611,26 +616,40 @@ def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3):
       lv = c[prob.row_lin:]
       r.append(np.minimum(lv - prob.lin_lo, 0) + np.maximum(lv - prob.lin_hi,
                                                             0))
+    if climb:
+      r.append([speed_w * max(prob.speed_target / S_SPEED
+                              - c[prob.row_speed], 0.0)])
     return np.concatenate(r)
+
+  def feas(rr):
+    return float(np.abs(rr[:len(rr) - 1] if climb else rr).max())
 
   rows, cols = prob.jacobianstructure()
   keep_rows = prob.n_eq + prob.n_lin
   t0 = time.time()
   r = residual(z)
   for it in range(iters):
-    worst = float(np.abs(r).max())
-    print(f'  LM {it:3d} max residual {worst:.2e} |r| {np.linalg.norm(r):.3e}'
-          f' mu {mu:.1e} ({time.time() - t0:.0f} s)', flush=True)
-    if worst < tol:
+    worst = feas(r)
+    if not quiet:
+      print(f'  LM {it:3d} max residual {worst:.2e} |r| '
+            f'{np.linalg.norm(r):.3e} mu {mu:.1e} speed {prob.speed(z):.4f} '
+            f'({time.time() - t0:.0f} s)', flush=True)
+    if worst < tol and not climb:
       break
     vals = prob.jacobian(z)
     J = sp.csr_matrix((vals, (rows, cols)), shape=(prob.m_rows, prob.n))
     idx = np.r_[np.arange(prob.n_eq), prob.row_lin + np.arange(prob.n_lin)] \
         if prob.n_lin else np.arange(prob.n_eq)
+    if climb:
+      idx = np.r_[idx, prob.row_speed]
     J = J[idx]
+    scale = np.ones(len(idx))
     if prob.n_lin:
-      active = np.r_[np.ones(prob.n_eq, bool), r[prob.n_eq:] != 0]
-      J = sp.diags(active.astype(float)) @ J
+      scale[prob.n_eq:prob.n_eq + prob.n_lin] = (
+          r[prob.n_eq:prob.n_eq + prob.n_lin] != 0)
+    if climb:
+      scale[-1] = -speed_w if r[-1] > 0 else 0.0
+    J = sp.diags(scale) @ J
     J = J[:, free]
     JtJ = (J.T @ J).tocsc()
     g = J.T @ r
@@ -651,7 +670,50 @@ def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3):
     if not improved:
       print('  LM: no improving step', flush=True)
       break
-  return z, float(np.abs(r).max())
+  return z, feas(r)
+
+
+def climb_lm(make, z, args, out_dir, direction, t_start):
+  """Speed ladder by Levenberg-Marquardt: each rung asks for the best speed
+  plus a step as a penalty residual (lm_iters iterations), then closes the
+  constraints (lm_feas iterations without the speed residual). A rung is
+  kept if the constraints are below feas_climb and it is faster; a missed
+  rung halves the step."""
+  prob = make(speed_target=None, prox=0.0)
+  best_v, step = prob.speed(z), args.lm_step
+  history = []
+  rung = 0
+  while step >= args.lm_step_min and rung < args.lm_rungs:
+    target = best_v + step
+    t0 = time.time()
+    pc = make(speed_target=target, prox=0.0)
+    zc, _ = feasibility_lm(pc, z, iters=args.lm_iters, speed_w=args.lm_w,
+                           quiet=True)
+    pf = make(speed_target=None, prox=0.0)
+    zc, worst = feasibility_lm(pf, zc, iters=args.lm_feas, quiet=True)
+    v = pf.speed(zc)
+    ok = worst < args.feas_climb and v > best_v
+    row = dict(rung=rung, target=target, speed=v, max_residual=worst,
+               ok=bool(ok), wall_s=time.time() - t0,
+               elapsed_s=time.time() - t_start)
+    history.append(row)
+    print(f'rung {rung}: target {target:.4f} -> speed {v:.4f} m/s, max '
+          f'residual {worst:.1e}, {"kept" if ok else "missed"} in '
+          f'{row["wall_s"]:.0f} s ({row["elapsed_s"]:.0f} s total)',
+          flush=True)
+    if ok:
+      z, best_v = zc, v
+      np.savez(os.path.join(out_dir, f'rung{rung}_v{v:.4f}.npz'),
+               X=pf.X(z), P=pf.P(z), z=z, nodes=args.nodes,
+               substeps=args.substeps, dt=args.dt, period=pf.T,
+               direction=direction, speed=v, robot='v2', max_residual=worst)
+      step = min(step * 1.5, args.lm_step_max)
+    else:
+      step *= 0.5
+    with open(os.path.join(out_dir, 'history_lm.json'), 'w') as f:
+      json.dump(history, f, indent=1)
+    rung += 1
+  return z, best_v
 
 
 # ----- Warm start and validation ----- #
@@ -853,6 +915,14 @@ def main():
                  help='with --start_ref / --start_sine: a kinematic warm '
                  'start (level body, joints on the stroke) instead of a '
                  'simulated one')
+  p.add_argument('--climb', choices=('ipopt', 'lm'), default='ipopt')
+  p.add_argument('--lm_step', type=float, default=0.01)
+  p.add_argument('--lm_step_min', type=float, default=0.0005)
+  p.add_argument('--lm_step_max', type=float, default=0.03)
+  p.add_argument('--lm_iters', type=int, default=6)
+  p.add_argument('--lm_feas', type=int, default=4)
+  p.add_argument('--lm_w', type=float, default=0.1)
+  p.add_argument('--lm_rungs', type=int, default=200)
   p.add_argument('--lm0', type=int, default=0,
                  help='replace the feasibility stage by this many '
                  'Levenberg-Marquardt iterations on the constraints')
@@ -959,6 +1029,17 @@ def main():
         f'{np.abs(prob.constraints(z0)).max():.3e}', flush=True)
   history = []
   t_start = time.time()
+  if args.climb == 'lm':
+    z_best, v_best = climb_lm(make, z0, args, args.out, direction, t_start)
+    print(f'LM climb: {v_best:.4f} m/s in {time.time() - t_start:.0f} s; '
+          f'validating', flush=True)
+    prob = make()
+    out = dict(climb='lm', warm_speed=v0, best_speed=v_best,
+               total_wall_s=time.time() - t_start,
+               validate=validate(z_best, prob, args, direction, m))
+    with open(os.path.join(args.out, 'summary.json'), 'w') as f:
+      json.dump(out, f, indent=1)
+    return
   if args.maximize:
     stages = [None]
   elif args.prox_max:

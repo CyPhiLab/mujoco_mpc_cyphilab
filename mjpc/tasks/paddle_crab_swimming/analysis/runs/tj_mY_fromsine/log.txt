@@ -1,2 +1,2 @@
 stroke 1.080 s, 7128 variables, 9071 constraints
-  LM   0 max residual 2.31e-01 |r| 2.722e+00 mu 1.0e-03 (0 s)
+warm start: speed -0.0359 m/s, max defect 3.100e+00
