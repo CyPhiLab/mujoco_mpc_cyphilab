@@ -38,5 +38,15 @@
   "wall_s": 47.860373735427856,
   "fd_passes": 17,
   "ok": true
+ },
+ {
+  "stage": 4,
+  "target": "max",
+  "speed": 0.14280219198805646,
+  "max_defect": 1.640484144083132e-07,
+  "status": "Algorithm stopped at a point that was converged, not to \"desired\" tolerances, but to \"acceptable\" tolerances (see the acceptable-... options).",
+  "wall_s": 52.02950882911682,
+  "fd_passes": 19,
+  "ok": true
  }
 ]
