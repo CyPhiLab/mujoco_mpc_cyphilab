@@ -8,3 +8,78 @@ This program contains Ipopt, a library for large-scale nonlinear optimization.
          For more information visit http://projects.coin-or.org/Ipopt
 ******************************************************************************
 
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.5576 inf_pr 1.12e-05 inf_du 9.40e-03 | 1 FD passes, 2 s
+  iter   10 obj  -14.6283 inf_pr 1.46e-03 inf_du 9.37e-02 | 11 FD passes, 25 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4627376795601498e+01   -1.4627376795601498e+01
+Dual infeasibility......:   9.6732303265486819e-02    9.6732303265486819e-02
+Constraint violation....:   1.3021584141486020e-03    1.3021584141486020e-03
+Complementarity.........:   1.8726863488857632e-07    1.8726863488857632e-07
+Overall NLP error.......:   9.6732303265486819e-02    9.6732303265486819e-02
+
+
+Number of objective function evaluations             = 13
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 13
+Number of inequality constraint evaluations          = 13
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     12.647
+Total CPU secs in NLP function evaluations           =    108.971
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj -0.1458)
+stage 0: kept best feasible iterate in 35 s, 13 FD passes; speed 0.1458 m/s, max defect 1.08e-05 (35 s total)
+--- stage 1: speed target max, pull 0.21, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.5724 inf_pr 1.08e-05 inf_du 9.38e-03 | 1 FD passes, 3 s
+  iter   10 obj  -13.8918 inf_pr 5.05e-04 inf_du 5.44e-02 | 11 FD passes, 26 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.3892628157129584e+01   -1.3892628157129584e+01
+Dual infeasibility......:   5.9898727542409450e-02    5.9898727542409450e-02
+Constraint violation....:   1.5999544065774529e-03    1.5999544065774529e-03
+Complementarity.........:   2.3532406120917201e-03    2.3532406120917201e-03
+Overall NLP error.......:   5.9898727542409450e-02    5.9898727542409450e-02
+
+
+Number of objective function evaluations             = 13
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 13
+Number of inequality constraint evaluations          = 13
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     13.276
+Total CPU secs in NLP function evaluations           =    111.277
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj -0.1458)
+stage 1: kept best feasible iterate in 36 s, 13 FD passes; speed 0.1458 m/s, max defect 1.08e-05 (71 s total)
+stage failed or slower; retrying with pull 0.63
+--- stage 2: speed target max, pull 0.63, cap 12

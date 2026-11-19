@@ -206,7 +206,7 @@ class PeriodicShooting:
 
   def __init__(self, m, nodes, substeps, direction, smooth=1e-2,
                nthread=4, eps=1e-6, speed_target=None, prox=0.0,
-               z_ref=None, servo=None, limit_margin=0.0):
+               z_ref=None, servo=None, limit_margin=0.0, feas_tol=1e-4):
     self.m = m
     self.N, self.K = nodes, substeps
     self.dt = m.opt.timestep
@@ -254,7 +254,7 @@ class PeriodicShooting:
     self._cache_fd = None
     self.evals = 0
     self.fd_time = 0.0
-    self.feas_tol = 1e-4
+    self.feas_tol = feas_tol
     self._best_obj, self._best_z = np.inf, None
 
   # z layout
@@ -715,6 +715,12 @@ def main():
                  'x3 and retry after a failed or slower one')
   p.add_argument('--prox_min', type=float, default=0.03)
   p.add_argument('--max_failures', type=int, default=3)
+  p.add_argument('--feas_climb', type=float, default=1e-4,
+                 help='defect / limit tolerance accepted while climbing '
+                 '(the next stage re-closes it); a final polish stage '
+                 '(--polish_prox, --polish_iter) brings it to 1e-5')
+  p.add_argument('--polish_prox', type=float, default=3.0)
+  p.add_argument('--polish_iter', type=int, default=0)
   p.add_argument('--smooth_servo', action='store_true',
                  help='optimize on the unsaturated servo law with the '
                  'torque and voltage limits as constraints at the nodes '
@@ -782,7 +788,8 @@ def main():
     first = stage == 0 and not args.resume and target != 'max'
     stage_pull = args.prox0 if first and args.prox0 is not None else pull
     prob = make(speed_target=None if target in (None, 'max') else target,
-                prox=0.0 if target is None else stage_pull, z_ref=z.copy())
+                prox=0.0 if target is None else stage_pull, z_ref=z.copy(),
+                feas_tol=args.feas_climb if target == 'max' else 1e-4)
     t0 = time.time()
     cap = args.max_iter0 if first else args.max_iter
     print(f'--- stage {stage}: speed target {target}, pull {stage_pull:.3g},'
@@ -796,7 +803,7 @@ def main():
       viol = max(viol, float(np.max(np.maximum(prob.lin_lo - lv,
                                                lv - prob.lin_hi))))
     v = prob.speed(zs)
-    ok = info['status'] in (0, 1) and viol < 1e-4
+    ok = info['status'] in (0, 1) and viol < prob.feas_tol
     gain = v - (best['speed'] if best else -np.inf)
     row = dict(stage=stage, target=target, speed=v, max_defect=viol,
                status=info['status_msg'].decode(), wall_s=wall,
@@ -831,6 +838,38 @@ def main():
       break
     if args.adapt and target == 'max':
       pull = max(pull * 0.7, args.prox_min)
+  if best is not None and args.polish_iter:
+    # Polish: close the defects and limits tightly at the best solution
+    # (strong pull to it, speed still maximized).
+    prob = make(speed_target=None, prox=args.polish_prox,
+                z_ref=best['z'].copy(), feas_tol=1e-5)
+    t0 = time.time()
+    print(f'--- polish: pull {args.polish_prox}, cap {args.polish_iter}',
+          flush=True)
+    zs, info = prob.solve(best['z'], max_iter=args.polish_iter,
+                          hessian=args.hessian)
+    c = prob.constraints(zs)
+    viol = float(np.abs(c[:prob.n_eq]).max())
+    if prob.n_lin:
+      lv = c[prob.row_lin:]
+      viol = max(viol, float(np.max(np.maximum(prob.lin_lo - lv,
+                                               lv - prob.lin_hi))))
+    v = prob.speed(zs)
+    row = dict(stage='polish', speed=v, max_defect=viol,
+               status=info['status_msg'].decode(), wall_s=time.time() - t0,
+               fd_passes=prob.evals, elapsed_s=time.time() - t_start_loop)
+    history.append(row)
+    print(f'polish: {row["status"]} in {row["wall_s"]:.0f} s; speed '
+          f'{v:.4f} m/s, max defect {viol:.2e} ({row["elapsed_s"]:.0f} s '
+          f'total)', flush=True)
+    if viol < 1e-5:
+      best = dict(z=zs, speed=v, stage='polish')
+      np.savez(os.path.join(args.out, f'polish_v{v:.4f}.npz'),
+               X=prob.X(zs), P=prob.P(zs), z=zs, nodes=args.nodes,
+               substeps=args.substeps, dt=args.dt, period=prob.T,
+               direction=direction, init=args.init, speed=v, robot='v2')
+    with open(os.path.join(args.out, 'history.json'), 'w') as f:
+      json.dump(history, f, indent=1)
   out = dict(warm_speed=v0, history=history,
              total_wall_s=time.time() - t_start)
   if best is not None:

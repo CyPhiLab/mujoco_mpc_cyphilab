@@ -1,0 +1,26 @@
+[
+ {
+  "stage": 0,
+  "target": "max",
+  "speed": 0.1458369411217283,
+  "max_defect": 1.0808710580012537e-05,
+  "status": "kept best feasible iterate",
+  "wall_s": 35.192612171173096,
+  "fd_passes": 13,
+  "ok": true,
+  "pull": 0.3,
+  "elapsed_s": 35.27743673324585
+ },
+ {
+  "stage": 1,
+  "target": "max",
+  "speed": 0.1458369411217283,
+  "max_defect": 1.0808710580012537e-05,
+  "status": "kept best feasible iterate",
+  "wall_s": 36.10745358467102,
+  "fd_passes": 13,
+  "ok": true,
+  "pull": 0.21,
+  "elapsed_s": 71.47832894325256
+ }
+]
