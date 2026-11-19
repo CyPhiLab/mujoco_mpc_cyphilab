@@ -399,7 +399,10 @@ class PeriodicShooting:
     if self.speed_target is not None:
       viol = max(viol, self.speed_target / S_SPEED - out[self.row_speed])
     if viol < self.feas_tol:
-      f = self.objective(z, E)
+      # speed stages keep the fastest feasible point (the objective also
+      # holds the smoothness and pull terms, which can favour a slower one)
+      f = (-self.speed(z, E) if self.speed_target is None and self.prox
+           else self.objective(z, E))
       if f < self._best_obj:
         self._best_obj, self._best_z = f, z.copy()
     return out
@@ -558,6 +561,9 @@ class PeriodicShooting:
     opts = dict(hessian_approximation='limited-memory' if hessian == 'lbfgs'
                 else 'exact', max_iter=max_iter,
                 acceptable_constr_viol_tol=1e-4, acceptable_iter=5,
+                # keep the (feasible) start where it is: the default push of
+                # 1e-2 off the command bounds made it infeasible
+                bound_push=1e-8, bound_frac=1e-8,
                 acceptable_dual_inf_tol=1e-2,
                 tol=tol, constr_viol_tol=1e-7, acceptable_tol=1e-4,
                 print_level=3, mu_strategy='adaptive',
@@ -566,6 +572,7 @@ class PeriodicShooting:
     for k, v in opts.items():
       nlp.add_option(k, v)
     self._best_obj, self._best_z = np.inf, None
+    self.constraints(z0)        # the start is a keep-best candidate too
     z, info = nlp.solve(z0)
     if info['status'] not in (0, 1) and self._best_z is not None:
       print(f'  IPOPT did not converge; returning the best feasible iterate '

@@ -1,1 +1,249 @@
 stroke 1.080 s (warm-start gait 1.0775 s, 0.1405 m/s), 7128 variables, 9071 constraints
+warm start: speed 0.1456 m/s, max defect 6.782e+00
+--- stage 0: speed target 0.1406, pull 0.01, cap 60
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3889
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0115 inf_pr 3.71e+00 inf_du 2.50e-02 | 2 FD passes, 5 s
+  iter   10 obj    0.2404 inf_pr 2.08e-03 inf_du 6.86e-03 | 12 FD passes, 30 s
+  iter   20 obj    0.2391 inf_pr 1.05e-04 inf_du 1.78e-03 | 22 FD passes, 54 s
+  iter   30 obj    0.2391 inf_pr 4.75e-04 inf_du 2.47e-03 | 32 FD passes, 79 s
+  iter   40 obj    0.2391 inf_pr 9.56e-05 inf_du 1.67e-03 | 42 FD passes, 104 s
+  iter   50 obj    0.2391 inf_pr 1.77e-04 inf_du 2.41e-03 | 52 FD passes, 128 s
+  iter   60 obj    0.2391 inf_pr 3.34e-04 inf_du 3.69e-03 | 62 FD passes, 151 s
+
+Number of Iterations....: 60
+
+                                   (scaled)                 (unscaled)
+Objective...............:   2.3911842530473079e-01    2.3911842530473079e-01
+Dual infeasibility......:   3.6901267983477852e-03    3.6901267983477852e-03
+Constraint violation....:   3.3417392829471204e-04    3.3417392829471204e-04
+Complementarity.........:   1.0000416599480762e-11    1.0000416599480762e-11
+Overall NLP error.......:   3.6901267983477852e-03    3.6901267983477852e-03
+
+
+Number of objective function evaluations             = 68
+Number of objective gradient evaluations             = 61
+Number of equality constraint evaluations            = 68
+Number of inequality constraint evaluations          = 68
+Number of equality constraint Jacobian evaluations   = 61
+Number of inequality constraint Jacobian evaluations = 61
+Number of Lagrangian Hessian evaluations             = 60
+Total CPU secs in IPOPT (w/o function evaluations)   =     27.934
+Total CPU secs in NLP function evaluations           =    576.460
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj 0.2391)
+stage 0: kept best feasible iterate in 175 s, 62 FD passes; speed 0.1406 m/s, max defect 3.95e-05 (175 s total)
+--- stage 1: speed target max, pull 0.3, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.0494 inf_pr 1.57e-01 inf_du 9.66e-03 | 2 FD passes, 5 s
+  iter   10 obj  -14.1468 inf_pr 2.33e-04 inf_du 5.58e-02 | 12 FD passes, 28 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4147453261508394e+01   -1.4147453261508394e+01
+Dual infeasibility......:   7.6396359842646297e-02    7.6396359842646297e-02
+Constraint violation....:   1.7831035758970604e-03    1.7831035758970604e-03
+Complementarity.........:   1.2490119541820495e-08    1.2490119541820495e-08
+Overall NLP error.......:   7.6396359842646297e-02    7.6396359842646297e-02
+
+
+Number of objective function evaluations             = 13
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 13
+Number of inequality constraint evaluations          = 13
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     12.874
+Total CPU secs in NLP function evaluations           =    120.034
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj -14.1467)
+stage 1: kept best feasible iterate in 38 s, 14 FD passes; speed 0.1425 m/s, max defect 7.47e-05 (214 s total)
+--- stage 2: speed target max, pull 0.21, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.2368 inf_pr 1.66e-01 inf_du 9.71e-03 | 2 FD passes, 5 s
+  iter   10 obj  -14.3489 inf_pr 1.86e-05 inf_du 9.59e-02 | 12 FD passes, 29 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4344779150155397e+01   -1.4344779150155397e+01
+Dual infeasibility......:   1.2746325179787879e-01    1.2746325179787879e-01
+Constraint violation....:   6.8791110884203199e-05    6.8791110884203199e-05
+Complementarity.........:   1.0710428617603032e-07    1.0710428617603032e-07
+Overall NLP error.......:   1.2746325179787879e-01    1.2746325179787879e-01
+
+
+Number of objective function evaluations             = 15
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 15
+Number of inequality constraint evaluations          = 15
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     13.219
+Total CPU secs in NLP function evaluations           =    120.305
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj -14.3489)
+stage 2: kept best feasible iterate in 39 s, 14 FD passes; speed 0.1447 m/s, max defect 1.86e-05 (253 s total)
+--- stage 3: speed target max, pull 0.147, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.4575 inf_pr 1.66e-01 inf_du 9.58e-03 | 2 FD passes, 5 s
+  iter   10 obj  -14.6034 inf_pr 9.86e-04 inf_du 8.11e-02 | 12 FD passes, 28 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4605616387246885e+01   -1.4605616387246885e+01
+Dual infeasibility......:   9.7847611385293867e-02    9.7847611385293867e-02
+Constraint violation....:   5.9811955740745326e-03    5.9811955740745326e-03
+Complementarity.........:   2.9083984105619135e-08    2.9083984105619135e-08
+Overall NLP error.......:   9.7847611385293867e-02    9.7847611385293867e-02
+
+
+Number of objective function evaluations             = 13
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 13
+Number of inequality constraint evaluations          = 13
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     12.484
+Total CPU secs in NLP function evaluations           =    119.522
+
+EXIT: Maximum Number of Iterations Exceeded.
+stage 3: Maximum number of iterations exceeded (can be specified by an option). in 38 s, 14 FD passes; speed 0.1476 m/s, max defect 5.98e-03 (291 s total)
+stage failed or slower; retrying with pull 0.441
+--- stage 4: speed target max, pull 0.441, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.4573 inf_pr 1.66e-01 inf_du 9.59e-03 | 2 FD passes, 5 s
+  iter   10 obj  -14.5079 inf_pr 2.06e-04 inf_du 4.90e-02 | 12 FD passes, 28 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4508485143004227e+01   -1.4508485143004227e+01
+Dual infeasibility......:   6.3042261762740540e-02    6.3042261762740540e-02
+Constraint violation....:   9.8637495607818704e-04    9.8637495607818704e-04
+Complementarity.........:   1.3315295046636762e-09    1.3315295046636762e-09
+Overall NLP error.......:   6.3042261762740540e-02    6.3042261762740540e-02
+
+
+Number of objective function evaluations             = 14
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 14
+Number of inequality constraint evaluations          = 14
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     13.030
+Total CPU secs in NLP function evaluations           =    120.626
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj -14.5067)
+stage 4: kept best feasible iterate in 38 s, 14 FD passes; speed 0.1457 m/s, max defect 1.12e-05 (330 s total)
+--- stage 5: speed target max, pull 0.309, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.5574 inf_pr 1.66e-01 inf_du 9.44e-03 | 2 FD passes, 5 s
+  iter   10 obj  -14.6258 inf_pr 1.41e-03 inf_du 1.32e-01 | 12 FD passes, 28 s
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4625801264000227e+01   -1.4625801264000227e+01
+Dual infeasibility......:   9.3196376595251068e-02    9.3196376595251068e-02
+Constraint violation....:   1.3574042016053500e-03    1.3574042016053500e-03
+Complementarity.........:   5.9080961143358006e-08    5.9080961143358006e-08
+Overall NLP error.......:   9.3196376595251068e-02    9.3196376595251068e-02
+
+
+Number of objective function evaluations             = 13
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 13
+Number of inequality constraint evaluations          = 13
+Number of equality constraint Jacobian evaluations   = 13
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 12
+Total CPU secs in IPOPT (w/o function evaluations)   =     12.281
+Total CPU secs in NLP function evaluations           =    118.889
+
+EXIT: Maximum Number of Iterations Exceeded.
+  IPOPT did not converge; returning the best feasible iterate (obj -13.9960)
+stage 5: kept best feasible iterate in 38 s, 14 FD passes; speed 0.1426 m/s, max defect 7.91e-05 (367 s total)
+stage failed or slower; retrying with pull 0.926
+--- stage 6: speed target max, pull 0.926, cap 12
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3888
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.5570 inf_pr 1.66e-01 inf_du 9.46e-03 | 2 FD passes, 5 s
