@@ -701,6 +701,13 @@ def main():
                  'solution (a trust region), stopping when the gain is '
                  'below --min_gain')
   p.add_argument('--min_gain', type=float, default=2e-4)
+  p.add_argument('--max_iter0', type=int, default=60,
+                 help='iteration cap of the feasibility stage (stage 0)')
+  p.add_argument('--adapt', action='store_true',
+                 help='adaptive pull: x0.7 after a successful speed stage, '
+                 'x3 and retry after a failed or slower one')
+  p.add_argument('--prox_min', type=float, default=0.03)
+  p.add_argument('--max_failures', type=int, default=3)
   p.add_argument('--smooth_servo', action='store_true',
                  help='optimize on the unsaturated servo law with the '
                  'torque and voltage limits as constraints at the nodes '
@@ -761,14 +768,19 @@ def main():
         round(v0 + k * args.step, 4) for k in range(1, 40)]
   z = z0
   best = None
+  pull = args.prox
+  failures = 0
+  t_start_loop = time.time()
   for stage, target in enumerate(stages):
-    pull = (args.prox if stage or args.prox0 is None or args.resume
-            else args.prox0)
+    first = stage == 0 and not args.resume and target != 'max'
+    stage_pull = args.prox0 if first and args.prox0 is not None else pull
     prob = make(speed_target=None if target in (None, 'max') else target,
-                prox=0.0 if target is None else pull, z_ref=z.copy())
+                prox=0.0 if target is None else stage_pull, z_ref=z.copy())
     t0 = time.time()
-    print(f'--- stage {stage}: speed target {target}', flush=True)
-    zs, info = prob.solve(z, max_iter=args.max_iter, hessian=args.hessian)
+    cap = args.max_iter0 if first else args.max_iter
+    print(f'--- stage {stage}: speed target {target}, pull {stage_pull:.3g},'
+          f' cap {cap}', flush=True)
+    zs, info = prob.solve(z, max_iter=cap, hessian=args.hessian)
     wall = time.time() - t0
     c = prob.constraints(zs)
     viol = float(np.abs(c[:prob.n_eq]).max())
@@ -778,31 +790,40 @@ def main():
                                                lv - prob.lin_hi))))
     v = prob.speed(zs)
     ok = info['status'] in (0, 1) and viol < 1e-4
+    gain = v - (best['speed'] if best else -np.inf)
     row = dict(stage=stage, target=target, speed=v, max_defect=viol,
                status=info['status_msg'].decode(), wall_s=wall,
-               fd_passes=prob.evals, ok=ok)
+               fd_passes=prob.evals, ok=ok, pull=stage_pull,
+               elapsed_s=time.time() - t_start_loop)
     history.append(row)
     print(f'stage {stage}: {row["status"]} in {wall:.0f} s, '
           f'{prob.evals} FD passes; speed {v:.4f} m/s, max defect '
-          f'{viol:.2e}', flush=True)
-    if not ok:
-      print('stage failed; keeping the last good solution', flush=True)
-      break
-    gain = v - (best['speed'] if best else -np.inf)
-    if gain > 0 or best is None:
-      best = dict(z=zs, speed=v, stage=stage)
-    # a stage that swims slower (the smoothness term traded speed away)
-    # does not move the reference: the next stage starts from the best
-    z = best['z']
+          f'{viol:.2e} ({row["elapsed_s"]:.0f} s total)', flush=True)
+    with open(os.path.join(args.out, 'history.json'), 'w') as f:
+      json.dump(history, f, indent=1)
+    if not ok or (target == 'max' and gain <= 0):
+      # Adaptive pull: a failed or slower stage is retried from the best
+      # solution with a stronger pull (smaller step).
+      failures += 1
+      if first or not args.adapt or failures > args.max_failures:
+        print('stage failed; stopping with the best solution', flush=True)
+        break
+      pull *= 3.0
+      print(f'stage failed or slower; retrying with pull {pull:.3g}',
+            flush=True)
+      continue
+    failures = 0
+    best = dict(z=zs, speed=v, stage=stage)
+    z = zs
     np.savez(os.path.join(args.out, f'stage{stage}_v{v:.4f}.npz'),
              X=prob.X(zs), P=prob.P(zs), z=zs, nodes=args.nodes,
              substeps=args.substeps, dt=args.dt, period=prob.T,
              direction=direction, init=args.init, speed=v, robot='v2')
-    with open(os.path.join(args.out, 'history.json'), 'w') as f:
-      json.dump(history, f, indent=1)
     if target == 'max' and gain < args.min_gain:
       print(f'gain {gain:.5f} m/s below {args.min_gain}; done', flush=True)
       break
+    if args.adapt and target == 'max':
+      pull = max(pull * 0.7, args.prox_min)
   out = dict(warm_speed=v0, history=history,
              total_wall_s=time.time() - t_start)
   if best is not None:
