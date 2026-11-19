@@ -19,3 +19,49 @@ Total number of inequality constraints...............:        1
         inequality constraints with only upper bounds:        0
 
   iter    0 obj    0.0237 inf_pr 1.70e-01 inf_du 7.14e-02 | 2 FD passes, 4 s
+  iter   10 obj    0.0328 inf_pr 1.02e-07 inf_du 1.49e-04 | 12 FD passes, 28 s
+
+Number of Iterations....: 14
+
+                                   (scaled)                 (unscaled)
+Objective...............:   3.2789722544966135e-02    3.2789722544966135e-02
+Dual infeasibility......:   1.9427069921176300e-08    1.9427069921176300e-08
+Constraint violation....:   3.7210234893336747e-12    3.7210234893336747e-12
+Complementarity.........:   1.8590819381022537e-11    1.8590819381022537e-11
+Overall NLP error.......:   1.9427069921176300e-08    1.9427069921176300e-08
+
+
+Number of objective function evaluations             = 15
+Number of objective gradient evaluations             = 15
+Number of equality constraint evaluations            = 15
+Number of inequality constraint evaluations          = 15
+Number of equality constraint Jacobian evaluations   = 15
+Number of inequality constraint Jacobian evaluations = 15
+Number of Lagrangian Hessian evaluations             = 14
+Total CPU secs in IPOPT (w/o function evaluations)   =     10.313
+Total CPU secs in NLP function evaluations           =    134.370
+
+EXIT: Optimal Solution Found.
+stage 0: Algorithm terminated successfully at a locally optimal point, satisfying the convergence tolerances (can be specified by options). in 40 s, 16 FD passes; speed 0.1404 m/s, max defect 1.44e-07
+--- stage 1: speed target 0.1455
+Total number of variables............................:     3561
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:      972
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     2591
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0239 inf_pr 6.58e-01 inf_du 6.59e-02 | 2 FD passes, 5 s
+  iter   10 obj    0.5837 inf_pr 1.33e-01 inf_du 9.23e-01 | 12 FD passes, 28 s
+  iter   20 obj    1.5009 inf_pr 8.02e-02 inf_du 3.47e+00 | 22 FD passes, 51 s
+  iter   30 obj    1.6349 inf_pr 7.47e-01 inf_du 2.75e+00 | 32 FD passes, 74 s
+  iter   40 obj    0.9860 inf_pr 1.87e-01 inf_du 4.09e-01 | 42 FD passes, 97 s
+  iter   50 obj    0.9409 inf_pr 6.49e-01 inf_du 1.29e+00 | 52 FD passes, 120 s
+  iter   60 obj    1.5694 inf_pr 1.71e-01 inf_du 2.85e+00 | 62 FD passes, 145 s
+  iter   70 obj    1.0462 inf_pr 1.20e-01 inf_du 8.95e-01 | 72 FD passes, 169 s
+  iter   80 obj    1.0504 inf_pr 1.99e-01 inf_du 2.20e+00 | 82 FD passes, 194 s
+  iter   90 obj    0.9199 inf_pr 2.08e-01 inf_du 1.00e+00 | 92 FD passes, 218 s
+  iter  100 obj    1.2470 inf_pr 9.86e-02 inf_du 1.54e+00 | 102 FD passes, 244 s

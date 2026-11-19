@@ -575,6 +575,12 @@ def main():
                  help='speed targets, m/s (default: from the warm start '
                  'up in steps of --step until a target fails)')
   p.add_argument('--step', type=float, default=0.005)
+  p.add_argument('--prox_max', type=int, default=0,
+                 help='instead of a ladder: this many proximal stages, each '
+                 'maximizing speed with the pull (--prox) to the previous '
+                 'solution (a trust region), stopping when the gain is '
+                 'below --min_gain')
+  p.add_argument('--min_gain', type=float, default=2e-4)
   p.add_argument('--prox', type=float, default=1.0)
   p.add_argument('--hessian', choices=('lbfgs', 'gn'), default='lbfgs',
                  help='IPOPT Hessian: limited-memory BFGS, or constrained '
@@ -603,6 +609,8 @@ def main():
   t_start = time.time()
   if args.maximize:
     stages = [None]
+  elif args.prox_max:
+    stages = [round(v0 - args.step, 4)] + ['max'] * args.prox_max
   elif args.ladder:
     stages = list(args.ladder)
   else:
@@ -612,14 +620,14 @@ def main():
   z = z0
   best = None
   for stage, target in enumerate(stages):
-    prob = make(speed_target=target, prox=0.0 if target is None
-                else args.prox, z_ref=z.copy())
+    prob = make(speed_target=None if target in (None, 'max') else target,
+                prox=0.0 if target is None else args.prox, z_ref=z.copy())
     t0 = time.time()
     print(f'--- stage {stage}: speed target {target}', flush=True)
     zs, info = prob.solve(z, max_iter=args.max_iter, hessian=args.hessian)
     wall = time.time() - t0
     c = prob.constraints(zs)
-    eq = c[:-1] if target is not None else c
+    eq = c[:-1] if prob.speed_target is not None else c
     viol = float(np.abs(eq).max())
     v = prob.speed(zs)
     ok = info['status'] in (0, 1) and viol < 1e-5
@@ -633,6 +641,7 @@ def main():
     if not ok:
       print('stage failed; keeping the last good solution', flush=True)
       break
+    gain = v - (best['speed'] if best else -np.inf)
     z = zs
     best = dict(z=zs, speed=v, stage=stage)
     np.savez(os.path.join(args.out, f'stage{stage}_v{v:.4f}.npz'),
@@ -641,6 +650,9 @@ def main():
              direction=direction, init=args.init, speed=v, robot='v2')
     with open(os.path.join(args.out, 'history.json'), 'w') as f:
       json.dump(history, f, indent=1)
+    if target == 'max' and gain < args.min_gain:
+      print(f'gain {gain:.5f} m/s below {args.min_gain}; done', flush=True)
+      break
   out = dict(warm_speed=v0, history=history,
              total_wall_s=time.time() - t_start)
   if best is not None:
