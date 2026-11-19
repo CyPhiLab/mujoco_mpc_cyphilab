@@ -246,6 +246,7 @@ class PeriodicShooting:
     self._cache_fd = None
     self.evals = 0
     self.fd_time = 0.0
+    self.feas_tol = 1e-6
 
   # z layout
   def X(self, z):
@@ -500,6 +501,13 @@ class PeriodicShooting:
   def intermediate(self, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
                    d_norm, regularization_size, alpha_du, alpha_pr,
                    ls_trials):
+    # keep-best (as in shooting-for-contact): the feasible iterate with the
+    # lowest objective, returned if IPOPT stops without converging.
+    if inf_pr < self.feas_tol and obj_value < self._best_obj:
+      it = self._nlp.get_current_iterate()
+      if it is not None and it.get('x') is not None:
+        self._best_obj = obj_value
+        self._best_z = np.array(it['x'], dtype=float, copy=True)
     if iter_count % 10 == 0:
       print(f'  iter {iter_count:4d} obj {obj_value:9.4f} inf_pr {inf_pr:.2e} '
             f'inf_du {inf_du:.2e} | {self.evals} FD passes, '
@@ -538,7 +546,14 @@ class PeriodicShooting:
     opts.update(options or {})
     for k, v in opts.items():
       nlp.add_option(k, v)
+    self._nlp = nlp
+    self._best_obj, self._best_z = np.inf, None
     z, info = nlp.solve(z0)
+    if info['status'] not in (0, 1) and self._best_z is not None:
+      print(f'  IPOPT did not converge; returning the best feasible iterate '
+            f'(obj {self._best_obj:.4f})', flush=True)
+      z = self._best_z
+      info = dict(info, status=1, status_msg=b'kept best feasible iterate')
     return z, info
 
 
