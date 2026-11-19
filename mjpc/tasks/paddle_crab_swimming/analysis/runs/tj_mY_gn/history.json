@@ -1,0 +1,12 @@
+[
+ {
+  "stage": 0,
+  "target": 0.1355,
+  "speed": 0.14037508150250413,
+  "max_defect": 1.443080579477396e-07,
+  "status": "Algorithm terminated successfully at a locally optimal point, satisfying the convergence tolerances (can be specified by options).",
+  "wall_s": 39.610777378082275,
+  "fd_passes": 16,
+  "ok": true
+ }
+]
