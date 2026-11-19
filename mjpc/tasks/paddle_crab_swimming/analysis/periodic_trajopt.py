@@ -617,9 +617,21 @@ def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3, speed_w=0.0,
       r.append(np.minimum(lv - prob.lin_lo, 0) + np.maximum(lv - prob.lin_hi,
                                                             0))
     if climb:
-      r.append([speed_w * max(prob.speed_target / S_SPEED
-                              - c[prob.row_speed], 0.0)])
+      r.append([speed_w * max((prob.speed_target - node_speed(zz)) / S_SPEED,
+                              0.0)])
     return np.concatenate(r)
+
+  # The climb uses the mean forward velocity over the nodes, not the end
+  # displacement: with defects allowed, the end displacement can be raised
+  # by moving the last node alone (a gap the feasibility pass then closes),
+  # while the node mean only rises if the whole stroke speeds up.
+  vrow = np.zeros(prob.n)
+  for i in range(prob.N):
+    vrow[prob.xcol(i) + prob.nv:prob.xcol(i) + prob.nv + 3] = \
+        prob.direction / prob.N
+
+  def node_speed(zz):
+    return float(vrow @ zz)
 
   def feas(rr):
     return float(np.abs(rr[:len(rr) - 1] if climb else rr).max())
@@ -640,10 +652,10 @@ def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3, speed_w=0.0,
     J = sp.csr_matrix((vals, (rows, cols)), shape=(prob.m_rows, prob.n))
     idx = np.r_[np.arange(prob.n_eq), prob.row_lin + np.arange(prob.n_lin)] \
         if prob.n_lin else np.arange(prob.n_eq)
-    if climb:
-      idx = np.r_[idx, prob.row_speed]
     J = J[idx]
-    scale = np.ones(len(idx))
+    if climb:
+      J = sp.vstack([J, sp.csr_matrix(vrow / S_SPEED)]).tocsr()
+    scale = np.ones(J.shape[0])
     if prob.n_lin:
       scale[prob.n_eq:prob.n_eq + prob.n_lin] = (
           r[prob.n_eq:prob.n_eq + prob.n_lin] != 0)
@@ -673,6 +685,15 @@ def feasibility_lm(prob, z, iters=60, tol=1e-5, mu=1e-3, speed_w=0.0,
   return z, feas(r)
 
 
+def node_speed(prob, z):
+  """Mean forward velocity over the nodes: the stroke's speed, robust to
+  the small base-position defects a loose tolerance leaves (they add up
+  along the stroke and bias the end-displacement speed; the base position
+  does not enter the dynamics)."""
+  X = prob.X(z)
+  return float(np.mean(X[:, prob.nv:prob.nv + 3] @ prob.direction))
+
+
 def climb_lm(make, z, args, out_dir, direction, t_start):
   """Speed ladder by Levenberg-Marquardt: each rung asks for the best speed
   plus a step as a penalty residual (lm_iters iterations), then closes the
@@ -680,7 +701,7 @@ def climb_lm(make, z, args, out_dir, direction, t_start):
   kept if the constraints are below feas_climb and it is faster; a missed
   rung halves the step."""
   prob = make(speed_target=None, prox=0.0)
-  best_v, step = prob.speed(z), args.lm_step
+  best_v, step = node_speed(prob, z), args.lm_step
   history = []
   rung = 0
   while step >= args.lm_step_min and rung < args.lm_rungs:
@@ -691,7 +712,7 @@ def climb_lm(make, z, args, out_dir, direction, t_start):
                            quiet=True)
     pf = make(speed_target=None, prox=0.0)
     zc, worst = feasibility_lm(pf, zc, iters=args.lm_feas, quiet=True)
-    v = pf.speed(zc)
+    v = node_speed(pf, zc)
     ok = worst < args.feas_climb and v > best_v
     row = dict(rung=rung, target=target, speed=v, max_residual=worst,
                ok=bool(ok), wall_s=time.time() - t0,
