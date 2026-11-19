@@ -1,2 +1,6 @@
 stroke 1.080 s, 7128 variables, 9071 constraints
 warm start: speed -0.0359 m/s, max defect 3.100e+00
+rung 0: target -0.0267 -> speed -0.0283 m/s, max residual 1.0e-03, kept in 40 s (40 s total)
+rung 1: target -0.0133 -> speed -0.0252 m/s, max residual 2.1e-03, missed in 41 s (81 s total)
+rung 2: target -0.0208 -> speed -0.0288 m/s, max residual 1.1e-03, missed in 42 s (123 s total)
+rung 3: target -0.0245 -> speed -0.0262 m/s, max residual 8.3e-04, kept in 41 s (164 s total)

@@ -858,6 +858,40 @@ def sine_commands(N):
   return U
 
 
+def global_seed_commands(prob, n, seed, direction, out_dir=None):
+  """Global stage: n random first-harmonic strokes (gait_opt.seeds, fixed
+  seed, period prob.T), each simulated once from rest (3 strokes to settle,
+  2 scored, real dcmotor servos); the fastest that swims straight enough
+  (lateral drift below a fifth of its speed, yaw rate below 0.05 rad/s,
+  mean tilt below 0.3 rad) gives the commands at the node phases."""
+  layout = G.Layout(1)
+  thetas = G.seeds(layout, n=n, period=prob.T, seed=seed)
+  ev = G.Problem(dt=prob.dt, k=1, warm=3, measure=2, direction=direction,
+                 robot='v2', fixed_period=prob.T)
+  t0 = time.time()
+  rows = []
+  for i in range(0, n, 32):
+    _, info = ev.evaluate(thetas[i:i + 32])
+    rows += info
+  sp = np.array([r['speed'] for r in rows])
+  ok = np.array([abs(r['lateral_rate']) < 0.2 * max(r['speed'], 1e-3)
+                 and abs(r['yaw_rate']) < 0.05 and r['tilt_mean'] < 0.3
+                 for r in rows])
+  score = np.where(ok, sp, -np.inf)
+  best = int(np.argmax(score)) if ok.any() else int(np.argmax(sp))
+  order = np.argsort(-score)[:5]
+  print(f'global stage: {n} random strokes in {time.time() - t0:.0f} s; '
+        f'{ok.sum()} straight; best #{best} {sp[best]:.4f} m/s; top five '
+        + ' '.join(f'{sp[i]:.4f}' for i in order), flush=True)
+  if out_dir:
+    with open(os.path.join(out_dir, 'global_stage.json'), 'w') as f:
+      json.dump(dict(n=n, seed=seed, best=best, metrics=rows), f)
+  theta = ev.fix(thetas[best])
+  half = ev.half
+  U, _ = G.controls(layout, theta, half, prob.N, prob.K * prob.dt)
+  return U
+
+
 def periodic_ctrl(P, K, n, phase0=0):
   """Per-step commands (n, nu) of the periodic piecewise-linear command."""
   N = len(P)
@@ -929,6 +963,10 @@ def main():
                  help='start from a kinematic reference (crab_reference.json)'
                  ' used as the commands; with --mode')
   p.add_argument('--mode', default='paddles_first')
+  p.add_argument('--global_seeds', type=int, default=0,
+                 help='start from the best of this many random strokes '
+                 '(global_seed_commands)')
+  p.add_argument('--global_seed', type=int, default=0)
   p.add_argument('--start_sine', action='store_true',
                  help='start from a hand-written paddle stroke')
   p.add_argument('--direction', type=float, nargs=3, default=[0, -1, 0])
@@ -1029,6 +1067,11 @@ def main():
   elif args.start_ref:
     z0 = (warm_start_kinematic(prob, U_ref) if args.kinematic
           else warm_start_commands(prob, U_ref))
+  elif args.global_seeds:
+    U_g = global_seed_commands(prob, args.global_seeds, args.global_seed,
+                               direction, args.out)
+    z0 = (warm_start_kinematic(prob, U_g) if args.kinematic
+          else warm_start_commands(prob, U_g))
   elif args.start_sine:
     U_s = sine_commands(args.nodes)
     z0 = (warm_start_kinematic(prob, U_s) if args.kinematic
