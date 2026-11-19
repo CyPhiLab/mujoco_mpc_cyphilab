@@ -641,6 +641,17 @@ def warm_start_commands(prob, U, cycles=6):
   start = (cycles - 1) * prob.N * prob.K
   X = traj[start:start + prob.N * prob.K:prob.K].copy()
   X[:, :3] -= X[0, :3]
+  if prob.servo is not None:
+    # Equivalent commands: the command that makes the unclipped servo law
+    # give the torque the real (clipped) servo applied at each node, so the
+    # start meets the servo limits at the nodes by construction.
+    sv = prob.servo
+    q, qd = X[:, 6:prob.nv], X[:, prob.nv + 6:]
+    tau = sv['kp'] * (U - q) - sv['kd'] * qd
+    hi = np.minimum(sv['tmax'], sv['vlim'] - sv['c'] * qd)
+    lo = np.maximum(-sv['tmax'], -sv['vlim'] - sv['c'] * qd)
+    tau = np.clip(tau, lo, hi)
+    U = np.clip(q + (tau + sv['kd'] * qd) / sv['kp'], prob.lo, prob.hi)
   return np.concatenate([X.ravel(), U.ravel()])
 
 
