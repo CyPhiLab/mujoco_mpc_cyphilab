@@ -622,6 +622,53 @@ def warm_start(prob, gait, cycles=4):
   return np.concatenate([X.ravel(), P.ravel()])
 
 
+def warm_start_commands(prob, U, cycles=6):
+  """Warm start from boundary commands U (N, nu) alone: the robot starts at
+  rest in the pose of the first command, is driven by the periodic
+  commands for `cycles` strokes (real dcmotor servos, Euler base), and the
+  nodes of the last stroke are taken. Needs no earlier gait."""
+  m = load_euler_model(prob.dt)
+  U = np.clip(U, prob.lo, prob.hi)
+  x = np.zeros(prob.nx)
+  x[6:prob.nv] = U[0]
+  n = cycles * prob.N * prob.K
+  u = periodic_ctrl(U, prob.K, n)
+  state, _ = mujoco.rollout.rollout(m, mujoco.MjData(m),
+                                    prob._states(x[None])[0], u[None])
+  traj = np.concatenate([state[0, :, 1:1 + prob.nv],
+                         state[0, :, 1 + prob.nv:1 + 2 * prob.nv]], axis=1)
+  traj = np.concatenate([x[None], traj])
+  start = (cycles - 1) * prob.N * prob.K
+  X = traj[start:start + prob.N * prob.K:prob.K].copy()
+  X[:, :3] -= X[0, :3]
+  return np.concatenate([X.ravel(), U.ravel()])
+
+
+def reference_commands(path, mode, N):
+  """Commands = the kinematic reference stroke's joint angles
+  (kinematic_ref.py, keyframed from crab footage) at the N node phases."""
+  import gait_chain
+  ref = gait_chain.load_reference(path, mode)
+  U = G.reference_at(np.asarray(ref['angles']), np.arange(N) / N)
+  return U, np.asarray(ref['direction'], float)
+
+
+def sine_commands(N):
+  """A hand-written paddle stroke: both paddles pointing back, the base
+  swinging +-0.4 rad, the mid joint raising +-0.6 rad a quarter stroke
+  later, the blade feathering +-0.6 rad; every other joint at 0. The left
+  side mirrors the right (C.MIRROR_SIGN / MIRROR_INDEX)."""
+  ph = 2 * np.pi * np.arange(N) / N
+  U = np.zeros((N, C.NU))
+  r3 = [C.ACTUATORS.index(a) for a in ('R3_1', 'R3_2', 'R3_3')]
+  U[:, r3[0]] = -0.79 + 0.4 * np.sin(ph)
+  U[:, r3[1]] = 0.8 + 0.6 * np.cos(ph)
+  U[:, r3[2]] = 0.6 * np.sin(ph + np.pi / 2)
+  for i in range(9, 18):
+    U[:, i] = C.MIRROR_SIGN[i] * U[:, C.MIRROR_INDEX[i]]
+  return U
+
+
 def periodic_ctrl(P, K, n, phase0=0):
   """Per-step commands (n, nu) of the periodic piecewise-linear command."""
   N = len(P)
@@ -687,7 +734,15 @@ def validate(z, prob, args, direction, m):
 def main():
   p = argparse.ArgumentParser(description=__doc__,
                               formatter_class=argparse.RawTextHelpFormatter)
-  p.add_argument('--init', required=True)
+  p.add_argument('--init', default=None,
+                 help='a gait_chain step npz to start from')
+  p.add_argument('--start_ref', default=None,
+                 help='start from a kinematic reference (crab_reference.json)'
+                 ' used as the commands; with --mode')
+  p.add_argument('--mode', default='paddles_first')
+  p.add_argument('--start_sine', action='store_true',
+                 help='start from a hand-written paddle stroke')
+  p.add_argument('--direction', type=float, nargs=3, default=[0, -1, 0])
   p.add_argument('--out', required=True)
   p.add_argument('--nodes', type=int, default=54)
   p.add_argument('--substeps', type=int, default=10)
@@ -741,9 +796,13 @@ def main():
   args = p.parse_args()
   os.makedirs(args.out, exist_ok=True)
   C.set_robot('v2')
-  gait = gait_from_npz(args.init)
-  z_init = np.load(args.init)
-  direction = z_init['direction']
+  direction = np.asarray(args.direction, float)
+  if args.init:
+    gait = gait_from_npz(args.init)
+    direction = np.load(args.init)['direction']
+  if args.start_ref:
+    U_ref, direction = reference_commands(args.start_ref, args.mode,
+                                          args.nodes)
   m = load_euler_model(args.dt)
   servo = smooth_servos(m) if args.smooth_servo else None
 
@@ -753,14 +812,17 @@ def main():
                             servo=servo, limit_margin=args.limit_margin, **kw)
 
   prob = make()
-  print(f'stroke {prob.T:.3f} s (warm-start gait {gait["period"]:.4f} s, '
-        f'{gait["metrics"]["speed"]:.4f} m/s), {prob.n} variables, '
-        f'{prob.m_rows} constraints', flush=True)
+  print(f'stroke {prob.T:.3f} s, {prob.n} variables, {prob.m_rows} '
+        f'constraints', flush=True)
   if args.resume:
     r = np.load(args.resume)
     assert int(r['nodes']) == args.nodes and int(r['substeps']) == \
         args.substeps and float(r['dt']) == args.dt, 'grid mismatch'
     z0 = r['z']
+  elif args.start_ref:
+    z0 = warm_start_commands(prob, U_ref)
+  elif args.start_sine:
+    z0 = warm_start_commands(prob, sine_commands(args.nodes))
   else:
     z0 = warm_start(prob, gait)
   v0 = prob.speed(z0)
