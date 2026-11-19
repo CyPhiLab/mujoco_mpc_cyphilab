@@ -19,3 +19,80 @@ Total number of inequality constraints...............:        1
         inequality constraints with only upper bounds:        0
 
   iter    0 obj    0.0237 inf_pr 1.70e-01 inf_du 7.14e-02 | 2 FD passes, 5 s
+  iter   10 obj    0.0328 inf_pr 1.02e-07 inf_du 1.49e-04 | 12 FD passes, 31 s
+
+Number of Iterations....: 14
+
+                                   (scaled)                 (unscaled)
+Objective...............:   3.2789722544966135e-02    3.2789722544966135e-02
+Dual infeasibility......:   1.9427069921176300e-08    1.9427069921176300e-08
+Constraint violation....:   3.7210234893336747e-12    3.7210234893336747e-12
+Complementarity.........:   1.8590819381022537e-11    1.8590819381022537e-11
+Overall NLP error.......:   1.9427069921176300e-08    1.9427069921176300e-08
+
+
+Number of objective function evaluations             = 15
+Number of objective gradient evaluations             = 15
+Number of equality constraint evaluations            = 15
+Number of inequality constraint evaluations          = 15
+Number of equality constraint Jacobian evaluations   = 15
+Number of inequality constraint Jacobian evaluations = 15
+Number of Lagrangian Hessian evaluations             = 14
+Total CPU secs in IPOPT (w/o function evaluations)   =     11.287
+Total CPU secs in NLP function evaluations           =    146.388
+
+EXIT: Optimal Solution Found.
+stage 0: Algorithm terminated successfully at a locally optimal point, satisfying the convergence tolerances (can be specified by options). in 43 s, 16 FD passes; speed 0.1404 m/s, max defect 1.44e-07
+--- stage 1: speed target max
+Total number of variables............................:     3561
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:      972
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     2591
+Total number of inequality constraints...............:        0
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj  -14.0136 inf_pr 1.70e-01 inf_du 4.77e-02 | 2 FD passes, 5 s
+  iter   10 obj  -14.0852 inf_pr 1.03e-01 inf_du 2.29e-01 | 12 FD passes, 29 s
+  iter   20 obj  -14.0844 inf_pr 9.75e-02 inf_du 1.10e-01 | 22 FD passes, 52 s
+  iter   30 obj  -14.0675 inf_pr 4.24e-02 inf_du 7.08e-01 | 32 FD passes, 75 s
+  iter   40 obj  -14.0843 inf_pr 1.05e-01 inf_du 2.32e-01 | 42 FD passes, 99 s
+  iter   50 obj  -14.0838 inf_pr 1.13e-01 inf_du 2.09e-01 | 52 FD passes, 122 s
+  iter   60 obj  -14.0804 inf_pr 3.42e-02 inf_du 1.59e-01 | 62 FD passes, 148 s
+  iter   70 obj  -14.0835 inf_pr 9.66e-02 inf_du 2.67e-01 | 72 FD passes, 172 s
+  iter   80 obj  -14.0845 inf_pr 5.19e-02 inf_du 1.89e-01 | 82 FD passes, 197 s
+  iter   90 obj  -14.0693 inf_pr 6.06e-02 inf_du 7.08e-01 | 92 FD passes, 221 s
+  iter  100 obj  -14.0909 inf_pr 9.42e-02 inf_du 1.98e-01 | 102 FD passes, 246 s
+
+Number of Iterations....: 100
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -1.4090850152636015e+01   -1.4090850152636015e+01
+Dual infeasibility......:   1.9769572579152372e-01    1.9769572579152372e-01
+Constraint violation....:   9.4153082364201612e-02    9.4153082364201612e-02
+Complementarity.........:   5.1344076829041144e-08    5.1344076829041144e-08
+Overall NLP error.......:   1.9769572579152372e-01    1.9769572579152372e-01
+
+
+Number of objective function evaluations             = 155
+Number of objective gradient evaluations             = 101
+Number of equality constraint evaluations            = 155
+Number of inequality constraint evaluations          = 0
+Number of equality constraint Jacobian evaluations   = 101
+Number of inequality constraint Jacobian evaluations = 0
+Number of Lagrangian Hessian evaluations             = 100
+Total CPU secs in IPOPT (w/o function evaluations)   =     24.802
+Total CPU secs in NLP function evaluations           =    969.030
+
+EXIT: Maximum Number of Iterations Exceeded.
+stage 1: Maximum number of iterations exceeded (can be specified by an option). in 273 s, 102 FD passes; speed 0.1419 m/s, max defect 9.42e-02
+stage failed; keeping the last good solution
+best: stage 0, 0.1404 m/s (warm start 0.1405); validating
+free-joint model, dt 0.001: speed per cycle 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402
+  lateral -0.0000 -0.0000 -0.0000 -0.0001 -0.0001 -0.0001 -0.0001 -0.0002 -0.0002 -0.0002 -0.0002 -0.0003
+  yaw/cycle -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000
+free-joint model, dt 0.002: speed per cycle 0.1403 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404
+  lateral -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000
+  yaw/cycle -0.000 -0.000 -0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000

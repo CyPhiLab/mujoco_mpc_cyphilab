@@ -89,6 +89,11 @@ def load_euler_model(dt, design=None):
   m.dof_damping[:6] = 0.0
   m.dof_armature[:6] = 0.0
   m.dof_frictionloss[:6] = 0.0
+  # No command clamp in the optimizer's model: the command range is IPOPT's
+  # bounds on p instead. MuJoCo's clamp makes the dynamics kinked at the
+  # range (a forward difference at a bound reads zero slope), which stalled
+  # the solves. Within the bounds the dynamics are the same.
+  m.actuator_ctrllimited[:] = 0
   assert m.nq == m.nv == 6 + C.NU and m.na == 0
   return m
 

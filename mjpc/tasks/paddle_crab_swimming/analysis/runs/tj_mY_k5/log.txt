@@ -1,0 +1,21 @@
+stroke 1.080 s (warm-start gait 1.0775 s, 0.1405 m/s), 7128 variables, 5183 constraints
+warm start: speed 0.1405 m/s, max defect 3.812e-02
+--- stage 0: speed target 0.1355
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0133 inf_pr 1.80e-01 inf_du 2.84e-02 | 2 FD passes, 5 s
