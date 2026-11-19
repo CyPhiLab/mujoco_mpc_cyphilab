@@ -61,3 +61,49 @@ Total number of inequality constraints...............:        1
   iter   30 obj    1.0093 inf_pr 3.47e-02 inf_du 6.97e-01 | 32 FD passes, 140 s
   iter   40 obj    1.2212 inf_pr 5.34e-02 inf_du 2.77e+00 | 42 FD passes, 185 s
   iter   50 obj    1.2305 inf_pr 1.27e-02 inf_du 5.22e-01 | 52 FD passes, 230 s
+  iter   60 obj    1.2328 inf_pr 3.32e-03 inf_du 9.34e-01 | 62 FD passes, 276 s
+  iter   70 obj    1.2170 inf_pr 3.26e-02 inf_du 2.19e+00 | 72 FD passes, 320 s
+  iter   80 obj    1.2087 inf_pr 1.71e-01 inf_du 3.13e+00 | 82 FD passes, 365 s
+  iter   90 obj    1.2283 inf_pr 7.42e-03 inf_du 9.50e-01 | 92 FD passes, 411 s
+  iter  100 obj    1.2200 inf_pr 1.63e-02 inf_du 3.11e+00 | 102 FD passes, 457 s
+  iter  110 obj    1.2289 inf_pr 1.94e-03 inf_du 6.74e-01 | 112 FD passes, 503 s
+  iter  120 obj    1.2271 inf_pr 1.36e-02 inf_du 7.00e-01 | 122 FD passes, 527 s
+  iter  130 obj    1.2272 inf_pr 4.88e-03 inf_du 2.01e+00 | 132 FD passes, 549 s
+  iter  140 obj    1.2238 inf_pr 2.01e-02 inf_du 1.65e+00 | 142 FD passes, 573 s
+  iter  150 obj    1.2236 inf_pr 1.39e-02 inf_du 1.68e+00 | 152 FD passes, 596 s
+  iter  160 obj    1.2293 inf_pr 2.64e-03 inf_du 9.45e-01 | 162 FD passes, 619 s
+  iter  170 obj    1.2292 inf_pr 2.59e-03 inf_du 1.58e+01 | 172 FD passes, 642 s
+  iter  180 obj    1.2259 inf_pr 1.45e-02 inf_du 6.10e+00 | 182 FD passes, 665 s
+  iter  190 obj    1.1713 inf_pr 1.63e-01 inf_du 1.99e+00 | 192 FD passes, 688 s
+  iter  200 obj    1.2166 inf_pr 3.82e-02 inf_du 1.30e+00 | 202 FD passes, 711 s
+
+Number of Iterations....: 200
+
+                                   (scaled)                 (unscaled)
+Objective...............:   1.2166179826448811e+00    1.2166179826448811e+00
+Dual infeasibility......:   1.3019842695419102e+00    1.3019842695419102e+00
+Constraint violation....:   3.8190409446853923e-02    3.8190409446853923e-02
+Complementarity.........:   6.3364027917779725e-07    6.3364027917779725e-07
+Overall NLP error.......:   1.3019842695419102e+00    1.3019842695419102e+00
+
+
+Number of objective function evaluations             = 529
+Number of objective gradient evaluations             = 201
+Number of equality constraint evaluations            = 529
+Number of inequality constraint evaluations          = 529
+Number of equality constraint Jacobian evaluations   = 201
+Number of inequality constraint Jacobian evaluations = 201
+Number of Lagrangian Hessian evaluations             = 0
+Total CPU secs in IPOPT (w/o function evaluations)   =     39.737
+Total CPU secs in NLP function evaluations           =   1853.746
+
+EXIT: Maximum Number of Iterations Exceeded.
+stage 1: Maximum number of iterations exceeded (can be specified by an option). in 772 s, 202 FD passes; speed 0.1455 m/s, max defect 3.82e-02
+stage failed; keeping the last good solution
+best: stage 0, 0.1404 m/s (warm start 0.1405); validating
+free-joint model, dt 0.001: speed per cycle 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402 0.1402
+  lateral -0.0000 -0.0000 -0.0000 -0.0001 -0.0001 -0.0001 -0.0001 -0.0002 -0.0002 -0.0002 -0.0002 -0.0003
+  yaw/cycle -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000 -0.000
+free-joint model, dt 0.002: speed per cycle 0.1403 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404 0.1404
+  lateral -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000 -0.0000
+  yaw/cycle -0.000 -0.000 -0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000 +0.000
