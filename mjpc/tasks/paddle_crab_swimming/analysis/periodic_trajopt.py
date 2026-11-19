@@ -390,6 +390,29 @@ class PeriodicShooting:
       vals += [d @ Ax[-1, :3], -Sd, d @ B0[-1, :3], d @ B1[-1, :3]]
     return np.concatenate([v.ravel() for v in vals])
 
+  # --- Hessian (constrained Gauss-Newton: the objective's exact Hessian,
+  # the constraints' curvature left out) --- #
+
+  def hessianstructure(self):
+    n, N, nu = self.n, self.N, self.nu
+    r = [np.arange(n)]
+    c = [np.arange(n)]
+    for i in range(N):
+      a = self.nX + i * nu + np.arange(nu)
+      b = self.nX + ((i + 1) % N) * nu + np.arange(nu)
+      r.append(np.maximum(a, b))
+      c.append(np.minimum(a, b))
+    return np.concatenate(r), np.concatenate(c)
+
+  def hessian(self, z, lagrange, obj_factor):
+    n, N, nu = self.n, self.N, self.nu
+    diag = np.zeros(n)
+    if self.prox:
+      diag += 2 * self.prox * self._prox_w()
+    diag[self.nX:] += 4 * self.smooth
+    off = np.full(N * nu, -2 * self.smooth)
+    return obj_factor * np.concatenate([diag, off])
+
   def intermediate(self, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
                    d_norm, regularization_size, alpha_du, alpha_pr,
                    ls_trials):
@@ -410,7 +433,7 @@ class PeriodicShooting:
     ub[self.nX:] = np.tile(self.hi, self.N)
     return lb, ub
 
-  def solve(self, z0, max_iter=300, tol=1e-6, options=None):
+  def solve(self, z0, max_iter=300, tol=1e-6, options=None, hessian='lbfgs'):
     lb, ub = self.bounds(z0)
     z0 = np.clip(z0, lb, ub)
     cl = np.zeros(self.m_rows)
@@ -420,7 +443,8 @@ class PeriodicShooting:
       cu[-1] = 1e19
     nlp = cyipopt.Problem(n=self.n, m=self.m_rows, problem_obj=self,
                           lb=lb, ub=ub, cl=cl, cu=cu)
-    opts = dict(hessian_approximation='limited-memory', max_iter=max_iter,
+    opts = dict(hessian_approximation='limited-memory' if hessian == 'lbfgs'
+                else 'exact', max_iter=max_iter,
                 tol=tol, constr_viol_tol=1e-7, acceptable_tol=1e-4,
                 print_level=3, mu_strategy='adaptive',
                 limited_memory_max_history=20)
@@ -552,6 +576,9 @@ def main():
                  'up in steps of --step until a target fails)')
   p.add_argument('--step', type=float, default=0.005)
   p.add_argument('--prox', type=float, default=1.0)
+  p.add_argument('--hessian', choices=('lbfgs', 'gn'), default='lbfgs',
+                 help='IPOPT Hessian: limited-memory BFGS, or constrained '
+                 'Gauss-Newton (objective Hessian only)')
   args = p.parse_args()
   os.makedirs(args.out, exist_ok=True)
   C.set_robot('v2')
@@ -589,7 +616,7 @@ def main():
                 else args.prox, z_ref=z.copy())
     t0 = time.time()
     print(f'--- stage {stage}: speed target {target}', flush=True)
-    zs, info = prob.solve(z, max_iter=args.max_iter)
+    zs, info = prob.solve(z, max_iter=args.max_iter, hessian=args.hessian)
     wall = time.time() - t0
     c = prob.constraints(zs)
     eq = c[:-1] if target is not None else c
