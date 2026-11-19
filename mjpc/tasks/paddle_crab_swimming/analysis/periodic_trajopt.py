@@ -698,6 +698,9 @@ def main():
                  'torque and voltage limits as constraints at the nodes '
                  '(smooth_servos); validation stays on the real dcmotor')
   p.add_argument('--limit_margin', type=float, default=0.0)
+  p.add_argument('--resume', default=None,
+                 help='start from a stage npz of an earlier run (same '
+                 'nodes, substeps, dt) and skip the feasibility stage')
   p.add_argument('--prox0', type=float, default=None,
                  help='pull in stage 0 (default --prox). Keep it small when '
                  'the warm start is far from feasible: the Gauss-Newton '
@@ -725,7 +728,13 @@ def main():
   print(f'stroke {prob.T:.3f} s (warm-start gait {gait["period"]:.4f} s, '
         f'{gait["metrics"]["speed"]:.4f} m/s), {prob.n} variables, '
         f'{prob.m_rows} constraints', flush=True)
-  z0 = warm_start(prob, gait)
+  if args.resume:
+    r = np.load(args.resume)
+    assert int(r['nodes']) == args.nodes and int(r['substeps']) == \
+        args.substeps and float(r['dt']) == args.dt, 'grid mismatch'
+    z0 = r['z']
+  else:
+    z0 = warm_start(prob, gait)
   v0 = prob.speed(z0)
   print(f'warm start: speed {v0:.4f} m/s, max defect '
         f'{np.abs(prob.constraints(z0)).max():.3e}', flush=True)
@@ -734,7 +743,8 @@ def main():
   if args.maximize:
     stages = [None]
   elif args.prox_max:
-    stages = [round(v0 - args.step, 4)] + ['max'] * args.prox_max
+    stages = ([] if args.resume else [round(v0 - args.step, 4)]) + [
+        'max'] * args.prox_max
   elif args.ladder:
     stages = list(args.ladder)
   else:
@@ -744,7 +754,8 @@ def main():
   z = z0
   best = None
   for stage, target in enumerate(stages):
-    pull = args.prox if stage or args.prox0 is None else args.prox0
+    pull = (args.prox if stage or args.prox0 is None or args.resume
+            else args.prox0)
     prob = make(speed_target=None if target in (None, 'max') else target,
                 prox=0.0 if target is None else pull, z_ref=z.copy())
     t0 = time.time()
