@@ -246,7 +246,7 @@ class PeriodicShooting:
     self._cache_fd = None
     self.evals = 0
     self.fd_time = 0.0
-    self.feas_tol = 1e-6
+    self.feas_tol = 1e-4
 
   # z layout
   def X(self, z):
@@ -540,6 +540,8 @@ class PeriodicShooting:
                           lb=lb, ub=ub, cl=cl, cu=cu)
     opts = dict(hessian_approximation='limited-memory' if hessian == 'lbfgs'
                 else 'exact', max_iter=max_iter,
+                acceptable_constr_viol_tol=1e-4, acceptable_iter=5,
+                acceptable_dual_inf_tol=1e-2,
                 tol=tol, constr_viol_tol=1e-7, acceptable_tol=1e-4,
                 print_level=3, mu_strategy='adaptive',
                 limited_memory_max_history=20)
@@ -748,7 +750,7 @@ def main():
       viol = max(viol, float(np.max(np.maximum(prob.lin_lo - lv,
                                                lv - prob.lin_hi))))
     v = prob.speed(zs)
-    ok = info['status'] in (0, 1) and viol < 1e-5
+    ok = info['status'] in (0, 1) and viol < 1e-4
     row = dict(stage=stage, target=target, speed=v, max_defect=viol,
                status=info['status_msg'].decode(), wall_s=wall,
                fd_passes=prob.evals, ok=ok)

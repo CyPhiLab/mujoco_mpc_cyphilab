@@ -1,0 +1,51 @@
+stroke 1.080 s (warm-start gait 1.0775 s, 0.1405 m/s), 7128 variables, 9071 constraints
+warm start: speed 0.1456 m/s, max defect 6.782e+00
+--- stage 0: speed target 0.1406
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:     7125
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1944
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     5183
+Total number of inequality constraints...............:     3889
+        inequality constraints with only lower bounds:        1
+   inequality constraints with lower and upper bounds:     3888
+        inequality constraints with only upper bounds:        0
+
+  iter    0 obj    0.0115 inf_pr 3.71e+00 inf_du 2.50e-02 | 2 FD passes, 5 s
+  iter   10 obj    0.2405 inf_pr 1.06e-02 inf_du 5.68e-03 | 12 FD passes, 30 s
+  iter   20 obj    0.2392 inf_pr 8.23e-06 inf_du 4.61e-03 | 22 FD passes, 55 s
+  iter   30 obj    0.2391 inf_pr 1.58e-03 inf_du 2.18e-03 | 32 FD passes, 79 s
+  iter   40 obj    0.2391 inf_pr 2.05e-05 inf_du 3.95e-03 | 42 FD passes, 102 s
+  iter   50 obj    0.2391 inf_pr 6.09e-04 inf_du 2.48e-03 | 52 FD passes, 126 s
+  iter   60 obj    0.2391 inf_pr 1.35e-03 inf_du 3.67e-03 | 62 FD passes, 149 s
+
+Number of Iterations....: 60
+
+                                   (scaled)                 (unscaled)
+Objective...............:   2.3910305132050280e-01    2.3910305132050280e-01
+Dual infeasibility......:   3.6693949876058897e-03    3.6693949876058897e-03
+Constraint violation....:   1.3454755943490548e-03    1.3454755943490548e-03
+Complementarity.........:   1.0000001259894071e-11    1.0000001259894071e-11
+Overall NLP error.......:   3.6693949876058897e-03    3.6693949876058897e-03
+
+
+Number of objective function evaluations             = 71
+Number of objective gradient evaluations             = 61
+Number of equality constraint evaluations            = 71
+Number of inequality constraint evaluations          = 71
+Number of equality constraint Jacobian evaluations   = 61
+Number of inequality constraint Jacobian evaluations = 61
+Number of Lagrangian Hessian evaluations             = 60
+Total CPU secs in IPOPT (w/o function evaluations)   =     27.620
+Total CPU secs in NLP function evaluations           =    568.210
+
+EXIT: Maximum Number of Iterations Exceeded.
+stage 0: Maximum number of iterations exceeded (can be specified by an option). in 172 s, 62 FD passes; speed 0.1406 m/s, max defect 1.35e-03
+stage failed; keeping the last good solution

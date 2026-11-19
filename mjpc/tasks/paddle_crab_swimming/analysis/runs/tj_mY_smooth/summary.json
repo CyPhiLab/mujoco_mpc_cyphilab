@@ -1,0 +1,16 @@
+{
+ "warm_speed": 0.1455915699757278,
+ "history": [
+  {
+   "stage": 0,
+   "target": 0.1406,
+   "speed": 0.14059999859772265,
+   "max_defect": 0.0013454755943490548,
+   "status": "Maximum number of iterations exceeded (can be specified by an option).",
+   "wall_s": 171.86722254753113,
+   "fd_passes": 62,
+   "ok": false
+  }
+ ],
+ "total_wall_s": 171.94692182540894
+}
