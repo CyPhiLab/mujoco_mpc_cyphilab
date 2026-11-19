@@ -26,3 +26,7 @@ Total number of inequality constraints...............:        0
   iter   60 obj  -17.8126 inf_pr 9.10e+01 inf_du 3.68e+01 | 62 FD passes, 158 s
   iter   70 obj  -13.9319 inf_pr 6.55e+01 inf_du 3.81e+02 | 72 FD passes, 200 s
   iter   80 obj  -12.8977 inf_pr 4.49e+01 inf_du 8.51e+01 | 82 FD passes, 243 s
+  iter   90 obj  -14.7860 inf_pr 1.03e+02 inf_du 6.01e+01 | 92 FD passes, 288 s
+  iter  100 obj  -14.1967 inf_pr 7.64e+01 inf_du 1.35e+02 | 102 FD passes, 332 s
+  iter  110 obj  -14.1438 inf_pr 1.17e+02 inf_du 2.79e+03 | 112 FD passes, 375 s
+  iter  120 obj  -13.6823 inf_pr 1.68e+02 inf_du 3.31e+03 | 122 FD passes, 419 s

@@ -56,3 +56,8 @@ Total number of inequality constraints...............:        1
         inequality constraints with only upper bounds:        0
 
   iter    0 obj    0.0239 inf_pr 6.58e-01 inf_du 6.59e-02 | 2 FD passes, 9 s
+  iter   10 obj    0.2248 inf_pr 2.90e-01 inf_du 5.45e-01 | 12 FD passes, 52 s
+  iter   20 obj    0.4598 inf_pr 1.79e-01 inf_du 8.80e-01 | 22 FD passes, 96 s
+  iter   30 obj    1.0093 inf_pr 3.47e-02 inf_du 6.97e-01 | 32 FD passes, 140 s
+  iter   40 obj    1.2212 inf_pr 5.34e-02 inf_du 2.77e+00 | 42 FD passes, 185 s
+  iter   50 obj    1.2305 inf_pr 1.27e-02 inf_du 5.22e-01 | 52 FD passes, 230 s
