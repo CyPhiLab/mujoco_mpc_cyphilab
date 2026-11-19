@@ -807,3 +807,42 @@ The trajopt objective is speed only (plus command smoothness), so it buys
 the 12% speed with 35% more power: 22% more energy per metre. An energy
 term, or minimum energy at a fixed speed, is not tried yet.
 `runs/tj_mY_compare/compare.mp4` shows the two side by side.
+
+### From scratch (no earlier gait)
+
+To check that the trajopt does not depend on the Fourier pipeline's gaits,
+it was started from method-free strokes:
+
+- **Crab kinematic reference** (`--start_ref`): dropped. Open loop it tumbles
+  (52° of pitch in 6 strokes) and asks for up to 13 N m over the servo limit.
+- **Hand-written sine stroke** (`--start_sine --kinematic`): the
+  Levenberg-Marquardt feasibility stage (`--lm0`) closes it in 110 s (IPOPT
+  stalled), but neither climb (IPOPT or the LM ladder `--climb lm`) gets far:
+  −0.037 → −0.026 m/s in 3 minutes. The trajopt is a local refiner.
+- **Random-stroke global stage** (`--global_seeds 256 --global_seed 0`):
+  256 random first-harmonic strokes (`gait_opt.seeds`, fixed seed) are each
+  simulated once from rest; the fastest straight one (0.0616 m/s) is closed
+  by LM and climbed by IPOPT (12-iteration stages, adaptive pull).
+
+| stage | time | speed |
+|---|---|---|
+| global stage (256 strokes) | 133 s | 0.0616 m/s |
+| LM feasibility | 108 s | 0.0610 m/s |
+| IPOPT climb, 14 stages (stopped when gains fell to 1e-4 m/s per stage) | 495 s | 0.1357 m/s |
+
+`runs/tj_mY_global/best_stage13_v0.1357.npz` on the real dcmotor model at
+1 ms: 0.1356 m/s for 20 strokes, no measurable lateral or yaw drift, 2.6 W,
+19 J/m (the Fourier ladder's accepted gait: 0.1405 m/s, 18 J/m). It is a
+visibly different stroke (`runs/tj_mY_global/compare.mp4`), found in about
+12 minutes on 4 cores from a seed and command-line flags alone:
+
+```
+~/venvtj/bin/python periodic_trajopt.py --global_seeds 256 --global_seed 0 \
+    --tilt_max 0.35 --lm0 40 --out runs/tj_mY_global --nodes 108 --substeps 5 \
+    --max_iter 12 --hessian gn --prox_max 300 --prox 0.3 --adapt \
+    --min_gain 1e-4 --feas_climb 2e-3 --polish_iter 40 --smooth_servo
+```
+
+It plateaus below the 0.157 m/s reached from the Fourier gait, so the
+result depends on the basin the global stage lands in; other seeds (and
+the best few strokes rather than the best one) are the next check.

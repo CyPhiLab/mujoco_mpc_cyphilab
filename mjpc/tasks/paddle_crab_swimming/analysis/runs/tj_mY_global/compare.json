@@ -1,0 +1,30 @@
+{
+ "Fourier ladder": {
+  "path": "runs/v2_mY/step6_v0.1458_dt0.001.npz",
+  "period": 1.0774953396455587,
+  "speed": 0.1404501630328679,
+  "lateral": 0.0009443054097443592,
+  "depth": 0.0020162034630642764,
+  "mech_work_per_stroke": 70.91131157328975,
+  "electrical_per_stroke": 2.790174578231664,
+  "mech_work_per_m": 468.7891669354881,
+  "electrical_per_m": 18.445627180113895,
+  "electrical_power": 2.590691344690496,
+  "cot": 0.21151594384010144,
+  "saturated": 0.15542143815124318
+ },
+ "Trajopt": {
+  "path": "runs/tj_mY_global/best_stage13_v0.1357.npz",
+  "period": 1.08,
+  "speed": 0.1355969876216317,
+  "lateral": 9.979271523189416e-06,
+  "depth": 0.00017654705707261838,
+  "mech_work_per_stroke": 67.31229795842569,
+  "electrical_per_stroke": 2.8493769899710766,
+  "mech_work_per_m": 459.64296778680256,
+  "electrical_per_m": 19.45701061673223,
+  "electrical_power": 2.6383120277509966,
+  "cot": 0.22311347425160202,
+  "saturated": 0.11918724279835391
+ }
+}

@@ -154,5 +154,17 @@
   "ok": true,
   "pull": 0.03,
   "elapsed_s": 459.4056296348572
+ },
+ {
+  "stage": 13,
+  "target": "max",
+  "speed": 0.13574607883192621,
+  "max_defect": 6.51397335427184e-06,
+  "status": "kept best feasible iterate",
+  "wall_s": 35.085012912750244,
+  "fd_passes": 13,
+  "ok": true,
+  "pull": 0.03,
+  "elapsed_s": 494.56618094444275
  }
 ]
